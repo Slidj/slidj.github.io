@@ -1,29 +1,36 @@
 (function() {
     'use strict';
+    
+    // 1. Створюємо валідний, але порожній компонент
+    class SlidjComponent {
+        constructor() {
+            // Ініціалізуємо компонент, але без вмісту
+            this.app = new Lampa.Component.Store('slidj_app_store');
+            this.component = this.app.render(); 
+            this.component.innerHTML = ''; // Порожній вміст
+        }
+        
+        render() { return this.component; }
+        
+        // Тут ми вимикаємо будь-яку дію, щоб сторінка не відкривалася
+        start() { 
+            Lampa.Noty.show('Slidj: Неклікабельна функція.');
+            // Не викликаємо Lampa.Controller.add/toggle, щоб залишитися на поточному екрані
+        }
 
-    // Функція, яка викликається при натисканні (для тестових цілей)
-    function handleSlidjSelect() {
-        // Виводимо повідомлення на екран Lampa
-        Lampa.Noty.show('Slidj: Функція заблокована (тільки для тесту).');
+        destroy() { this.app.destroy(); }
     }
 
-    // Реєстрація компонента
+    // 2. Реєстрація з валідним компонентом
     Lampa.Utils.add({
-        name: 'Slidj',             // Назва
+        name: 'Slidj',
+        component: SlidjComponent, // <-- Використовуємо наш валідний клас
+        type: 'all',
         
-        // 1. КОМПОНЕНТ: Встановлюємо 'false' для неклікабельності
-        component: false,          
+        // ВИДАЛЯЄМО onSelect, оскільки логіка перенесена у start()
         
-        type: 'all',               
-        
-        // 2. ДІЯ: Викликаємо функцію при натисканні
-        onSelect: handleSlidjSelect, 
-
-        // 3. ІКОНКА: Використовуємо простіший текст-іконку (або вбудований клас)
-        // Ми використовуємо вбудований клас 'icon-settings' як приклад:
-        icon: 'icon-settings' 
-        // АБО: можете використати HTML-символ (наприклад, "⚙️" або "🔒")
-        // icon: '🔒' 
+        // Використовуємо просту вбудовану іконку, щоб уникнути помилок синтаксису
+        icon: 'icon-tv' 
     });
 
 })();

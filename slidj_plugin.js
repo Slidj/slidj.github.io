@@ -1,36 +1,37 @@
 (function() {
     'use strict';
-    
-    // 1. Створюємо валідний, але порожній компонент
-    class SlidjComponent {
-        constructor() {
-            // Ініціалізуємо компонент, але без вмісту
-            this.app = new Lampa.Component.Store('slidj_app_store');
-            this.component = this.app.render(); 
-            this.component.innerHTML = ''; // Порожній вміст
-        }
-        
-        render() { return this.component; }
-        
-        // Тут ми вимикаємо будь-яку дію, щоб сторінка не відкривалася
-        start() { 
-            Lampa.Noty.show('Slidj: Неклікабельна функція.');
-            // Не викликаємо Lampa.Controller.add/toggle, щоб залишитися на поточному екрані
-        }
 
-        destroy() { this.app.destroy(); }
+    // 1. Функція, яка виконується, коли користувач намагається натиснути на пункт
+    function handleSlidjSelect() {
+        // Виводимо повідомлення на екран Lampa
+        Lampa.Noty.show('Slidj: Неклікабельний пункт.', true);
+    }
+    
+    // 2. Функція-заглушка для компонента (максимальна сумісність ES5)
+    // Це забезпечує, що Lampa отримає валідне посилання на компонент, а не "false", 
+    // що іноді спричиняє Script Error.
+    function SlidjComponent() {
+        this.render = function() {
+            var div = document.createElement('div');
+            // Можемо вставити текст-заглушку, який видно, якщо пункт випадково відкриється
+            div.innerHTML = '<h1 style="color:#FFF;">Slidj заглушка</h1>';
+            return div;
+        };
+        
+        // Перехоплюємо старт, щоб він не перемикав екран, і викликаємо onSelect
+        this.start = handleSlidjSelect;
+        
+        this.destroy = function() {};
     }
 
-    // 2. Реєстрація з валідним компонентом
+    // 3. Реєстрація компонента в системі Lampa
     Lampa.Utils.add({
         name: 'Slidj',
-        component: SlidjComponent, // <-- Використовуємо наш валідний клас
+        component: SlidjComponent, // Посилаємось на нашу функцію-заглушку
         type: 'all',
         
-        // ВИДАЛЯЄМО onSelect, оскільки логіка перенесена у start()
-        
-        // Використовуємо просту вбудовану іконку, щоб уникнути помилок синтаксису
-        icon: 'icon-tv' 
+        // Іконка (використовуємо просту вбудовану іконку Lampa для безпеки)
+        icon: 'icon-puzzle' 
     });
 
 })();

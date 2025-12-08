@@ -8,23 +8,27 @@
     
     // --- ОСНОВНИЙ КЛАС ПЛАГІНА ---
     function TmdbPlugin() {
-        // Ініціалізація компонентів Lampa та змінних
         this.app = new Lampa.Component.Store('tmdb_popular_movies');
         this.component = this.app.render();
         this.wall = null;
-        this.hasBuilt = false; // Прапор для уникнення повторної побудови
+        this.hasBuilt = false; 
     }
 
-    // Метод для асинхронного запиту (тепер використовує Promise/XMLHttpRequest)
+    // Метод для запиту даних з TMDB (на основі Lampa.Utils.request)
     TmdbPlugin.prototype.fetchMovies = function(callback) {
         var self = this;
         var URL_POPULAR = BASE_URL + '/movie/popular?api_key=' + API_KEY + '&language=uk-UA&page=1';
         
-        // Використовуємо Lampa.Utils.request для сумісності
         Lampa.Utils.request({
             url: URL_POPULAR,
+            
             callback: function(data) {
                 var json = JSON.parse(data);
+                if (!json.results) {
+                    self.displayError('Помилка: Невірний формат даних.');
+                    return callback([]);
+                }
+                
                 var items = json.results.map(function(item) {
                     return {
                         id: item.id,
@@ -35,12 +39,18 @@
                 });
                 callback(items);
             },
+            
             error: function(xhr, status) {
                 console.error('TMDB Fetch Error:', status);
-                self.component.innerHTML += '<p style="padding: 2em; text-align: center; color: white;">Неможливо завантажити дані. Перевірте ключ.</p>';
+                self.displayError('Неможливо завантажити дані. Перевірте API-ключ або підключення.');
                 callback([]);
             }
         });
+    };
+
+    // Метод для відображення помилки
+    TmdbPlugin.prototype.displayError = function(message) {
+        this.component.innerHTML = '<p style="padding: 2em; text-align: center; color: white;">' + message + '</p>';
     };
 
     // Обробка натискання на постер
@@ -59,7 +69,7 @@
         }, item_data);
     };
 
-    // Побудова інтерфейсу
+    // Побудова інтерфейсу після отримання даних
     TmdbPlugin.prototype.build = function(items) {
         var self = this;
         if (self.hasBuilt) return;
@@ -84,10 +94,11 @@
     };
     
     // --- МЕТОДИ ЖИТТЄВОГО ЦИКЛУ ---
+    // start() викликається при виборі плагіна з меню
     TmdbPlugin.prototype.start = function() {
         var self = this;
         
-        // Викликаємо запит і передаємо функцію, яка будує інтерфейс
+        // Починаємо завантаження даних, коли плагін обрано
         self.fetchMovies(function(items) {
             self.build(items);
             
@@ -117,4 +128,3 @@
     });
 
 })();
-                    

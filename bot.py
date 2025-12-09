@@ -62,8 +62,14 @@ def get_latest_news() -> str:
 @app.route('/publish', methods=['GET'])
 def publish_endpoint():
     
-    if not all([TELEGRAM_TOKEN, CHANNEL_ID, NEWS_API_KEY]):
-        return "Error: Missing configuration keys.", 500
+    # Новий код для діагностики:
+if not TELEGRAM_TOKEN:
+    return "Error: Missing TELEGRAM_TOKEN.", 500
+if not CHANNEL_ID:
+    return "Error: Missing CHANNEL_ID.", 500
+if not NEWS_API_KEY:
+    return "Error: Missing NEWS_API_KEY.", 500
+
 
     news_text = get_latest_news()
     

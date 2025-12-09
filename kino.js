@@ -3,7 +3,7 @@
 
   var Defined = {
     api: 'lampac',
-    localhost: 'https://slidj.github.io/',
+    localhost: 'https://npidzcii.deploy.cx/',
     apn: ''
   };
 

@@ -1,13 +1,11 @@
-﻿⭐ {{title_prefix}} | {{current_time}}
-🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸
+{{title_prefix}} | {{current_time}}
 ➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
 
-{{title}}
+{{title_line}}
 
 ➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
-— — — — — — — — — — — — —
 {{description}}
 
-═════════════════════════
-📰 Джерело: {{source}}
-🔗 Посилання: {{url}}
+
+{{source_line}}
+{{url_line}}

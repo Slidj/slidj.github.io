@@ -22,14 +22,16 @@ TEMPLATE_FILE = "templates/news_template.html"
 # ----------------------------------------------------
 
 def load_template():
-    """Функція для завантаження шаблону з файлу."""
+    """Функція для завантаження шаблону з файлу. Використовує резервний шаблон у разі помилки."""
     global NEWS_TEMPLATE
     try:
+        # Читаємо файл шаблону
         with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
             NEWS_TEMPLATE = f.read().strip()
         print(f"Template loaded successfully from {TEMPLATE_FILE}")
     except FileNotFoundError:
         print(f"Error: Template file not found at {TEMPLATE_FILE}. Using fallback template.")
+        # Резервний шаблон (безпечний HTML)
         NEWS_TEMPLATE = (
             "<b>📢 {{title_prefix}}</b> | <i>{{current_time}}</i><br>"
             "--------------------------<br>"
@@ -43,9 +45,10 @@ def load_template():
         NEWS_TEMPLATE = "" 
 
 def escape_html(text):
-    """Екранує символи <, > та & для безпечного використання в HTML."""
+    """Екранує символи <, > та & для безпечного використання в HTML-тексті."""
     if text is None:
         return ""
+    # Екранування, щоб запобігти розриву HTML-парсера Telegram
     text = text.replace('&', '&amp;')
     text = text.replace('<', '&lt;')
     text = text.replace('>', '&gt;')
@@ -58,7 +61,7 @@ def escape_html(text):
 def _fetch_news(params: dict, title_prefix: str) -> dict | None:
     """Виконує запит до NewsAPI, обробляє дані та формує словник для публікації."""
     params['apiKey'] = NEWS_API_KEY
-    params['pageSize'] = 5
+    params['pageSize'] = 5 # Запитуємо 5 статей для випадкового вибору
     
     try:
         response = requests.get(NEWS_API_URL, params=params)
@@ -68,7 +71,6 @@ def _fetch_news(params: dict, title_prefix: str) -> dict | None:
         if data['status'] == 'ok' and data['articles']:
             
             # --- ЛОГІКА УНИКНЕННЯ ДУБЛІКАТІВ ТА ПУСТИХ НОВИН ---
-            
             article = None
             articles = data['articles']
             random.shuffle(articles) # Перемішуємо для більшої випадковості
@@ -145,8 +147,11 @@ def publish_endpoint():
 
     news_data = get_latest_news()
     
+    # 🌟 ВИПРАВЛЕННЯ: ЗАПОБІГАННЯ ПОМИЛЦІ 500
     if not news_data:
-        return "No news found or API error (after fallback attempt).", 200
+        print("Final result: No news found after all attempts. Exiting gracefully.")
+        # Повертаємо 200 OK, щоб UptimeRobot не видавав помилку
+        return "No news found after all attempts.", 200
 
     caption = news_data.get('caption')
     
@@ -167,6 +172,7 @@ def publish_endpoint():
         return "News published successfully (text only guaranteed)!", 200
         
     except requests.exceptions.RequestException as e:
+        # Ця помилка може бути через невірний TOKEN/CHANNEL_ID або помилку HTML
         print(f"Помилка відправки в Telegram (sendMessage): {e}")
         return "Telegram sending failed.", 500
 
@@ -174,6 +180,7 @@ def publish_endpoint():
 def home():
     return "Bot is alive and ready to publish.", 200
 
+# !!! ВИКЛИК ЗАВАНТАЖЕННЯ ШАБЛОНУ ПЕРЕД ЗАПУСКОМ APP !!!
 if __name__ == '__main__':
     load_template() 
     port = int(os.environ.get('PORT', 5000))

@@ -28,6 +28,15 @@ MIN_IMAGE_SIZE = 400
 # ФІКСОВАНИЙ ШЛЯХ ДО ЛОКАЛЬНОГО ШРИФТУ
 FONT_PATH = "fonts/Roboto-Bold.ttf" 
 
+# === НОВИЙ ШАБЛОН ДЛЯ ПРИВІТАННЯ ===
+GREETING_TEMPLATE = (
+    "👋 **Ласкаво просимо на наш новинний канал!**\n\n"
+    "Тут ви знайдете найсвіжіші та перевірені новини. Наші публікації виходять кілька разів на день.\n\n"
+    "---"
+    "⏰ Останнє оновлення привітання: {current_time}"
+)
+# ==================================
+
 
 # ----------------------------------------------------
 # 2. ФУНКЦІЇ ЗАВАНТАЖЕННЯ ШАБЛОНУ ТА ОЧИЩЕННЯ
@@ -85,11 +94,9 @@ def _get_image_with_title(image_url: str, title: str) -> bytes | None:
     Повертає зображення як bytes (готове до відправки).
     """
     
-    # === НОВЕ ВИПРАВЛЕННЯ: ОБМЕЖЕННЯ ДОВЖИНИ ЗАГОЛОВКА ДЛЯ ЗОБРАЖЕННЯ ===
+    # === ВИПРАВЛЕННЯ: ОБМЕЖЕННЯ ДОВЖИНИ ЗАГОЛОВКА ДЛЯ ЗОБРАЖЕННЯ ===
     MAX_TITLE_LENGTH = 120
     if len(title) > MAX_TITLE_LENGTH:
-        # Обрізаємо по слову, щоб уникнути обриву слова, та додаємо "..."
-        # rsplit(' ', 1)[0] знаходить останній пробіл, щоб обрізати по слову.
         shortened_title = title[:MAX_TITLE_LENGTH].rsplit(' ', 1)[0]
         title = shortened_title + '...'
         print(f"Title truncated for image: {title}")
@@ -200,7 +207,7 @@ def _get_image_with_title(image_url: str, title: str) -> bytes | None:
 
 
 # ----------------------------------------------------
-# 3. ДОПОМІЖНІ ФУНКЦІЇ ДЛЯ API (Без змін)
+# 3. ДОПОМІЖНІ ФУНКЦІЇ ДЛЯ API
 # ----------------------------------------------------
 
 def _process_article(article, title_prefix, source_key, url_key, image_key=None, description_key='description'):
@@ -326,6 +333,55 @@ def get_latest_news() -> dict | None:
     
     return news_data
 
+# === НОВА ФУНКЦІЯ ДЛЯ ВІТАННЯ ТА ЗАКРІПЛЕННЯ ===
+def _send_and_pin_greeting():
+    """Надсилає нове привітання та закріплює його в каналі."""
+    current_time = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+    greeting_text = GREETING_TEMPLATE.format(current_time=current_time)
+
+    if not all([TELEGRAM_TOKEN, CHANNEL_ID]):
+        return False, "Missing Telegram credentials."
+
+    # 1. Надсилаємо повідомлення
+    send_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    send_payload = {
+        'chat_id': CHANNEL_ID,
+        'text': greeting_text,
+        'parse_mode': 'Markdown' # Для форматування жирним/курсивом
+    }
+    
+    try:
+        send_response = requests.post(send_url, json=send_payload)
+        send_response.raise_for_status()
+        send_data = send_response.json()
+        
+        if not send_data['ok']:
+            return False, f"Error sending greeting: {send_data.get('description')}"
+            
+        message_id = send_data['result']['message_id']
+        
+        # 2. Закріплюємо повідомлення
+        pin_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/pinChatMessage"
+        pin_payload = {
+            'chat_id': CHANNEL_ID,
+            'message_id': message_id,
+            # Опція False: для нових користувачів з'явиться спливаюче повідомлення
+            'disable_notification': False, 
+        }
+        
+        pin_response = requests.post(pin_url, json=pin_payload)
+        pin_response.raise_for_status()
+        
+        if pin_response.json()['ok']:
+            print(f"Greeting message ID {message_id} successfully pinned.")
+            return True, "Greeting pinned successfully."
+        else:
+            return False, f"Error pinning message: {pin_response.json().get('description')}"
+            
+    except requests.exceptions.RequestException as e:
+        return False, f"Telegram API error during greeting/pin: {e}"
+
+
 # ----------------------------------------------------
 # 4. ОСНОВНА ЛОГІКА ПУБЛІКАЦІЇ ТА WEB SERVICE
 # ----------------------------------------------------
@@ -425,6 +481,20 @@ def publish_endpoint():
         return "News published successfully (fallback to text only with button)!", 200
     else:
         return "Telegram final send failed. (Fallback failed)", 200 
+
+
+# === НОВИЙ ENDPOINT ДЛЯ ОНОВЛЕННЯ ПРИВІТАННЯ ===
+@app.route('/greet', methods=['GET'])
+def greet_endpoint():
+    """Оновлює закріплене привітання, надсилаючи нове повідомлення та закріплюючи його."""
+    success, message = _send_and_pin_greeting()
+    
+    if success:
+        return message, 200
+    else:
+        # Помилка, ймовірно, пов'язана з правами адміністратора або Telegram API
+        print(f"Error in /greet: {message}")
+        return f"Failed to update greeting: {message}", 500
 
 @app.route('/', methods=['GET'])
 def home():

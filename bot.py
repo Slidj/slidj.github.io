@@ -30,21 +30,20 @@ def load_template():
         print(f"Template loaded successfully from {TEMPLATE_FILE}")
     except FileNotFoundError:
         print(f"Error: Template file not found at {TEMPLATE_FILE}. Using fallback template.")
-        # Резервний шаблон
         NEWS_TEMPLATE = (
-            "<b>📢 {{title_prefix}}</b> | <i>{{current_time}}</i>\n"
-            "__________________________\n"
-            "<b>{{title}}</b>\n\n"
-            "<i>🔎 Джерело: {{source}}</i>"
-            "\n\n<a href='{{url}}'>➡️ Читати повністю</a>"
-            "\n__________________________"
+            "<b>📢 {{title_prefix}}</b> | <i>{{current_time}}</i><br>"
+            "--------------------------<br>"
+            "<b>{{title}}</b><br>"
+            "<i>🔎 Джерело: {{source}}</i><br>"
+            "<a href='{{url}}'>➡️ Читати повністю</a><br>"
+            "--------------------------"
         )
     except Exception as e:
         print(f"Error loading template: {e}. Using fallback template.")
         NEWS_TEMPLATE = "" 
 
 def escape_html(text):
-    """Екранує символи <, > та & для безпечного використання в HTML-підписах (caption)."""
+    """Екранує символи <, > та & для безпечного використання в HTML."""
     if text is None:
         return ""
     text = text.replace('&', '&amp;')
@@ -68,12 +67,31 @@ def _fetch_news(params: dict, title_prefix: str) -> dict | None:
         
         if data['status'] == 'ok' and data['articles']:
             
-            article = random.choice(data['articles']) 
+            # --- ЛОГІКА УНИКНЕННЯ ДУБЛІКАТІВ ТА ПУСТИХ НОВИН ---
+            
+            article = None
+            articles = data['articles']
+            random.shuffle(articles) # Перемішуємо для більшої випадковості
+            
+            for art in articles:
+                title = art.get("title")
+                url = art.get("url")
+                
+                # Перевіряємо наявність заголовка, URL та ігноруємо видалені статті
+                if title and url and title != "[Removed]":
+                    article = art
+                    break # Знайшли придатну статтю
+            
+            if not article:
+                print("No suitable articles found after filtering.")
+                return None
+            
+            # --- Формування даних для публікації ---
             
             title = escape_html(article.get("title", "Без заголовка"))
             source = escape_html(article.get("source", {}).get("name", "Невідоме джерело"))
             url = article.get("url", "#") 
-            image_url = article.get("urlToImage") 
+            image_url = article.get("urlToImage") # Залишаємо для резерву
             
             current_time = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
             
@@ -101,20 +119,14 @@ def _fetch_news(params: dict, title_prefix: str) -> dict | None:
 
 def get_latest_news() -> dict | None:
     """Виконує головну логіку: спроба України, потім резерв світової новини."""
-    ukraine_params = {
-        'country': 'ua', 
-        'category': 'general',
-    }
+    ukraine_params = {'country': 'ua', 'category': 'general'}
     news_data = _fetch_news(ukraine_params, "Свіжа Новина з України")
     
     if news_data:
         return news_data
 
     print("FALLBACK: No Ukrainian news found. Trying global English news...")
-    global_params = {
-        'language': 'en',
-        'category': 'general',
-    }
+    global_params = {'language': 'en', 'category': 'general'}
     news_data = _fetch_news(global_params, "Світова Новина") 
     
     return news_data
@@ -136,33 +148,9 @@ def publish_endpoint():
     if not news_data:
         return "No news found or API error (after fallback attempt).", 200
 
-    image_url = news_data.get('image_url')
     caption = news_data.get('caption')
     
-    # --- 1. СПРОБА ЗОБРАЖЕННЯ (sendPhoto) ---
-    if image_url:
-        telegram_publish_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
-        payload = {
-            'chat_id': CHANNEL_ID,
-            'photo': image_url, 
-            'caption': caption,
-            'parse_mode': 'HTML'
-        }
-        
-        try:
-            telegram_response = requests.post(telegram_publish_url, data=payload)
-            telegram_response.raise_for_status() 
-            
-            # Успіх: повертаємо результат
-            print(f"Публікація sendPhoto успішна.")
-            return "News published successfully with photo!", 200
-            
-        except requests.exceptions.RequestException as e:
-            # Провал sendPhoto: переходимо до резерву лише тексту
-            print(f"sendPhoto failed: {e}. Falling back to sendMessage.")
-            pass # Продовжуємо виконання, щоб спробувати sendMessage
-    
-    # --- 2. РЕЗЕРВ ТІЛЬКИ ТЕКСТ (sendMessage) ---
+    # --- ВИКОРИСТОВУЄМО ТІЛЬКИ sendMessage (Гарантуємо доставку тексту) ---
     
     telegram_publish_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {
@@ -176,7 +164,7 @@ def publish_endpoint():
         telegram_response.raise_for_status() 
         
         print(f"Публікація sendMessage успішна.")
-        return "News published successfully (text only fallback)!", 200
+        return "News published successfully (text only guaranteed)!", 200
         
     except requests.exceptions.RequestException as e:
         print(f"Помилка відправки в Telegram (sendMessage): {e}")

@@ -1,8 +1,8 @@
 // ==========================================================
-// 📜 SCRIPT.JS: ФІНАЛЬНА ВЕРСІЯ (ВИПРАВЛЕНО 422)
+// 📜 SCRIPT.JS: ФІНАЛЬНА ВЕРСІЯ (АВАТАР + ІМ'Я)
 // ==========================================================
 
-const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // <--- ОБОВ'ЯЗКОВО ВСТАВТЕ СВІЙ КЛЮЧ
+const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // <--- ВСТАВТЕ СЮДИ СВІЙ КЛЮЧ
 const BASE_API_URL = 'https://newsdata.io/api/1/news'; 
 
 // --- ГЛОБАЛЬНІ ЗМІННІ ---
@@ -15,29 +15,50 @@ let touchStartY = 0;
 let isPulling = false;
 const ptrSpinner = document.getElementById('ptr_spinner');
 
-// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
+// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ТА ПРОФІЛЮ ---
 if (window.Telegram && window.Telegram.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     try { tg.expand(); } catch (e) {}
 
-    // Вітання з ім'ям користувача
+    // Отримуємо дані користувача
     const user = tg.initDataUnsafe?.user;
-    const headerTitle = document.getElementById('header_title');
     
-    if (user && user.first_name && headerTitle) {
-        headerTitle.innerText = `👋 Привіт, ${user.first_name}`;
+    // Елементи в header
+    const headerTitle = document.getElementById('header_title');
+    const avatarImg = document.getElementById('user_avatar');
+    const defaultAvatar = document.getElementById('default_avatar');
+    
+    if (user && headerTitle) {
+        // 1. Встановлюємо Ім'я (та Прізвище, якщо є)
+        headerTitle.innerText = user.first_name + (user.last_name ? ` ${user.last_name}` : '');
+        
+        // 2. Логіка Аватара
+        if (user.photo_url && avatarImg) {
+            // Якщо є фото - показуємо його
+            avatarImg.src = user.photo_url;
+            avatarImg.style.display = 'block';
+            if (defaultAvatar) defaultAvatar.style.display = 'none';
+        } else {
+            // Якщо фото немає - показуємо заглушку
+            if (avatarImg) avatarImg.style.display = 'none';
+            if (defaultAvatar) defaultAvatar.style.display = 'flex';
+        }
+    } else {
+        // Якщо відкрили не в Telegram - показуємо заглушку
+        if (avatarImg) avatarImg.style.display = 'none';
+        if (defaultAvatar) defaultAvatar.style.display = 'flex';
     }
 }
 
-// Завантаження збережених новин з пам'яті
+// Завантаження збережених новин з пам'яті телефону
 try {
     const stored = localStorage.getItem('savedNews');
     if (stored) savedArticles = JSON.parse(stored);
 } catch (e) { console.error(e); }
 
 
-// --- ВІДОБРАЖЕННЯ СТАНІВ (ПОМИЛКИ ТА ЗАВАНТАЖЕННЯ) ---
+// --- ВІДОБРАЖЕННЯ СТАНІВ (Empty States) ---
 function showState(type, errorDetails = "") {
     const container = document.getElementById('news_container');
     let icon, title, subtext;
@@ -71,7 +92,7 @@ function showState(type, errorDetails = "") {
     document.getElementById('load_more_container').style.display = 'none';
 }
 
-// --- РЕНДЕРИНГ КАРТОК ---
+// --- РЕНДЕРИНГ НОВИН ---
 function renderNews(articles, append = false) {
     const container = document.getElementById('news_container');
     if (!append) container.innerHTML = '';
@@ -169,7 +190,7 @@ window.switchTab = function(tabName) {
     }
 };
 
-// --- ЗАВАНТАЖЕННЯ З API (FIXED) ---
+// --- ЗАВАНТАЖЕННЯ З API ---
 async function fetchNews(query = '', category = '', pageToken = null) {
     if (activeTab === 'saved') return;
     const loadMoreContainer = document.getElementById('load_more_container');
@@ -180,7 +201,7 @@ async function fetchNews(query = '', category = '', pageToken = null) {
         loadMoreContainer.style.display = 'none';
     }
 
-    // ВИПРАВЛЕНО: Прибрано зайвий параметр _nocache
+    // Формуємо чистий URL (без _nocache, щоб уникнути помилки 422)
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
     if (query) apiUrl += `&q=${query}`;
     if (category) apiUrl += `&category=${category}`;

@@ -1,8 +1,8 @@
 // ==========================================================
-// 📜 SCRIPT.JS: ФІНАЛЬНА ВЕРСІЯ (АВАТАР + ІМ'Я)
+// 📜 SCRIPT.JS: ВИПРАВЛЕНО ПЕРЕМИКАННЯ ВКЛАДОК + ПАМ'ЯТЬ
 // ==========================================================
 
-const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // <--- ВСТАВТЕ СЮДИ СВІЙ КЛЮЧ
+const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // <--- ВСТАВТЕ СВІЙ КЛЮЧ
 const BASE_API_URL = 'https://newsdata.io/api/1/news'; 
 
 // --- ГЛОБАЛЬНІ ЗМІННІ ---
@@ -11,54 +11,46 @@ let currentQuery = '';
 let currentCategory = '';
 let activeTab = 'feed'; 
 let savedArticles = [];
+let feedArticles = []; // НОВЕ: Пам'ять для поточної стрічки новин
 let touchStartY = 0;
 let isPulling = false;
 const ptrSpinner = document.getElementById('ptr_spinner');
 
-// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ТА ПРОФІЛЮ ---
+// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
 if (window.Telegram && window.Telegram.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     try { tg.expand(); } catch (e) {}
 
-    // Отримуємо дані користувача
     const user = tg.initDataUnsafe?.user;
-    
-    // Елементи в header
     const headerTitle = document.getElementById('header_title');
     const avatarImg = document.getElementById('user_avatar');
     const defaultAvatar = document.getElementById('default_avatar');
     
     if (user && headerTitle) {
-        // 1. Встановлюємо Ім'я (та Прізвище, якщо є)
         headerTitle.innerText = user.first_name + (user.last_name ? ` ${user.last_name}` : '');
-        
-        // 2. Логіка Аватара
         if (user.photo_url && avatarImg) {
-            // Якщо є фото - показуємо його
             avatarImg.src = user.photo_url;
             avatarImg.style.display = 'block';
             if (defaultAvatar) defaultAvatar.style.display = 'none';
         } else {
-            // Якщо фото немає - показуємо заглушку
             if (avatarImg) avatarImg.style.display = 'none';
             if (defaultAvatar) defaultAvatar.style.display = 'flex';
         }
     } else {
-        // Якщо відкрили не в Telegram - показуємо заглушку
         if (avatarImg) avatarImg.style.display = 'none';
         if (defaultAvatar) defaultAvatar.style.display = 'flex';
     }
 }
 
-// Завантаження збережених новин з пам'яті телефону
+// Завантаження збережених
 try {
     const stored = localStorage.getItem('savedNews');
     if (stored) savedArticles = JSON.parse(stored);
 } catch (e) { console.error(e); }
 
 
-// --- ВІДОБРАЖЕННЯ СТАНІВ (Empty States) ---
+// --- ВІДОБРАЖЕННЯ СТАНІВ ---
 function showState(type, errorDetails = "") {
     const container = document.getElementById('news_container');
     let icon, title, subtext;
@@ -92,7 +84,7 @@ function showState(type, errorDetails = "") {
     document.getElementById('load_more_container').style.display = 'none';
 }
 
-// --- РЕНДЕРИНГ НОВИН ---
+// --- РЕНДЕРИНГ ---
 function renderNews(articles, append = false) {
     const container = document.getElementById('news_container');
     if (!append) container.innerHTML = '';
@@ -105,6 +97,7 @@ function renderNews(articles, append = false) {
     articles.forEach(article => {
         const card = document.createElement('div');
         card.className = 'news-card'; 
+        // Перевіряємо, чи є новина в збережених (порівнюємо посилання)
         const isSaved = savedArticles.some(item => item.link === article.link);
         
         const safeLink = (article.link || '');
@@ -154,6 +147,7 @@ function renderNews(articles, append = false) {
 window.toggleSave = function(encodedArticle, btn) {
     const article = JSON.parse(decodeURIComponent(encodedArticle));
     const index = savedArticles.findIndex(item => item.link === article.link);
+    
     if (index === -1) {
         savedArticles.push(article);
         btn.classList.add('saved');
@@ -162,12 +156,13 @@ window.toggleSave = function(encodedArticle, btn) {
         savedArticles.splice(index, 1);
         btn.classList.remove('saved');
         btn.querySelector('svg').setAttribute('fill', 'none');
+        // Якщо ми у вкладці "Збережене", оновлюємо список відразу
         if (activeTab === 'saved') renderNews(savedArticles);
     }
     localStorage.setItem('savedNews', JSON.stringify(savedArticles));
 };
 
-// --- ПЕРЕМИКАННЯ ВКЛАДОК ---
+// --- ПЕРЕМИКАННЯ ВКЛАДОК (ВИПРАВЛЕНО!) ---
 window.switchTab = function(tabName) {
     activeTab = tabName;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -176,16 +171,24 @@ window.switchTab = function(tabName) {
     const loadMoreBtn = document.getElementById('load_more_container');
 
     if (tabName === 'saved') {
+        // Вкладка ЗБЕРЕЖЕНЕ
         feedControls.style.display = 'none';
         loadMoreBtn.style.display = 'none';
         renderNews(savedArticles);
     } else {
+        // Вкладка СТРІЧКА
         feedControls.style.display = 'flex';
-        const container = document.getElementById('news_container');
-        if (!container.hasChildNodes() || container.querySelector('.empty-state')) {
-             fetchNews(currentQuery, currentCategory);
+        
+        // ЛОГІКА ВИПРАВЛЕННЯ:
+        // Якщо у нас є завантажені новини в пам'яті (feedArticles), показуємо їх.
+        // Якщо ні (наприклад, перший запуск), завантажуємо з API.
+        if (feedArticles.length > 0) {
+            renderNews(feedArticles);
+            // Відновлюємо кнопку "Завантажити ще", якщо є наступна сторінка
+            loadMoreBtn.style.display = currentPageToken ? 'block' : 'none';
         } else {
-             loadMoreBtn.style.display = currentPageToken ? 'block' : 'none';
+            // Якщо пам'ять порожня, завантажуємо
+            fetchNews(currentQuery, currentCategory);
         }
     }
 };
@@ -194,14 +197,12 @@ window.switchTab = function(tabName) {
 async function fetchNews(query = '', category = '', pageToken = null) {
     if (activeTab === 'saved') return;
     const loadMoreContainer = document.getElementById('load_more_container');
-    const container = document.getElementById('news_container');
 
     if (!pageToken && !isPulling) {
         showState('loading');
         loadMoreContainer.style.display = 'none';
     }
 
-    // Формуємо чистий URL (без _nocache, щоб уникнути помилки 422)
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
     if (query) apiUrl += `&q=${query}`;
     if (category) apiUrl += `&category=${category}`;
@@ -215,10 +216,20 @@ async function fetchNews(query = '', category = '', pageToken = null) {
         if (data.status === 'error') throw new Error(data.results.message || 'API Error');
 
         if (data.results && data.results.length > 0) {
+            // НОВЕ: Зберігаємо новини в пам'ять (кеш сесії)
+            if (!pageToken) {
+                // Якщо це перша сторінка, перезаписуємо пам'ять
+                feedArticles = data.results;
+            } else {
+                // Якщо це підвантаження ("Завантажити ще"), додаємо до пам'яті
+                feedArticles = [...feedArticles, ...data.results];
+            }
+
             renderNews(data.results, !!pageToken);
             currentPageToken = data.nextPage || null;
             loadMoreContainer.style.display = currentPageToken ? 'block' : 'none';
         } else if (!pageToken) {
+            feedArticles = []; // Очищаємо пам'ять, якщо нічого не знайдено
             showState('no_results');
             loadMoreContainer.style.display = 'none';
         }
@@ -237,6 +248,10 @@ window.shareArticle = function(url, title) {
 window.performSearch = function() {
     const input = document.getElementById('search_input');
     if (!input) return;
+    
+    // При новому пошуку очищаємо пам'ять стрічки
+    feedArticles = []; 
+    
     currentQuery = encodeURIComponent(input.value.trim());
     currentCategory = document.getElementById('category_select').value;
     currentPageToken = null;
@@ -270,6 +285,10 @@ if (ptrSpinner) {
         if (isPulling && window.scrollY === 0 && activeTab === 'feed') {
             ptrSpinner.style.top = '10px';
             if (window.Telegram && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+            
+            // При оновленні пальцем очищаємо пам'ять
+            feedArticles = [];
+            
             currentPageToken = null;
             fetchNews(currentQuery, currentCategory).then(() => {
                 setTimeout(() => { ptrSpinner.style.top = '-50px'; isPulling = false; }, 500);

@@ -1,27 +1,26 @@
 // ==========================================================
-// 📜 Оновлений script.js для Новинного Web App (newsdata.io)
-// Включає: Пошук + Фільтри Категорій
+// 📜 ПОВНИЙ script.js: Пошук + Категорії + "Завантажити ще"
 // ==========================================================
 
-// !!! ЗАМІНІТЬ ЦЕЙ ПЛЕЙСХОЛДЕР НА ВАШ РЕАЛЬНИЙ API KEY newsdata.io
 const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; 
-
-// Базовий Endpoint для новин
 const BASE_API_URL = 'https://newsdata.io/api/1/news'; 
 
-// Ініціалізація Telegram Web App SDK
+let currentPageToken = null; // Для зберігання токена наступної сторінки від newsdata.io
+let currentQuery = '';
+let currentCategory = '';
+
 if (window.Telegram && window.Telegram.WebApp) {
     window.Telegram.WebApp.ready(); 
     window.Telegram.WebApp.expand(); 
 } 
 
-
 /**
- * Рендерить масив новинних статей у DOM, використовуючи CSS-класи.
+ * Рендерить новини. 
+ * @param {boolean} append - Якщо true, додає до списку, якщо false - очищує список.
  */
-function renderNews(articles) {
+function renderNews(articles, append = false) {
     const container = document.getElementById('news_container');
-    container.innerHTML = '';
+    if (!append) container.innerHTML = '';
     
     container.classList.add('news-container'); 
     
@@ -32,9 +31,7 @@ function renderNews(articles) {
         card.className = 'news-card'; 
 
         const imageHtml = article.image_url 
-            ? `<div class="news-image-container">
-                 <img src="${article.image_url}" alt="${article.title}">
-               </div>` 
+            ? `<div class="news-image-container"><img src="${article.image_url}" alt=""></div>` 
             : '';
 
         card.innerHTML = `
@@ -44,102 +41,67 @@ function renderNews(articles) {
               <p>${article.description || ''}</p>
             </div>
         `;
-        
         container.appendChild(card);
     });
 }
 
-
 /**
- * Ініціює пошук та фільтрацію. Викликається кнопкою пошуку та зміною фільтра.
+ * Основна функція запиту
  */
-window.performSearch = function() {
-    const searchInput = document.getElementById('search_input');
-    const categorySelect = document.getElementById('category_select'); // НОВЕ: Отримуємо фільтр
-
-    // Отримання та кодування запиту
-    const query = encodeURIComponent(searchInput.value.trim()); 
-    // Отримання обраної категорії
-    const category = categorySelect.value; 
-    
-    // Передаємо і запит, і категорію
-    fetchAndRenderNews(query, category);
-};
-
-
-/**
- * Завантажує та рендерить новини, враховуючи пошуковий запит та категорію.
- * @param {string} [query=''] - Пошуковий запит (уже закодований)
- * @param {string} [category=''] - Обрана категорія
- */
-async function fetchAndRenderNews(query = '', category = '') {
+async function fetchNews(query = '', category = '', pageToken = null) {
+    const loadMoreContainer = document.getElementById('load_more_container');
     const container = document.getElementById('news_container');
-    
-    const loadingMessage = query ? 
-        `Пошук новин за запитом "${decodeURIComponent(query)}"...` : 
-        'Завантаження новин...';
-        
-    container.innerHTML = `<p class="loading-status">${loadingMessage}</p>`; 
-    
-    // 1. Формування URL: базові параметри (API ключ, мова, розмір)
+
+    // Показуємо статус завантаження
+    if (!pageToken) {
+        container.innerHTML = '<p class="loading-status">Завантаження новин...</p>';
+        loadMoreContainer.style.display = 'none';
+    }
+
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
-    
-    // 2. Додавання параметрів
-    if (query) {
-        apiUrl += `&q=${query}`;
-    }
-    
-    // НОВЕ: Додавання категорії
-    if (category) {
-        apiUrl += `&category=${category}`;
-    }
-    
+    if (query) apiUrl += `&q=${query}`;
+    if (category) apiUrl += `&category=${category}`;
+    if (pageToken) apiUrl += `&page=${pageToken}`; // Додаємо токен наступної сторінки
+
     try {
         const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                 throw new Error(`API Key Error. Перевірте, чи ключ дійсний та не перевищено ліміт.`);
-            }
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-        
         const data = await response.json();
-        
+
         if (data.results && data.results.length > 0) {
-            renderNews(data.results); 
-        } else {
-            const message = (query || category) ? 
-                `Новин за заданими критеріями не знайдено.` : 
-                `Новини не знайдено.`;
-                
-            container.innerHTML = `<p class="loading-status">${message}</p>`;
+            renderNews(data.results, !!pageToken);
+            
+            // Зберігаємо токен для наступного завантаження
+            currentPageToken = data.nextPage || null;
+            
+            // Показуємо кнопку, якщо є наступна сторінка
+            loadMoreContainer.style.display = currentPageToken ? 'block' : 'none';
+        } else if (!pageToken) {
+            container.innerHTML = '<p class="loading-status">Новин не знайдено.</p>';
         }
-        
     } catch (error) {
-        console.error("Помилка завантаження новин:", error);
-        container.innerHTML = `<p class="loading-status">Помилка з'єднання: ${error.message}.</p>`;
+        console.error("Помилка:", error);
+        if (!pageToken) container.innerHTML = '<p class="loading-status">Помилка завантаження.</p>';
     }
 }
 
+/**
+ * Викликається при пошуку або зміні категорії (скидає все на 1 сторінку)
+ */
+window.performSearch = function() {
+    currentQuery = encodeURIComponent(document.getElementById('search_input').value.trim());
+    currentCategory = document.getElementById('category_select').value;
+    currentPageToken = null; // Скидаємо сторінку
+    fetchNews(currentQuery, currentCategory);
+};
 
-// ==========================================================
-// 💻 ДОДАТКОВА ФУНКЦІОНАЛЬНІСТЬ: ПОШУК ПО ENTER
-// ==========================================================
-
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('search_input');
-    
-    if (searchInput) {
-        searchInput.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault(); 
-                window.performSearch();
-            }
-        });
+/**
+ * Викликається кнопкою "Завантажити ще"
+ */
+window.loadMoreNews = function() {
+    if (currentPageToken) {
+        fetchNews(currentQuery, currentCategory, currentPageToken);
     }
-});
+};
 
-
-// Запускаємо завантаження початкових новин при старті
-fetchAndRenderNews();
+// Початкове завантаження
+fetchNews();

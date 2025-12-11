@@ -1,7 +1,8 @@
 /* ==========================================================
-   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (ЦЕНТРУВАННЯ КНОПКИ)
+   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (КОМПАКТНИЙ ЗАГОЛОВОК)
    ========================================================== */
 
+/* --- 1. БАЗОВІ НАЛАШТУВАННЯ --- */
 body {
     background-color: var(--tg-theme-bg-color, #ffffff);
     color: var(--tg-theme-text-color, #000000);
@@ -11,6 +12,7 @@ body {
     line-height: 1.5;
 }
 
+/* --- 2. HEADER ТА ПРОФІЛЬ --- */
 header {
     background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
     padding: 15px 20px;
@@ -20,14 +22,50 @@ header {
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-h1 {
-    color: var(--tg-theme-link-color, #007aff);
-    font-size: 22px;
-    margin: 0;
-    font-weight: 700;
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-/* --- ВКЛАДКИ (TABS) --- */
+/* Аватарка */
+.avatar-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--tg-theme-hint-color);
+}
+
+/* Заглушка, якщо немає фото */
+.avatar-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--tg-theme-button-color, #50a8eb);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-placeholder svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Ім'я користувача (зменшений шрифт) */
+h1 {
+    color: var(--tg-theme-text-color);
+    font-size: 17px;  /* Оптимальний розмір */
+    font-weight: 600; /* Акуратна жирність */
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- 3. ВКЛАДКИ (TABS) --- */
 .controls-container {
     padding: 15px 20px;
     background-color: var(--tg-theme-bg-color);
@@ -69,7 +107,7 @@ h1 {
     gap: 12px;
 }
 
-/* --- ПОШУК І КАТЕГОРІЇ --- */
+/* --- 4. ПОШУК І КАТЕГОРІЇ --- */
 .search-container {
     display: flex;
     gap: 8px;
@@ -78,7 +116,7 @@ h1 {
 }
 
 #category_select, #search_input, #search_button {
-    height: 46px !important; /* Важливо для рівності */
+    height: 46px !important;
     box-sizing: border-box;
     border-radius: 12px;
     font-size: 16px;
@@ -121,7 +159,7 @@ h1 {
     flex-shrink: 0;
 }
 
-/* --- КАРТКИ НОВИН --- */
+/* --- 5. КАРТКИ НОВИН --- */
 .news-container {
     padding: 5px 0;
     min-height: 300px;
@@ -184,7 +222,7 @@ h1 {
     overflow: hidden;
 }
 
-/* --- ФУТЕР КАРТКИ --- */
+/* --- 6. ФУТЕР КАРТКИ --- */
 .card-footer {
     display: flex;
     justify-content: space-between;
@@ -224,7 +262,7 @@ h1 {
     color: var(--tg-theme-hint-color);
 }
 
-/* --- EMPTY STATES --- */
+/* --- 7. EMPTY STATES (ПОМИЛКИ) --- */
 .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -233,7 +271,7 @@ h1 {
     align-items: center;
     justify-content: center;
     height: 100%;
-    flex-grow: 1; /* Заповнює простір */
+    flex-grow: 1;
 }
 
 .empty-icon {
@@ -256,7 +294,7 @@ h1 {
     color: var(--tg-theme-hint-color);
 }
 
-/* --- ЗАВАНТАЖЕННЯ ТА КНОПКА "ЩЕ" (ВИПРАВЛЕНО) --- */
+/* --- 8. ЗАВАНТАЖЕННЯ --- */
 .loading-status {
     text-align: center;
     padding: 30px;
@@ -271,10 +309,9 @@ h1 {
 }
 
 #load_more_button {
-    display: block; /* Робимо блоком */
+    display: block;
     width: fit-content;
-    margin: 0 auto; /* Центруємо блок по горизонталі */
-    
+    margin: 0 auto;
     min-width: 180px;
     padding: 12px 25px;
     background-color: transparent;
@@ -293,7 +330,7 @@ h1 {
     transform: scale(0.96);
 }
 
-/* --- PULL TO REFRESH --- */
+/* --- 9. PULL TO REFRESH --- */
 #ptr_spinner {
     position: fixed;
     top: -50px;
@@ -319,57 +356,4 @@ h1 {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-/* Оновлюємо Header для підтримки Flexbox */
-header {
-    background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-    padding: 15px 20px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.profile-header {
-    display: flex;
-    align-items: center;
-    gap: 12px; /* Відступ між фото та іменем */
-}
-
-/* Стиль для справжнього фото */
-.avatar-img {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid var(--tg-theme-hint-color);
-}
-
-/* Стиль для заглушки (якщо фото немає) */
-.avatar-placeholder {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: var(--tg-theme-button-color, #50a8eb);
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.avatar-placeholder svg {
-    width: 20px;
-    height: 20px;
-}
-
-/* Оновлюємо заголовок */
-h1 {
-    color: var(--tg-theme-text-color); /* Тепер колір тексту як у системи */
-    font-size: 20px;
-    margin: 0;
-    font-weight: 700;
-    white-space: nowrap;      /* Текст в один рядок */
-    overflow: hidden;         /* Обрізаємо, якщо дуже довге ім'я */
-    text-overflow: ellipsis;  /* Додаємо трикрапку */
 }

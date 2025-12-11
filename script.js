@@ -1,8 +1,8 @@
 // ==========================================================
-// 📜 SCRIPT.JS: ДІАГНОСТИЧНА ВЕРСІЯ
+// 📜 SCRIPT.JS: ПЕРСОНАЛІЗАЦІЯ + ВСІ ФУНКЦІЇ
 // ==========================================================
 
-const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // <--- ВСТАВТЕ СЮДИ СВІЙ КЛЮЧ
+const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // <--- ПЕРЕВІРТЕ, ЧИ ТУТ ВАШ КЛЮЧ
 const BASE_API_URL = 'https://newsdata.io/api/1/news'; 
 
 // --- ГЛОБАЛЬНІ ЗМІННІ ---
@@ -15,18 +15,30 @@ let touchStartY = 0;
 let isPulling = false;
 const ptrSpinner = document.getElementById('ptr_spinner');
 
-// --- ІНІЦІАЛІЗАЦІЯ ---
+// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ТА ПЕРСОНАЛІЗАЦІЯ ---
 if (window.Telegram && window.Telegram.WebApp) {
-    window.Telegram.WebApp.ready();
-    try { window.Telegram.WebApp.expand(); } catch (e) {}
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    try { tg.expand(); } catch (e) {}
+
+    // 👇 НОВИЙ БЛОК: Зміна заголовка на ім'я користувача
+    const user = tg.initDataUnsafe?.user;
+    const headerTitle = document.getElementById('header_title');
+    
+    if (user && user.first_name && headerTitle) {
+        // Замінюємо "Новини дня" на "Привіт, [Ім'я]!"
+        headerTitle.innerText = `👋 Привіт, ${user.first_name}`;
+    }
 }
 
+// Завантаження збережених
 try {
     const stored = localStorage.getItem('savedNews');
     if (stored) savedArticles = JSON.parse(stored);
 } catch (e) { console.error(e); }
 
-// --- ВІДОБРАЖЕННЯ СТАНІВ (З ВИВЕДЕННЯМ ПОМИЛКИ) ---
+
+// --- ВІДОБРАЖЕННЯ СТАНІВ ---
 function showState(type, errorDetails = "") {
     const container = document.getElementById('news_container');
     let icon, title, subtext;
@@ -43,8 +55,7 @@ function showState(type, errorDetails = "") {
     } else if (type === 'error') {
         icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
         title = "Помилка завантаження";
-        // !!! ТУТ МИ ВИВОДИМО ТОЧНУ ПРИЧИНУ !!!
-        subtext = `Код: ${errorDetails}<br>Перевірте API Key або ліміти.`;
+        subtext = `Код: ${errorDetails}<br>Перевірте інтернет або API.`;
     } else if (type === 'empty_saved') {
         icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
         title = "Немає збережених";
@@ -55,12 +66,13 @@ function showState(type, errorDetails = "") {
         <div class="empty-state">
             <div class="empty-icon">${icon}</div>
             <div class="empty-text">${title}</div>
-            <div class="empty-subtext" style="color:red; font-family:monospace;">${subtext}</div>
+            <div class="empty-subtext">${subtext}</div>
         </div>
     `;
     document.getElementById('load_more_container').style.display = 'none';
 }
 
+// --- РЕНДЕРИНГ ---
 function renderNews(articles, append = false) {
     const container = document.getElementById('news_container');
     if (!append) container.innerHTML = '';
@@ -74,6 +86,7 @@ function renderNews(articles, append = false) {
         const card = document.createElement('div');
         card.className = 'news-card'; 
         const isSaved = savedArticles.some(item => item.link === article.link);
+        
         const safeLink = (article.link || '');
         const safeTitle = (article.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
@@ -117,6 +130,7 @@ function renderNews(articles, append = false) {
     });
 }
 
+// --- ЛОГІКА ЗБЕРЕЖЕННЯ ---
 window.toggleSave = function(encodedArticle, btn) {
     const article = JSON.parse(decodeURIComponent(encodedArticle));
     const index = savedArticles.findIndex(item => item.link === article.link);
@@ -133,6 +147,7 @@ window.toggleSave = function(encodedArticle, btn) {
     localStorage.setItem('savedNews', JSON.stringify(savedArticles));
 };
 
+// --- ВКЛАДКИ ---
 window.switchTab = function(tabName) {
     activeTab = tabName;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -155,6 +170,7 @@ window.switchTab = function(tabName) {
     }
 };
 
+// --- API ---
 async function fetchNews(query = '', category = '', pageToken = null) {
     if (activeTab === 'saved') return;
     const loadMoreContainer = document.getElementById('load_more_container');
@@ -165,24 +181,20 @@ async function fetchNews(query = '', category = '', pageToken = null) {
         loadMoreContainer.style.display = 'none';
     }
 
-    // Прибрав _nocache, можливо API це не любить
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
     if (query) apiUrl += `&q=${query}`;
     if (category) apiUrl += `&category=${category}`;
     if (pageToken) apiUrl += `&page=${pageToken}`;
+    
+    // Повертаємо _nocache, щоб уникнути проблем із застарілим контентом
+    apiUrl += `&_nocache=${Date.now()}`;
 
     try {
         const response = await fetch(apiUrl);
-        if (!response.ok) {
-            // Кидаємо статус помилки
-            throw new Error(`HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`${response.status}`);
         const data = await response.json();
         
-        // Додаткова перевірка, чи API не повернуло помилку в JSON
-        if (data.status === 'error') {
-             throw new Error(data.results.message || 'API Error');
-        }
+        if (data.status === 'error') throw new Error(data.results.message || 'API Error');
 
         if (data.results && data.results.length > 0) {
             renderNews(data.results, !!pageToken);
@@ -194,13 +206,11 @@ async function fetchNews(query = '', category = '', pageToken = null) {
         }
     } catch (error) {
         console.error("Fetch Error:", error);
-        if (!pageToken && !isPulling) {
-            // Передаємо текст помилки у функцію відображення
-            showState('error', error.message);
-        }
+        if (!pageToken && !isPulling) showState('error', error.message);
     }
 }
 
+// --- SHARE & SEARCH ---
 window.shareArticle = function(url, title) {
     if (navigator.share) navigator.share({ title: title, url: url }).catch(console.error);
     else window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
@@ -221,6 +231,7 @@ document.getElementById('search_input')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); document.getElementById('search_input').blur(); window.performSearch(); }
 });
 
+// --- PULL TO REFRESH ---
 if (ptrSpinner) {
     window.addEventListener('touchstart', (e) => {
         if (window.scrollY === 0 && activeTab === 'feed') {
@@ -252,4 +263,5 @@ if (ptrSpinner) {
     });
 }
 
+// Старт
 fetchNews();

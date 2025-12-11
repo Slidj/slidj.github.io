@@ -125,3 +125,35 @@ h1 {
 #search_button:active {
     background-color: var(--tg-theme-link-color, #3a97d5);
     }
+
+
+
+/* style.css (Додайте або оновіть ці стилі) */
+
+.controls-container {
+    padding: 10px 20px 15px 20px;
+    background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+}
+
+.search-container {
+    /* Змінюємо відображення: тепер поле пошуку окремо від фільтра */
+    display: flex;
+    gap: 10px;
+    margin-top: 10px; /* Відступ між фільтром та полем пошуку */
+}
+
+#category_select {
+    width: 100%; /* Розтягуємо на всю ширину */
+    padding: 10px;
+    border: 1px solid var(--tg-theme-hint-color, #cccccc);
+    border-radius: 8px;
+    background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #000000);
+    font-size: 16px;
+    /* Видаляємо стандартний зовнішній вигляд для кращого контролю (за бажанням) */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}

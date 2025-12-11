@@ -6,9 +6,14 @@
     <title>Новини Web App</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css">
+    
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
+    
+    <div id="ptr_spinner">
+        <div class="spinner-icon"></div>
+    </div>
     
     <header>
         <h1>📰 Новини дня</h1>
@@ -40,10 +45,10 @@
         <p class="loading-status">Завантаження останніх новин...</p>
     </div>
 
-    <div id="load_more_container" style="display: none; text-align: center; padding: 20px;">
+    <div id="load_more_container" style="display: none;">
         <button id="load_more_button" onclick="loadMoreNews()">Завантажити ще</button>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=4"></script>
 </body>
 </html>

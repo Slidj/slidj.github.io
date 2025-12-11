@@ -1,28 +1,25 @@
 // ==========================================================
-// 📜 SCRIPT.JS: DUAL API SYSTEM (Newsdata + GNews)
+// 📜 SCRIPT.JS: ФІНАЛЬНА ВЕРСІЯ (РАНГИ + БАЛИ)
 // ==========================================================
 
 // --- НАЛАШТУВАННЯ API ---
-const NEWSDATA_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a";  // 200 запитів
-const GNEWS_KEY = "988894076e3186f8fbd93db235ee6fe9";        // 100 запитів (Резерв)
+const NEWSDATA_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; 
+const GNEWS_KEY = "988894076e3186f8fbd93db235ee6fe9";       
 
 const API_CONFIG = {
-    newsdata: {
-        url: 'https://newsdata.io/api/1/news',
-    },
-    gnews: {
-        url: 'https://gnews.io/api/v4/search',
-    }
+    newsdata: { url: 'https://newsdata.io/api/1/news' },
+    gnews: { url: 'https://gnews.io/api/v4/search' }
 };
 
 // --- ГЛОБАЛЬНІ ЗМІННІ ---
-let currentPageToken = null; // Для Newsdata
-let usedApiSource = 'newsdata'; // 'newsdata' або 'gnews'
+let currentPageToken = null;
+let usedApiSource = 'newsdata';
 let currentQuery = '';
 let currentCategory = '';
 let activeTab = 'feed'; 
 let savedArticles = [];
 let feedArticles = [];
+let userPoints = 0; // Бали користувача
 
 // Змінні PTR
 let touchStartY = 0;
@@ -56,10 +53,55 @@ if (window.Telegram && window.Telegram.WebApp) {
     }
 }
 
+// Завантаження даних (Збережене + Бали + Бонус за вхід)
 try {
-    const stored = localStorage.getItem('savedNews');
-    if (stored) savedArticles = JSON.parse(stored);
+    const storedNews = localStorage.getItem('savedNews');
+    if (storedNews) savedArticles = JSON.parse(storedNews);
+
+    const storedPoints = localStorage.getItem('userPoints');
+    if (storedPoints) userPoints = parseInt(storedPoints);
+
+    // Щоденний бонус (+10 балів)
+    const lastLogin = localStorage.getItem('lastLoginDate');
+    const today = new Date().toDateString(); // "Fri Dec 12 2025"
+    
+    if (lastLogin !== today) {
+        addPoints(10); // Нараховуємо бонус
+        localStorage.setItem('lastLoginDate', today);
+        // Можна додати сповіщення (popup), але поки просто оновимо
+    }
+
 } catch (e) { console.error(e); }
+
+// Оновлюємо відображення рангу при старті
+updateRankDisplay();
+
+
+// --- СИСТЕМА БАЛІВ ---
+function updateRankDisplay() {
+    const rankNameEl = document.getElementById('rank_name');
+    const pointsCountEl = document.getElementById('points_count');
+    
+    let rank = "Читач 👶";
+    if (userPoints >= 100) rank = "Коментатор 🗣";
+    if (userPoints >= 500) rank = "Оглядач 🧐";
+    if (userPoints >= 1000) rank = "Редактор 🎩";
+    if (userPoints >= 5000) rank = "Медіамагнат 👑";
+
+    if (rankNameEl) rankNameEl.innerText = rank;
+    if (pointsCountEl) pointsCountEl.innerText = userPoints;
+}
+
+function addPoints(amount) {
+    userPoints += amount;
+    localStorage.setItem('userPoints', userPoints);
+    updateRankDisplay();
+    
+    // Тактильний відгук (Вібрація)
+    if (window.Telegram && window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+}
 
 
 // --- ВІДОБРАЖЕННЯ СТАНІВ ---
@@ -78,8 +120,8 @@ function showState(type, errorDetails = "") {
         subtext = "Спробуйте змінити запит";
     } else if (type === 'error') {
         icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
-        title = "Ліміти вичерпано";
-        subtext = `Спроба обох джерел невдала.<br>${errorDetails}`;
+        title = "Упс!";
+        subtext = `Проблема з джерелом новин.<br>${errorDetails}`;
     } else if (type === 'empty_saved') {
         icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
         title = "Немає збережених";
@@ -115,6 +157,9 @@ function renderNews(articles, append = false) {
         
         card.onclick = (e) => {
             if (!e.target.closest('.action-btn')) {
+                // БОНУС: +5 балів за читання
+                addPoints(5);
+                
                 if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.openLink(article.url);
                 else window.open(article.url, '_blank');
             }
@@ -157,7 +202,7 @@ function renderNews(articles, append = false) {
     });
 }
 
-// --- НОРМАЛІЗАЦІЯ ДАНИХ ---
+// --- НОРМАЛІЗАЦІЯ ---
 function normalizeArticles(data, source) {
     if (source === 'newsdata') {
         return data.results.map(item => ({
@@ -179,7 +224,7 @@ function normalizeArticles(data, source) {
     return [];
 }
 
-// --- ЛОГІКА ЗБЕРЕЖЕННЯ ---
+// --- ЗБЕРЕЖЕННЯ (+БАЛИ) ---
 window.toggleSave = function(encodedArticle, btn) {
     const article = JSON.parse(decodeURIComponent(encodedArticle));
     const index = savedArticles.findIndex(item => item.url === article.url);
@@ -188,14 +233,24 @@ window.toggleSave = function(encodedArticle, btn) {
         savedArticles.push(article);
         btn.classList.add('saved');
         btn.querySelector('svg').setAttribute('fill', 'currentColor');
+        addPoints(2); // +2 бали за збереження
     } else {
         savedArticles.splice(index, 1);
         btn.classList.remove('saved');
         btn.querySelector('svg').setAttribute('fill', 'none');
+        addPoints(-2); // -2 бали, якщо видалив
         if (activeTab === 'saved') renderNews(savedArticles);
     }
     localStorage.setItem('savedNews', JSON.stringify(savedArticles));
 };
+
+// --- SHARE (+БАЛИ) ---
+window.shareArticle = function(url, title) {
+    addPoints(10); // +10 балів за шеринг
+    if (navigator.share) navigator.share({ title: title, url: url }).catch(console.error);
+    else window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
+};
+
 
 window.switchTab = function(tabName) {
     activeTab = tabName;
@@ -212,7 +267,6 @@ window.switchTab = function(tabName) {
         feedControls.style.display = 'flex';
         if (feedArticles.length > 0) {
             renderNews(feedArticles);
-            // GNews не підтримує пагінацію в безкоштовному тарифі, тому кнопка "Ще" тільки для Newsdata
             const canLoadMore = (usedApiSource === 'newsdata' && currentPageToken);
             loadMoreBtn.style.display = canLoadMore ? 'block' : 'none';
         } else {
@@ -221,7 +275,6 @@ window.switchTab = function(tabName) {
     }
 };
 
-// --- РОЗУМНЕ ЗАВАНТАЖЕННЯ ---
 async function fetchNews(query = '', category = '', token = null) {
     if (activeTab === 'saved') return;
     const loadMoreContainer = document.getElementById('load_more_container');
@@ -231,19 +284,17 @@ async function fetchNews(query = '', category = '', token = null) {
         loadMoreContainer.style.display = 'none';
     }
 
-    // 1. Пробуємо NEWSDATA
     if (usedApiSource === 'newsdata') {
         try {
             await fetchFromNewsData(query, category, token);
             return;
         } catch (error) {
-            console.warn("Newsdata failed/limited. Switching to GNews...", error);
+            console.warn("Switching to backup...", error);
             usedApiSource = 'gnews'; 
             currentPageToken = null; 
         }
     }
 
-    // 2. Пробуємо GNEWS (якщо Newsdata впав)
     if (usedApiSource === 'gnews') {
         try {
             await fetchFromGNews(query, category);
@@ -255,44 +306,33 @@ async function fetchNews(query = '', category = '', token = null) {
 }
 
 async function fetchFromNewsData(query, category, pageToken) {
+    // ВАЖЛИВО: &country=ua ЗАЛИШАЄМО АБО ПРИБИРАЄМО ЗА БАЖАННЯМ
     let apiUrl = `${API_CONFIG.newsdata.url}?apikey=${NEWSDATA_KEY}&language=uk&size=10`;
     if (query) apiUrl += `&q=${query}`;
     if (category) apiUrl += `&category=${category}`;
     if (pageToken) apiUrl += `&page=${pageToken}`;
 
     const response = await fetch(apiUrl);
-    
-    if (response.status === 401 || response.status === 429 || response.status === 403) {
-        throw new Error("Limit Exceeded");
-    }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    
     const data = await response.json();
     if (data.status === 'error') throw new Error(data.results.message);
-
     const normalized = normalizeArticles(data, 'newsdata');
     processResponse(normalized, data.nextPage || null);
 }
 
 async function fetchFromGNews(query, category) {
-    // GNews не підтримує категорії в безкоштовному тарифі так само гнучко, тому ігноруємо category для стабільності
     let apiUrl = `${API_CONFIG.gnews.url}?token=${GNEWS_KEY}&lang=uk&max=10`;
     if (query) apiUrl += `&q=${query}`;
-    else apiUrl += `&q=новини`; // GNews вимагає параметр q
-
+    else apiUrl += `&q=новини`; 
     const response = await fetch(apiUrl);
     if (!response.ok) throw new Error(`GNews Error: ${response.status}`);
-    
     const data = await response.json();
     const normalized = normalizeArticles(data, 'gnews');
-    
-    // GNews Free не дає пагінацію (page), тому nextToken = null
     processResponse(normalized, null);
 }
 
 function processResponse(articles, nextToken) {
     const loadMoreContainer = document.getElementById('load_more_container');
-    
     if (articles.length > 0) {
         if (!currentPageToken && usedApiSource === 'newsdata') {
              feedArticles = articles;
@@ -301,10 +341,8 @@ function processResponse(articles, nextToken) {
         } else {
              feedArticles = articles;
         }
-
         renderNews(articles, (currentPageToken));
         currentPageToken = (usedApiSource === 'newsdata') ? nextToken : null;
-        
         loadMoreContainer.style.display = nextToken ? 'block' : 'none';
     } else {
         if (!currentPageToken) {
@@ -315,23 +353,14 @@ function processResponse(articles, nextToken) {
     }
 }
 
-// --- ІНШЕ ---
-window.shareArticle = function(url, title) {
-    if (navigator.share) navigator.share({ title: title, url: url }).catch(console.error);
-    else window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
-};
-
 window.performSearch = function() {
     const input = document.getElementById('search_input');
     if (!input) return;
-    
     feedArticles = []; 
     currentQuery = encodeURIComponent(input.value.trim());
     currentCategory = document.getElementById('category_select').value;
-    
     currentPageToken = null;
-    usedApiSource = 'newsdata'; // Скидаємо на головний API при новому пошуку
-    
+    usedApiSource = 'newsdata';
     fetchNews(currentQuery, currentCategory);
 };
 
@@ -361,11 +390,9 @@ if (ptrSpinner) {
         if (isPulling && window.scrollY === 0 && activeTab === 'feed') {
             ptrSpinner.style.top = '10px';
             if (window.Telegram && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-            
             feedArticles = [];
             currentPageToken = null;
             usedApiSource = 'newsdata';
-            
             fetchNews(currentQuery, currentCategory).then(() => {
                 setTimeout(() => { ptrSpinner.style.top = '-50px'; isPulling = false; }, 500);
             });

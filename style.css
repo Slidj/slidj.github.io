@@ -89,3 +89,39 @@ h1 {
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+/* style.css (Додайте ці стилі) */
+
+.search-container {
+    padding: 10px 20px 15px 20px;
+    background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+    display: flex;
+    gap: 10px;
+}
+
+#search_input {
+    flex-grow: 1; /* Поле займатиме більшу частину простору */
+    padding: 10px;
+    border: 1px solid var(--tg-theme-hint-color, #cccccc);
+    border-radius: 8px;
+    background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #000000);
+    font-size: 16px;
+    /* Стилізація placeholder */
+    /* Використовуємо ::placeholder для сумісності з різними браузерами */
+}
+
+#search_button {
+    padding: 10px 15px;
+    background-color: var(--tg-theme-button-color, #50a8eb);
+    color: var(--tg-theme-button-text-color, #ffffff);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+#search_button:active {
+    background-color: var(--tg-theme-link-color, #3a97d5);
+    }

@@ -143,17 +143,60 @@ h1 {
     margin-top: 10px; /* Відступ між фільтром та полем пошуку */
 }
 
+/* Оновлений контейнер керування */
+.controls-container {
+    padding: 15px 20px;
+    background-color: var(--tg-theme-bg-color); /* Колір фону як у Telegram */
+    border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
+}
+
+/* Стилізація випадаючого списку */
 #category_select {
-    width: 100%; /* Розтягуємо на всю ширину */
-    padding: 10px;
-    border: 1px solid var(--tg-theme-hint-color, #cccccc);
-    border-radius: 8px;
-    background-color: var(--tg-theme-secondary-bg-color, #ffffff);
-    color: var(--tg-theme-text-color, #000000);
+    width: 100%;
+    padding: 12px 15px;
     font-size: 16px;
-    /* Видаляємо стандартний зовнішній вигляд для кращого контролю (за бажанням) */
+    border: 1px solid var(--tg-theme-hint-color);
+    border-radius: 10px; /* Більш м'які кути */
+    background-color: var(--tg-theme-secondary-bg-color);
+    color: var(--tg-theme-text-color);
+    appearance: none; /* Прибираємо стандартну стрілку браузера */
     -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
+    
+    /* Додаємо власну красиву стрілочку (SVG) */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 15px;
+    
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+/* Ефект при фокусі */
+#category_select:focus {
+    outline: none;
+    border-color: var(--tg-theme-link-color);
+}
+
+/* Стилізація поля пошуку для гармонії */
+#search_input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border: 1px solid var(--tg-theme-hint-color);
+    border-radius: 10px;
+    background-color: var(--tg-theme-secondary-bg-color);
+    color: var(--tg-theme-text-color);
+    font-size: 16px;
+    outline: none;
+}
+
+/* Стилізація кнопки пошуку */
+#search_button {
+    padding: 12px 20px;
+    background-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
     cursor: pointer;
 }

@@ -320,3 +320,56 @@ h1 {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Оновлюємо Header для підтримки Flexbox */
+header {
+    background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    padding: 15px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Відступ між фото та іменем */
+}
+
+/* Стиль для справжнього фото */
+.avatar-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--tg-theme-hint-color);
+}
+
+/* Стиль для заглушки (якщо фото немає) */
+.avatar-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--tg-theme-button-color, #50a8eb);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-placeholder svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Оновлюємо заголовок */
+h1 {
+    color: var(--tg-theme-text-color); /* Тепер колір тексту як у системи */
+    font-size: 20px;
+    margin: 0;
+    font-weight: 700;
+    white-space: nowrap;      /* Текст в один рядок */
+    overflow: hidden;         /* Обрізаємо, якщо дуже довге ім'я */
+    text-overflow: ellipsis;  /* Додаємо трикрапку */
+}

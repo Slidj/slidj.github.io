@@ -215,3 +215,23 @@ h1 {
     50% { opacity: 1; }
     100% { opacity: 0.5; }
 }
+
+
+/* style.css */
+#load_more_button {
+    width: 80%;
+    padding: 12px;
+    background-color: var(--tg-theme-secondary-bg-color);
+    color: var(--tg-theme-link-color);
+    border: 1px solid var(--tg-theme-link-color);
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+#load_more_button:active {
+    background-color: var(--tg-theme-link-color);
+    color: var(--tg-theme-button-text-color);
+}

@@ -1,6 +1,6 @@
 // ==========================================================
 // 📜 Оновлений script.js для Новинного Web App (newsdata.io)
-// Включає: Telegram SDK, API-запит, Рендеринг новин, Функціонал Пошуку
+// FIX: Уточнена логіка формування API URL для пошуку.
 // ==========================================================
 
 // !!! ЗАМІНІТЬ ЦЕЙ ПЛЕЙСХОЛДЕР НА ВАШ РЕАЛЬНИЙ API KEY newsdata.io
@@ -18,30 +18,26 @@ if (window.Telegram && window.Telegram.WebApp) {
 
 /**
  * Рендерить масив новинних статей у DOM, використовуючи CSS-класи.
- * @param {Array<Object>} articles - Масив новинних об'єктів від newsdata.io
+ * Ця функція не змінюється.
  */
 function renderNews(articles) {
     const container = document.getElementById('news_container');
     container.innerHTML = '';
     
-    // Додаємо клас для зовнішніх відступів
     container.classList.add('news-container'); 
     
     articles.forEach(article => {
-        // 1. Створюємо основну картку (посилання)
         const card = document.createElement('a');
         card.href = article.link || '#'; 
         card.target = '_blank';
-        card.className = 'news-card'; // Основний клас для стилізації
+        card.className = 'news-card'; 
 
-        // 2. Створення HTML для зображення (newsdata.io використовує image_url)
         const imageHtml = article.image_url 
             ? `<div class="news-image-container">
                  <img src="${article.image_url}" alt="${article.title}">
                </div>` 
             : '';
 
-        // 3. Збираємо вміст картки
         card.innerHTML = `
             ${imageHtml}
             <div class="news-text-content">
@@ -61,13 +57,19 @@ function renderNews(articles) {
  */
 async function fetchAndRenderNews(query = '') {
     const container = document.getElementById('news_container');
-    container.innerHTML = '<p class="loading-status">Завантаження новин...</p>'; 
     
-    // 1. Формування URL: базові параметри + параметр пошуку
+    // Якщо запит не порожній, показуємо, що ми шукаємо
+    const loadingMessage = query ? 
+        `Пошук новин за запитом "${decodeURIComponent(query)}"...` : 
+        'Завантаження останніх новин...';
+        
+    container.innerHTML = `<p class="loading-status">${loadingMessage}</p>`; 
+    
+    // 1. Формування URL: базові параметри (API ключ, мова, розмір)
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
     
     if (query) {
-        // Якщо є запит, додаємо його до URL (q - це параметр запиту)
+        // Якщо є пошуковий запит, додаємо його до URL
         apiUrl += `&q=${query}`;
     }
     
@@ -75,6 +77,10 @@ async function fetchAndRenderNews(query = '') {
         const response = await fetch(apiUrl);
         
         if (!response.ok) {
+             // Якщо помилка 401/403 (несанкціоновано), це може бути API Key
+            if (response.status === 401 || response.status === 403) {
+                 throw new Error(`API Key Error. Перевірте, чи ключ дійсний та не перевищено ліміт.`);
+            }
             throw new Error(`HTTP Error: ${response.status}`);
         }
         
@@ -93,7 +99,7 @@ async function fetchAndRenderNews(query = '') {
         
     } catch (error) {
         console.error("Помилка завантаження новин:", error);
-        container.innerHTML = `<p class="loading-status">Помилка з'єднання: ${error.message}. Перевірте API Key та CORS.</p>`;
+        container.innerHTML = `<p class="loading-status">Помилка з'єднання: ${error.message}.</p>`;
     }
 }
 

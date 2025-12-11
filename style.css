@@ -175,3 +175,64 @@ h1 {
     color: var(--tg-theme-hint-color);
     font-style: italic;
 }
+
+/* --- КНОПКА ПОДІЛИТИСЯ --- */
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,0,0,0.05); /* Легка лінія розділення */
+}
+
+.share-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    color: var(--tg-theme-link-color, #007aff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+    border-radius: 50%;
+}
+
+.share-btn:active {
+    background-color: rgba(0,0,0,0.05);
+    transform: scale(0.9);
+}
+
+/* Дата тепер частина футера, прибираємо margin-top, бо він є у футері */
+.news-date {
+    margin-top: 0; 
+}
+
+/* --- PULL-TO-REFRESH (Індикатор оновлення) --- */
+#ptr_spinner {
+    position: fixed;
+    top: -50px; /* Схований зверху */
+    left: 0;
+    width: 100%;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    transition: top 0.3s ease;
+}
+
+.spinner-icon {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--tg-theme-link-color);
+    border-top: 3px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+   }

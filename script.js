@@ -1,51 +1,47 @@
 // ==========================================================
 // 📜 Оновлений script.js для Новинного Web App (newsdata.io)
+// Включає: Telegram SDK, API-запит, Рендеринг новин, Функціонал Пошуку
 // ==========================================================
 
-const YOUR_API_KEY = "ВАШ_API_KEY_З_NEWSDATA_IO"; 
-const BASE_API_URL = 'https://newsdata.io/api/1/news'; // Використовуємо /news для пошуку
+// !!! ЗАМІНІТЬ ЦЕЙ ПЛЕЙСХОЛДЕР НА ВАШ РЕАЛЬНИЙ API KEY newsdata.io
+const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; 
 
-// ... (window.Telegram.WebApp.ready() та expand() залишаються) ...
+// Базовий Endpoint для новин (використовуємо /news для пошуку)
+const BASE_API_URL = 'https://newsdata.io/api/1/news'; 
 
+// Ініціалізація Telegram Web App SDK
 if (window.Telegram && window.Telegram.WebApp) {
     window.Telegram.WebApp.ready(); 
     window.Telegram.WebApp.expand(); 
 } 
 
-/**
- * Ініціює пошук при натисканні кнопки.
- * Ця функція викликається через onclick="performSearch()" в index.html
- */
-window.performSearch = function() {
-    const searchInput = document.getElementById('search_input');
-    // Обрізаємо пробіли та кодуємо для URL
-    const query = encodeURIComponent(searchInput.value.trim()); 
-    
-    // Викликаємо функцію завантаження новин з параметром пошуку
-    fetchAndRenderNews(query);
-};
 
-// Залишаємо стару функцію renderNews без змін (ми її вже оновили)
+/**
+ * Рендерить масив новинних статей у DOM, використовуючи CSS-класи.
+ * @param {Array<Object>} articles - Масив новинних об'єктів від newsdata.io
+ */
 function renderNews(articles) {
-    // ... (код renderNews залишається тут без змін) ...
     const container = document.getElementById('news_container');
     container.innerHTML = '';
     
+    // Додаємо клас для зовнішніх відступів
     container.classList.add('news-container'); 
     
     articles.forEach(article => {
-        // ... (ваш код рендерингу) ...
+        // 1. Створюємо основну картку (посилання)
         const card = document.createElement('a');
         card.href = article.link || '#'; 
         card.target = '_blank';
-        card.className = 'news-card'; 
+        card.className = 'news-card'; // Основний клас для стилізації
 
+        // 2. Створення HTML для зображення (newsdata.io використовує image_url)
         const imageHtml = article.image_url 
             ? `<div class="news-image-container">
                  <img src="${article.image_url}" alt="${article.title}">
                </div>` 
             : '';
 
+        // 3. Збираємо вміст картки
         card.innerHTML = `
             ${imageHtml}
             <div class="news-text-content">
@@ -61,23 +57,22 @@ function renderNews(articles) {
 
 /**
  * Завантажує та рендерить новини, опціонально з використанням пошукового запиту.
- * @param {string} [query=''] - Пошуковий запит (кодується в performSearch)
+ * @param {string} [query=''] - Пошуковий запит (уже закодований)
  */
 async function fetchAndRenderNews(query = '') {
     const container = document.getElementById('news_container');
     container.innerHTML = '<p class="loading-status">Завантаження новин...</p>'; 
     
-    // 1. Формування URL: використовуємо "q" для пошукового запиту
+    // 1. Формування URL: базові параметри + параметр пошуку
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
     
     if (query) {
-        // Якщо є запит, додаємо його до URL
+        // Якщо є запит, додаємо його до URL (q - це параметр запиту)
         apiUrl += `&q=${query}`;
     }
     
     try {
         const response = await fetch(apiUrl);
-        // ... (обробка відповіді та помилок залишається) ...
         
         if (!response.ok) {
             throw new Error(`HTTP Error: ${response.status}`);
@@ -98,10 +93,47 @@ async function fetchAndRenderNews(query = '') {
         
     } catch (error) {
         console.error("Помилка завантаження новин:", error);
-        container.innerHTML = `<p class="loading-status">Помилка з'єднання: ${error.message}.</p>`;
+        container.innerHTML = `<p class="loading-status">Помилка з'єднання: ${error.message}. Перевірте API Key та CORS.</p>`;
     }
 }
 
 
-// Запускаємо завантаження початкових новин (без пошуку) при старті
+/**
+ * Ініціює пошук при натисканні кнопки або клавіші Enter.
+ * Ця функція викликається через onclick="performSearch()" в index.html
+ */
+window.performSearch = function() {
+    const searchInput = document.getElementById('search_input');
+    // Обрізаємо пробіли та кодуємо для URL
+    const query = encodeURIComponent(searchInput.value.trim()); 
+    
+    // Викликаємо функцію завантаження новин з параметром пошуку
+    fetchAndRenderNews(query);
+};
+
+
+// ==========================================================
+// 💻 ДОДАТКОВА ФУНКЦІОНАЛЬНІСТЬ: ПОШУК ПО ENTER
+// ==========================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search_input');
+    
+    if (searchInput) {
+        // Додаємо слухача події 'keypress' до поля введення
+        searchInput.addEventListener('keypress', (event) => {
+            // Перевіряємо, чи натиснута клавіша "Enter"
+            if (event.key === 'Enter') {
+                // Запобігаємо стандартній дії (наприклад, надсилання форми)
+                event.preventDefault(); 
+                
+                // Викликаємо нашу функцію пошуку
+                window.performSearch();
+            }
+        });
+    }
+});
+
+
+// Запускаємо завантаження початкових новин (без пошуку) при завантаженні скрипта
 fetchAndRenderNews();

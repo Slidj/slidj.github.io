@@ -11,23 +11,33 @@
 </head>
 <body>
     
+    <body>
     <header>
         <h1>📰 Новини дня</h1>
     </header>
-
-
-<div class="search-container">
-        <input type="text" id="search_input" placeholder="Введіть ключові слова..." />
-        <button id="search_button" onclick="performSearch()">Пошук</button>
-</div>
-
-
+    
+    <div class="controls-container">
+        
+        <select id="category_select" onchange="performSearch()">
+            <option value="">Усі категорії</option>
+            <option value="business">Бізнес</option>
+            <option value="entertainment">Розваги</option>
+            <option value="health">Здоров'я</option>
+            <option value="science">Наука</option>
+            <option value="sports">Спорт</option>
+            <option value="technology">Технології</option>
+            </select>
+        
+        <div class="search-container">
+            <input type="text" id="search_input" placeholder="Введіть ключові слова..." />
+            <button id="search_button" onclick="performSearch()">Пошук</button>
+        </div>
+        
+    </div>
     
     <div id="news_container">
         <p>Завантаження останніх новин...</p>
     </div>
     
     <script src="script.js"></script>
-
 </body>
-</html>

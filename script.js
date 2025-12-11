@@ -1,34 +1,32 @@
-// ==========================================================
-// 📜 ПОВНИЙ script.js: Пошук + Категорії + "Завантажити ще"
-// ==========================================================
-
-const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; 
+const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // ЗАМІНІТЬ НА СВІЙ
 const BASE_API_URL = 'https://newsdata.io/api/1/news'; 
 
-let currentPageToken = null; // Для зберігання токена наступної сторінки від newsdata.io
+let currentPageToken = null;
 let currentQuery = '';
 let currentCategory = '';
 
+// Ініціалізація Telegram
 if (window.Telegram && window.Telegram.WebApp) {
-    window.Telegram.WebApp.ready(); 
-    window.Telegram.WebApp.expand(); 
-} 
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+}
 
 /**
- * Рендерить новини. 
- * @param {boolean} append - Якщо true, додає до списку, якщо false - очищує список.
+ * Рендерить новини в контейнер
  */
 function renderNews(articles, append = false) {
     const container = document.getElementById('news_container');
     if (!append) container.innerHTML = '';
-    
-    container.classList.add('news-container'); 
     
     articles.forEach(article => {
         const card = document.createElement('a');
         card.href = article.link || '#'; 
         card.target = '_blank';
         card.className = 'news-card'; 
+
+        // Форматування дати (YYYY-MM-DD HH:MM)
+        const rawDate = article.pubDate || '';
+        const formattedDate = rawDate ? rawDate.substring(0, 16) : '';
 
         const imageHtml = article.image_url 
             ? `<div class="news-image-container"><img src="${article.image_url}" alt=""></div>` 
@@ -38,7 +36,8 @@ function renderNews(articles, append = false) {
             ${imageHtml}
             <div class="news-text-content">
               <h3>${article.title || 'Без заголовка'}</h3>
-              <p>${article.description || ''}</p>
+              <p>${article.description || 'Опис відсутній'}</p>
+              <div class="news-date">${formattedDate}</div>
             </div>
         `;
         container.appendChild(card);
@@ -46,13 +45,12 @@ function renderNews(articles, append = false) {
 }
 
 /**
- * Основна функція запиту
+ * Завантаження новин з API
  */
 async function fetchNews(query = '', category = '', pageToken = null) {
     const loadMoreContainer = document.getElementById('load_more_container');
     const container = document.getElementById('news_container');
 
-    // Показуємо статус завантаження
     if (!pageToken) {
         container.innerHTML = '<p class="loading-status">Завантаження новин...</p>';
         loadMoreContainer.style.display = 'none';
@@ -61,7 +59,7 @@ async function fetchNews(query = '', category = '', pageToken = null) {
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
     if (query) apiUrl += `&q=${query}`;
     if (category) apiUrl += `&category=${category}`;
-    if (pageToken) apiUrl += `&page=${pageToken}`; // Додаємо токен наступної сторінки
+    if (pageToken) apiUrl += `&page=${pageToken}`;
 
     try {
         const response = await fetch(apiUrl);
@@ -69,11 +67,7 @@ async function fetchNews(query = '', category = '', pageToken = null) {
 
         if (data.results && data.results.length > 0) {
             renderNews(data.results, !!pageToken);
-            
-            // Зберігаємо токен для наступного завантаження
             currentPageToken = data.nextPage || null;
-            
-            // Показуємо кнопку, якщо є наступна сторінка
             loadMoreContainer.style.display = currentPageToken ? 'block' : 'none';
         } else if (!pageToken) {
             container.innerHTML = '<p class="loading-status">Новин не знайдено.</p>';
@@ -85,17 +79,17 @@ async function fetchNews(query = '', category = '', pageToken = null) {
 }
 
 /**
- * Викликається при пошуку або зміні категорії (скидає все на 1 сторінку)
+ * Пошук
  */
 window.performSearch = function() {
     currentQuery = encodeURIComponent(document.getElementById('search_input').value.trim());
     currentCategory = document.getElementById('category_select').value;
-    currentPageToken = null; // Скидаємо сторінку
+    currentPageToken = null;
     fetchNews(currentQuery, currentCategory);
 };
 
 /**
- * Викликається кнопкою "Завантажити ще"
+ * Завантажити ще
  */
 window.loadMoreNews = function() {
     if (currentPageToken) {
@@ -103,5 +97,10 @@ window.loadMoreNews = function() {
     }
 };
 
-// Початкове завантаження
+// Слухач на Enter для пошуку
+document.getElementById('search_input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') window.performSearch();
+});
+
+// Перший запуск
 fetchNews();

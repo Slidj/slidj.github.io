@@ -1,12 +1,12 @@
 // ==========================================================
 // 📜 Оновлений script.js для Новинного Web App (newsdata.io)
-// FIX: Уточнена логіка формування API URL для пошуку.
+// Включає: Пошук + Фільтри Категорій
 // ==========================================================
 
 // !!! ЗАМІНІТЬ ЦЕЙ ПЛЕЙСХОЛДЕР НА ВАШ РЕАЛЬНИЙ API KEY newsdata.io
 const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; 
 
-// Базовий Endpoint для новин (використовуємо /news для пошуку)
+// Базовий Endpoint для новин
 const BASE_API_URL = 'https://newsdata.io/api/1/news'; 
 
 // Ініціалізація Telegram Web App SDK
@@ -18,7 +18,6 @@ if (window.Telegram && window.Telegram.WebApp) {
 
 /**
  * Рендерить масив новинних статей у DOM, використовуючи CSS-класи.
- * Ця функція не змінюється.
  */
 function renderNews(articles) {
     const container = document.getElementById('news_container');
@@ -52,32 +51,53 @@ function renderNews(articles) {
 
 
 /**
- * Завантажує та рендерить новини, опціонально з використанням пошукового запиту.
- * @param {string} [query=''] - Пошуковий запит (уже закодований)
+ * Ініціює пошук та фільтрацію. Викликається кнопкою пошуку та зміною фільтра.
  */
-async function fetchAndRenderNews(query = '') {
+window.performSearch = function() {
+    const searchInput = document.getElementById('search_input');
+    const categorySelect = document.getElementById('category_select'); // НОВЕ: Отримуємо фільтр
+
+    // Отримання та кодування запиту
+    const query = encodeURIComponent(searchInput.value.trim()); 
+    // Отримання обраної категорії
+    const category = categorySelect.value; 
+    
+    // Передаємо і запит, і категорію
+    fetchAndRenderNews(query, category);
+};
+
+
+/**
+ * Завантажує та рендерить новини, враховуючи пошуковий запит та категорію.
+ * @param {string} [query=''] - Пошуковий запит (уже закодований)
+ * @param {string} [category=''] - Обрана категорія
+ */
+async function fetchAndRenderNews(query = '', category = '') {
     const container = document.getElementById('news_container');
     
-    // Якщо запит не порожній, показуємо, що ми шукаємо
     const loadingMessage = query ? 
         `Пошук новин за запитом "${decodeURIComponent(query)}"...` : 
-        'Завантаження останніх новин...';
+        'Завантаження новин...';
         
     container.innerHTML = `<p class="loading-status">${loadingMessage}</p>`; 
     
     // 1. Формування URL: базові параметри (API ключ, мова, розмір)
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
     
+    // 2. Додавання параметрів
     if (query) {
-        // Якщо є пошуковий запит, додаємо його до URL
         apiUrl += `&q=${query}`;
+    }
+    
+    // НОВЕ: Додавання категорії
+    if (category) {
+        apiUrl += `&category=${category}`;
     }
     
     try {
         const response = await fetch(apiUrl);
         
         if (!response.ok) {
-             // Якщо помилка 401/403 (несанкціоновано), це може бути API Key
             if (response.status === 401 || response.status === 403) {
                  throw new Error(`API Key Error. Перевірте, чи ключ дійсний та не перевищено ліміт.`);
             }
@@ -89,9 +109,8 @@ async function fetchAndRenderNews(query = '') {
         if (data.results && data.results.length > 0) {
             renderNews(data.results); 
         } else {
-            // Змінюємо повідомлення, якщо пошук не дав результатів
-            const message = query ? 
-                `Новин за запитом "${decodeURIComponent(query)}" не знайдено.` : 
+            const message = (query || category) ? 
+                `Новин за заданими критеріями не знайдено.` : 
                 `Новини не знайдено.`;
                 
             container.innerHTML = `<p class="loading-status">${message}</p>`;
@@ -104,20 +123,6 @@ async function fetchAndRenderNews(query = '') {
 }
 
 
-/**
- * Ініціює пошук при натисканні кнопки або клавіші Enter.
- * Ця функція викликається через onclick="performSearch()" в index.html
- */
-window.performSearch = function() {
-    const searchInput = document.getElementById('search_input');
-    // Обрізаємо пробіли та кодуємо для URL
-    const query = encodeURIComponent(searchInput.value.trim()); 
-    
-    // Викликаємо функцію завантаження новин з параметром пошуку
-    fetchAndRenderNews(query);
-};
-
-
 // ==========================================================
 // 💻 ДОДАТКОВА ФУНКЦІОНАЛЬНІСТЬ: ПОШУК ПО ENTER
 // ==========================================================
@@ -126,14 +131,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search_input');
     
     if (searchInput) {
-        // Додаємо слухача події 'keypress' до поля введення
         searchInput.addEventListener('keypress', (event) => {
-            // Перевіряємо, чи натиснута клавіша "Enter"
             if (event.key === 'Enter') {
-                // Запобігаємо стандартній дії (наприклад, надсилання форми)
                 event.preventDefault(); 
-                
-                // Викликаємо нашу функцію пошуку
                 window.performSearch();
             }
         });
@@ -141,5 +141,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// Запускаємо завантаження початкових новин (без пошуку) при завантаженні скрипта
+// Запускаємо завантаження початкових новин при старті
 fetchAndRenderNews();

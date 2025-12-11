@@ -1,8 +1,8 @@
 // ==========================================================
-// 📜 SCRIPT.JS: ПЕРСОНАЛІЗАЦІЯ + ВСІ ФУНКЦІЇ
+// 📜 SCRIPT.JS: ФІНАЛЬНА ВЕРСІЯ (ВИПРАВЛЕНО 422)
 // ==========================================================
 
-const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // <--- ПЕРЕВІРТЕ, ЧИ ТУТ ВАШ КЛЮЧ
+const YOUR_API_KEY = "pub_22e4e8780f9349e7a64a65f886ecae3a"; // <--- ОБОВ'ЯЗКОВО ВСТАВТЕ СВІЙ КЛЮЧ
 const BASE_API_URL = 'https://newsdata.io/api/1/news'; 
 
 // --- ГЛОБАЛЬНІ ЗМІННІ ---
@@ -15,30 +15,29 @@ let touchStartY = 0;
 let isPulling = false;
 const ptrSpinner = document.getElementById('ptr_spinner');
 
-// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ТА ПЕРСОНАЛІЗАЦІЯ ---
+// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
 if (window.Telegram && window.Telegram.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     try { tg.expand(); } catch (e) {}
 
-    // 👇 НОВИЙ БЛОК: Зміна заголовка на ім'я користувача
+    // Вітання з ім'ям користувача
     const user = tg.initDataUnsafe?.user;
     const headerTitle = document.getElementById('header_title');
     
     if (user && user.first_name && headerTitle) {
-        // Замінюємо "Новини дня" на "Привіт, [Ім'я]!"
         headerTitle.innerText = `👋 Привіт, ${user.first_name}`;
     }
 }
 
-// Завантаження збережених
+// Завантаження збережених новин з пам'яті
 try {
     const stored = localStorage.getItem('savedNews');
     if (stored) savedArticles = JSON.parse(stored);
 } catch (e) { console.error(e); }
 
 
-// --- ВІДОБРАЖЕННЯ СТАНІВ ---
+// --- ВІДОБРАЖЕННЯ СТАНІВ (ПОМИЛКИ ТА ЗАВАНТАЖЕННЯ) ---
 function showState(type, errorDetails = "") {
     const container = document.getElementById('news_container');
     let icon, title, subtext;
@@ -55,7 +54,7 @@ function showState(type, errorDetails = "") {
     } else if (type === 'error') {
         icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
         title = "Помилка завантаження";
-        subtext = `Код: ${errorDetails}<br>Перевірте інтернет або API.`;
+        subtext = `Код: ${errorDetails}<br>Перевірте інтернет або API Key.`;
     } else if (type === 'empty_saved') {
         icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
         title = "Немає збережених";
@@ -72,7 +71,7 @@ function showState(type, errorDetails = "") {
     document.getElementById('load_more_container').style.display = 'none';
 }
 
-// --- РЕНДЕРИНГ ---
+// --- РЕНДЕРИНГ КАРТОК ---
 function renderNews(articles, append = false) {
     const container = document.getElementById('news_container');
     if (!append) container.innerHTML = '';
@@ -147,7 +146,7 @@ window.toggleSave = function(encodedArticle, btn) {
     localStorage.setItem('savedNews', JSON.stringify(savedArticles));
 };
 
-// --- ВКЛАДКИ ---
+// --- ПЕРЕМИКАННЯ ВКЛАДОК ---
 window.switchTab = function(tabName) {
     activeTab = tabName;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -170,7 +169,7 @@ window.switchTab = function(tabName) {
     }
 };
 
-// --- API ---
+// --- ЗАВАНТАЖЕННЯ З API (FIXED) ---
 async function fetchNews(query = '', category = '', pageToken = null) {
     if (activeTab === 'saved') return;
     const loadMoreContainer = document.getElementById('load_more_container');
@@ -181,14 +180,12 @@ async function fetchNews(query = '', category = '', pageToken = null) {
         loadMoreContainer.style.display = 'none';
     }
 
+    // ВИПРАВЛЕНО: Прибрано зайвий параметр _nocache
     let apiUrl = `${BASE_API_URL}?apikey=${YOUR_API_KEY}&language=uk&size=10`;
     if (query) apiUrl += `&q=${query}`;
     if (category) apiUrl += `&category=${category}`;
     if (pageToken) apiUrl += `&page=${pageToken}`;
     
-    // Повертаємо _nocache, щоб уникнути проблем із застарілим контентом
-    apiUrl += `&_nocache=${Date.now()}`;
-
     try {
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error(`${response.status}`);

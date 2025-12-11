@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (КОМПАКТНИЙ ЗАГОЛОВОК)
+   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (РАНГИ + АВАТАР)
    ========================================================== */
 
 /* --- 1. БАЗОВІ НАЛАШТУВАННЯ --- */
@@ -10,13 +10,14 @@ body {
     padding: 0;
     margin: 0;
     line-height: 1.5;
+    -webkit-tap-highlight-color: transparent; /* Прибирає синій клік на Android */
 }
 
 /* --- 2. HEADER ТА ПРОФІЛЬ --- */
 header {
     background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
     padding: 15px 20px;
-    position: sticky;
+    position: sticky; /* Щоб меню залишалось зверху */
     top: 0;
     z-index: 100;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -30,8 +31,8 @@ header {
 
 /* Аватарка */
 .avatar-img {
-    width: 36px;
-    height: 36px;
+    width: 42px; 
+    height: 42px;
     border-radius: 50%;
     object-fit: cover;
     border: 1px solid var(--tg-theme-hint-color);
@@ -39,8 +40,8 @@ header {
 
 /* Заглушка, якщо немає фото */
 .avatar-placeholder {
-    width: 36px;
-    height: 36px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background-color: var(--tg-theme-button-color, #50a8eb);
     color: #ffffff;
@@ -50,19 +51,37 @@ header {
 }
 
 .avatar-placeholder svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
 }
 
-/* Ім'я користувача (зменшений шрифт) */
+/* Контейнер для тексту (Ім'я + Ранг) */
+.header-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Ім'я користувача */
 h1 {
     color: var(--tg-theme-text-color);
-    font-size: 17px;  /* Оптимальний розмір */
-    font-weight: 600; /* Акуратна жирність */
+    font-size: 17px;  /* Компактний розмір */
+    font-weight: 700;
     margin: 0;
+    line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Ранг та бали */
+.user-rank {
+    font-size: 13px;
+    color: var(--tg-theme-link-color, #007aff);
+    font-weight: 500;
+    margin-top: 2px;
+    white-space: nowrap;
 }
 
 /* --- 3. ВКЛАДКИ (TABS) --- */
@@ -115,6 +134,7 @@ h1 {
     align-items: stretch;
 }
 
+/* Примусова однакова висота */
 #category_select, #search_input, #search_button {
     height: 46px !important;
     box-sizing: border-box;
@@ -252,6 +272,7 @@ h1 {
     transform: scale(0.8);
 }
 
+/* Активний стан збереження */
 .bookmark-btn.saved {
     color: var(--tg-theme-button-color, #007aff);
     fill: var(--tg-theme-button-color, #007aff);
@@ -308,10 +329,12 @@ h1 {
     width: 100%;
 }
 
+/* Центрування кнопки */
 #load_more_button {
     display: block;
     width: fit-content;
     margin: 0 auto;
+    
     min-width: 180px;
     padding: 12px 25px;
     background-color: transparent;

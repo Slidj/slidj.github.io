@@ -2,53 +2,57 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Новини Web App</title>
-    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
     
     <div id="ptr_spinner">
         <div class="spinner-icon"></div>
     </div>
-    
+
     <header>
         <h1>📰 Новини дня</h1>
     </header>
 
     <div class="controls-container">
-        <select id="category_select" onchange="performSearch()">
-            <option value="">Усі категорії</option>
-            <option value="business">Бізнес</option>
-            <option value="entertainment">Розваги</option>
-            <option value="health">Здоров'я</option>
-            <option value="science">Наука</option>
-            <option value="sports">Спорт</option>
-            <option value="technology">Технології</option>
-        </select>
+        <div class="tabs-container">
+            <button class="tab-btn active" id="tab_feed" onclick="switchTab('feed')">Стрічка</button>
+            <button class="tab-btn" id="tab_saved" onclick="switchTab('saved')">Збережене</button>
+        </div>
 
-        <div class="search-container">
-            <input type="text" id="search_input" placeholder="Пошук новин..." />
-            <button id="search_button" onclick="performSearch()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-            </button>
+        <div id="feed_controls">
+            <select id="category_select" onchange="performSearch()">
+                <option value="">Усі категорії</option>
+                <option value="business">Бізнес</option>
+                <option value="entertainment">Розваги</option>
+                <option value="health">Здоров'я</option>
+                <option value="science">Наука</option>
+                <option value="sports">Спорт</option>
+                <option value="technology">Технології</option>
+            </select>
+
+            <div class="search-container">
+                <input type="text" id="search_input" placeholder="Пошук новин..." />
+                <button id="search_button" onclick="performSearch()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 
     <div id="news_container">
-        <p class="loading-status">Завантаження останніх новин...</p>
-    </div>
+        </div>
 
     <div id="load_more_container" style="display: none;">
         <button id="load_more_button" onclick="loadMoreNews()">Завантажити ще</button>
     </div>
 
-    <script src="script.js?v=4"></script>
+    <script src="script.js?v=6"></script>
 </body>
 </html>

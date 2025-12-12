@@ -260,7 +260,7 @@ window.toggleSave = function(idEnc, type, btn) {
 
 async function initApp() {
     const preloader = document.getElementById('preloader');
-    const minTimePromise = new Promise(resolve => setTimeout(resolve, 2000));
+    const minTimePromise = new Promise(resolve => setTimeout(resolve, 4000));
     const contentPromise = loadContent();
 
     await Promise.all([contentPromise, minTimePromise]);

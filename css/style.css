@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (ІДЕАЛЬНИЙ КЛІК)
+   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (FAB MENU + GOOGLE ANIMATION)
    ========================================================== */
 
 /* --- 1. БАЗОВІ НАЛАШТУВАННЯ --- */
@@ -10,7 +10,7 @@ body {
     padding: 0;
     margin: 0;
     line-height: 1.5;
-    -webkit-tap-highlight-color: transparent; /* Прибирає стандартне підсвічування Android */
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* --- 2. HEADER --- */
@@ -79,41 +79,15 @@ h1 {
     white-space: nowrap;
 }
 
-/* --- 3. КОНТЕЙНЕР КЕРУВАННЯ --- */
+/* --- 3. КОНТЕЙНЕР КЕРУВАННЯ (ФІЛЬТРИ) --- */
 .controls-container {
     padding: 15px 20px;
     background-color: var(--tg-theme-bg-color);
+    /* border-bottom більше не обов'язковий, але для відступу залишимо */
     border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
     display: flex;
     flex-direction: column;
     gap: 15px; 
-}
-
-.tabs-container {
-    display: flex;
-    background-color: var(--tg-theme-secondary-bg-color);
-    border-radius: 12px;
-    padding: 4px;
-}
-
-.tab-btn {
-    flex: 1;
-    border: none;
-    background: transparent;
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--tg-theme-hint-color);
-    cursor: pointer;
-    transition: all 0.2s;
-    user-select: none; /* Заборона виділення тексту на кнопках */
-}
-
-.tab-btn.active {
-    background-color: var(--tg-theme-bg-color);
-    color: var(--tg-theme-text-color);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 #filters_wrapper {
@@ -177,7 +151,7 @@ h1 {
 
 .hidden { display: none !important; }
 
-/* --- 5. КАРТКИ НОВИН (СПИСОК) --- */
+/* --- 5. КАРТКИ НОВИН --- */
 .news-container {
     padding: 5px 0;
     min-height: 300px;
@@ -196,8 +170,6 @@ h1 {
     
     transition: transform 0.1s ease-in-out, opacity 0.1s;
     cursor: pointer;
-    
-    /* 👇 ЗАБОРОНЯЄМО ВИДІЛЕННЯ ТЕКСТУ, ЩОБ КЛІК ПРАЦЮВАВ КРАЩЕ */
     user-select: none;
     -webkit-user-select: none;
 }
@@ -210,7 +182,6 @@ h1 {
 .card-content {
     display: flex;
     gap: 12px;
-    /* Контент пропускає кліки крізь себе на батьківську картку, окрім кнопок */
 }
 
 .news-image-container {
@@ -219,7 +190,6 @@ h1 {
     flex-shrink: 0;
     border-radius: 10px;
     overflow: hidden;
-    /* Картинка не повинна перехоплювати клік */
     pointer-events: none; 
 }
 
@@ -254,7 +224,6 @@ h1 {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
-
 /* --- 6. СІТКА ФІЛЬМІВ --- */
 .movies-grid {
     display: grid;
@@ -275,8 +244,6 @@ h1 {
     
     transition: transform 0.1s ease-in-out;
     cursor: pointer;
-    
-    /* 👇 ЗАБОРОНЯЄМО ВИДІЛЕННЯ ТЕКСТУ */
     user-select: none;
     -webkit-user-select: none;
 }
@@ -289,8 +256,6 @@ h1 {
     width: 100%;
     aspect-ratio: 2/3;
     object-fit: cover;
-    
-    /* 👇 КАРТИНКА НЕ БЛОКУЄ НАТИСКАННЯ */
     pointer-events: none;
 }
 
@@ -323,7 +288,7 @@ h1 {
     padding: 4px 8px;
     border-radius: 8px;
     backdrop-filter: blur(4px);
-    pointer-events: none; /* Рейтинг теж пропускає клік */
+    pointer-events: none;
 }
 
 .movie-year {
@@ -332,7 +297,6 @@ h1 {
     margin-bottom: 8px;
 }
 
-/* Дії */
 .movie-actions, .card-footer {
     display: flex;
     justify-content: space-between;
@@ -340,16 +304,12 @@ h1 {
     margin-top: auto; 
     padding-top: 8px;
     border-top: 1px solid rgba(0,0,0,0.05);
-    
-    /* Важливо: футер має реагувати на кліки для кнопок */
     pointer-events: auto;
 }
 
 .card-actions {
     display: flex;
     gap: 15px;
-    /* Забезпечуємо, щоб кліки по кнопках не викликали відкриття новини, 
-       але це вже оброблено в JS (e.target.closest) */
 }
 
 .action-btn {
@@ -444,7 +404,6 @@ h1 {
     color: #ffffff;
     transform: scale(0.96);
 }
-
 /* --- 9. PULL TO REFRESH --- */
 #ptr_spinner {
     position: fixed;
@@ -499,4 +458,133 @@ h1 {
     object-fit: contain;
     border-radius: 0;
     box-shadow: none;
+}
+
+/* ==========================================================
+   🧩 11. FAB MENU (ЛІВИЙ НИЖНІЙ КУТ)
+   ========================================================== */
+
+#fab_wrapper {
+    position: fixed;
+    bottom: 30px;
+    left: 20px;
+    z-index: 900;
+    display: flex;
+    flex-direction: column-reverse; /* Меню відкривається вгору */
+    align-items: center;
+    gap: 15px;
+}
+
+/* --- ГОЛОВНА КНОПКА --- */
+#fab_main {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px; /* Squircle */
+    background-color: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #000000);
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#fab_main:active {
+    transform: scale(0.9);
+}
+
+/* --- АНІМАЦІЯ КІЛЬЦЯ (GOOGLE STYLE) --- */
+#fab_main::before {
+    content: '';
+    position: absolute;
+    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border-radius: 22px;
+    z-index: -1;
+    
+    background: conic-gradient(
+        #4285f4, 
+        #ea4335, 
+        #fbbc05, 
+        #34a853, 
+        #4285f4
+    );
+    
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 3px; 
+    
+    opacity: 0;
+    animation: google-pulse 8s linear infinite;
+}
+
+/* 2 сек крутиться, 6 сек чекає */
+@keyframes google-pulse {
+    0% { transform: rotate(0deg); opacity: 0; }
+    5% { opacity: 1; }
+    25% { transform: rotate(360deg); opacity: 1; }
+    30% { opacity: 0; }
+    100% { transform: rotate(360deg); opacity: 0; }
+}
+
+/* --- СПИСОК КНОПОК МЕНЮ --- */
+.fab-menu {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 12px;
+    margin-bottom: 5px;
+    pointer-events: none; /* Не клікається, коли закрито */
+}
+
+.fab-item {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    color: var(--tg-theme-hint-color, #888);
+    border: 1px solid transparent;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    
+    /* Сховано за замовчуванням */
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Активна вкладка */
+.fab-item.active {
+    background-color: var(--tg-theme-button-color, #50a8eb);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(80, 168, 235, 0.4);
+}
+
+/* --- ВІДКРИТИЙ СТАН --- */
+#fab_wrapper.open .fab-menu {
+    pointer-events: auto;
+}
+
+#fab_wrapper.open .fab-item {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* Ефект "змійки" (по черзі) */
+#fab_wrapper.open .fab-item:nth-child(1) { transition-delay: 0.05s; }
+#fab_wrapper.open .fab-item:nth-child(2) { transition-delay: 0.1s; }
+#fab_wrapper.open .fab-item:nth-child(3) { transition-delay: 0.15s; }
+
+/* Зміна головної кнопки при відкритті */
+#fab_wrapper.open #fab_main {
+    background-color: var(--tg-theme-button-color, #50a8eb);
+    color: #ffffff;
 }

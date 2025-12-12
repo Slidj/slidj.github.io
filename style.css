@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (ВИПРАВЛЕНІ ВІДСТУПИ)
+   🎨 STYLE.CSS: ВИПРАВЛЕНІ ВІДСТУПИ ТА СІТКА
    ========================================================== */
 
 /* --- 1. БАЗОВІ НАЛАШТУВАННЯ --- */
@@ -13,7 +13,7 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* --- 2. HEADER ТА ПРОФІЛЬ --- */
+/* --- 2. HEADER --- */
 header {
     background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
     padding: 15px 20px;
@@ -79,17 +79,16 @@ h1 {
     white-space: nowrap;
 }
 
-/* --- 3. КОНТЕЙНЕР КЕРУВАННЯ (ВКЛАДКИ І ФІЛЬТРИ) --- */
+/* --- 3. КОНТЕЙНЕР КЕРУВАННЯ --- */
 .controls-container {
     padding: 15px 20px;
     background-color: var(--tg-theme-bg-color);
     border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Загальний відступ між елементами */
+    gap: 15px; /* Відступ між вкладками і фільтрами */
 }
 
-/* Стилі для вкладок */
 .tabs-container {
     display: flex;
     background-color: var(--tg-theme-secondary-bg-color);
@@ -116,23 +115,24 @@ h1 {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* 👇 ОСЬ ТУТ БУЛА ПРОБЛЕМА. ДОДАЄМО ВІДСТУПИ ДЛЯ ФІЛЬТРІВ 👇 */
+/* --- ВИПРАВЛЕНІ ВІДСТУПИ ДЛЯ ФІЛЬТРІВ --- */
 #filters_wrapper {
     display: flex;
     flex-direction: column;
-    gap: 12px; /* Відступ між "Категорією" та "Пошуком" */
+    gap: 15px; /* Більший відступ між категорією та пошуком */
+    padding-bottom: 5px; /* Додатковий простір знизу */
 }
 
 /* --- 4. ПОШУК І КАТЕГОРІЇ --- */
 .search-container {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
     align-items: stretch;
 }
 
 #category_select, #search_input, #search_button {
-    height: 46px !important;
+    height: 48px !important; /* Трохи збільшили висоту для зручності */
     box-sizing: border-box;
     border-radius: 12px;
     font-size: 16px;
@@ -175,10 +175,7 @@ h1 {
     flex-shrink: 0;
 }
 
-/* Клас для приховування елементів (наприклад, категорій у фільмах) */
-.hidden {
-    display: none !important;
-}
+.hidden { display: none !important; }
 
 /* --- 5. КАРТКИ НОВИН (СПИСОК) --- */
 .news-container {
@@ -246,9 +243,9 @@ h1 {
 /* --- 6. СІТКА ФІЛЬМІВ --- */
 .movies-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Дві колонки */
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
-    padding: 10px 15px;
+    padding: 15px; /* Більші відступи навколо сітки */
 }
 
 .movie-card {
@@ -309,22 +306,12 @@ h1 {
     margin-bottom: 8px;
 }
 
-/* Дії для фільму */
-.movie-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: auto;
-    padding-top: 8px;
-    border-top: 1px solid rgba(0,0,0,0.05);
-}
-
-
-/* --- 7. ФУТЕР КАРТКИ --- */
-.card-footer {
+/* Дії */
+.movie-actions, .card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 12px;
+    margin-top: auto; /* Притискає футер до низу */
     padding-top: 8px;
     border-top: 1px solid rgba(0,0,0,0.05);
 }
@@ -359,7 +346,7 @@ h1 {
     color: var(--tg-theme-hint-color);
 }
 
-/* --- 8. EMPTY STATES (ПОМИЛКИ) --- */
+/* --- EMPTY STATES --- */
 .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -391,7 +378,7 @@ h1 {
     color: var(--tg-theme-hint-color);
 }
 
-/* --- 9. ЗАВАНТАЖЕННЯ --- */
+/* --- ЗАВАНТАЖЕННЯ --- */
 .loading-status {
     text-align: center;
     padding: 30px;
@@ -409,7 +396,6 @@ h1 {
     display: block;
     width: fit-content;
     margin: 0 auto;
-    
     min-width: 180px;
     padding: 12px 25px;
     background-color: transparent;
@@ -428,7 +414,7 @@ h1 {
     transform: scale(0.96);
 }
 
-/* --- 10. PULL TO REFRESH --- */
+/* --- PTR --- */
 #ptr_spinner {
     position: fixed;
     top: -50px;

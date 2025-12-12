@@ -421,38 +421,39 @@ h1 {
 }
 
 
-/* ----------------------------------------------------------
-   8. ГОРИЗОНТАЛЬНЕ МЕНЮ (FAB) - ВНИЗУ ЗЛІВА
-   ---------------------------------------------------------- */
+/* ==========================================================
+   🧩 FAB MENU (ЛІВО, ЗНИЗУ -> ВПРАВО)
+   ========================================================== */
+
 #fab_wrapper {
     position: fixed;
-    bottom: 25px;
-    left: 20px !important;
+    bottom: 25px;          /* Відступ знизу */
+    left: 20px !important;  /* ЖОРСТКО ЛІВИЙ КРАЙ */
     right: auto;
     z-index: 900;
     
     display: flex;
-    flex-direction: row;
+    flex-direction: row;   /* В РЯДОК */
     align-items: center;
     gap: 0;
     
     width: auto;
     max-width: 100%;
-    
-    /* 👇 ВАЖЛИВО: Контейнер пропускає кліки крізь себе */
+
+    /* 👇 Пропускаємо кліки крізь прозорий контейнер, 
+       щоб можна було натиснути "Завантажити ще" */
     pointer-events: none; 
 }
 
-/* А самі кнопки повинні реагувати на кліки */
+/* Самі кнопки мають реагувати на кліки */
 #fab_main, .fab-menu {
     pointer-events: auto;
 }
 
-
-/* ГОЛОВНА КНОПКА */
+/* --- ГОЛОВНА КНОПКА --- */
 #fab_main {
     width: 56px; height: 56px;
-    border-radius: 18px; /* Squircle */
+    border-radius: 18px;
     background-color: var(--tg-theme-bg-color, #ffffff);
     color: var(--tg-theme-text-color, #000000);
     border: none;
@@ -467,24 +468,25 @@ h1 {
 
 #fab_main:active { transform: scale(0.9); }
 
-/* АНІМАЦІЯ КІЛЬЦЯ (Google Style) */
+/* --- АНІМАЦІЯ КІЛЬЦЯ (Google Style) --- */
 #fab_main::before {
-    content: '';
-    position: absolute;
+    content: ''; position: absolute;
     top: -4px; left: -4px; right: -4px; bottom: -4px;
-    border-radius: 22px;
-    z-index: -1;
-    
-    background: conic-gradient(
-        #4285f4, #ea4335, #fbbc05, #34a853, #4285f4
-    );
-    
+    border-radius: 22px; z-index: -1;
+    background: conic-gradient(#4285f4, #ea4335, #fbbc05, #34a853, #4285f4);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor; mask-composite: exclude;
-    padding: 3px;
+    -webkit-mask-composite: xor; mask-composite: exclude; padding: 3px;
     
-    opacity: 0;
+    opacity: 0; 
+    /* Анімація працює за замовчуванням */
     animation: google-pulse 8s linear infinite;
+    transition: opacity 0.3s; /* Плавне зникнення */
+}
+
+/* 👇👇👇 НОВЕ ПРАВИЛО: ЯКЩО МЕНЮ ВІДКРИТЕ — ВИМИКАЄМО АНІМАЦІЮ 👇👇👇 */
+#fab_wrapper.open #fab_main::before {
+    animation: none; /* Зупинити рух */
+    opacity: 0;      /* Приховати */
 }
 
 @keyframes google-pulse {
@@ -495,56 +497,36 @@ h1 {
     100% { transform: rotate(360deg); opacity: 0; }
 }
 
-/* СПИСОК КНОПОК МЕНЮ */
+/* --- МЕНЮ ІКОНОК (праворуч від кнопки) --- */
 .fab-menu {
-    display: flex;
-    flex-direction: row; /* В рядок */
-    align-items: center;
-    gap: 12px;
-    margin-left: 15px; /* Відступ від головної кнопки */
-    pointer-events: none;
-    z-index: 5;
+    display: flex; flex-direction: row; align-items: center; gap: 12px;
+    margin-left: 15px;
+    pointer-events: none; z-index: 5;
 }
 
 .fab-item {
-    width: 48px; height: 48px;
-    border-radius: 14px;
+    width: 48px; height: 48px; border-radius: 14px;
     background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
     color: var(--tg-theme-hint-color, #888);
     border: 1px solid transparent;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
     
-    /* Сховано ліворуч (під кнопку) */
-    opacity: 0;
-    transform: translateX(-30px) scale(0.8);
+    opacity: 0; transform: translateX(-30px) scale(0.8);
     transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Активна кнопка */
-.fab-item.active {
-    background-color: var(--tg-theme-button-color, #50a8eb);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(80, 168, 235, 0.4);
-}
+.fab-item.active { background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff; box-shadow: 0 4px 12px rgba(80, 168, 235, 0.4); }
 
 /* ВІДКРИТИЙ СТАН */
 #fab_wrapper.open .fab-menu { pointer-events: auto; }
-
-#fab_wrapper.open .fab-item {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-}
-
-/* Почерговий виїзд */
+#fab_wrapper.open .fab-item { opacity: 1; transform: translateX(0) scale(1); }
 #fab_wrapper.open .fab-item:nth-child(1) { transition-delay: 0.05s; }
 #fab_wrapper.open .fab-item:nth-child(2) { transition-delay: 0.1s; }
 #fab_wrapper.open .fab-item:nth-child(3) { transition-delay: 0.15s; }
 
-/* Поворот головної кнопки */
+/* Поворот кнопки */
 #fab_wrapper.open #fab_main {
-    background-color: var(--tg-theme-button-color, #50a8eb);
-    color: #ffffff;
+    background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff;
     transform: rotate(90deg);
 }

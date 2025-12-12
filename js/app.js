@@ -2,13 +2,15 @@ import { fetchNewsData, fetchTMDB } from './api.js';
 import { renderList, renderMovies, updateRankDisplay, addPoints, userPoints } from './ui.js';
 import { API_URLS } from './config.js'; 
 
-// Глобальні змінні стану
+// --- ГЛОБАЛЬНІ ЗМІННІ ---
 let appMode = 'news';
 let feedNews = [];
 let feedMovies = [];
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
+
 let newsPageToken = null;
 let moviePage = 1;
+
 let currentQuery = '';
 let currentCategory = '';
 
@@ -21,34 +23,49 @@ if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     const user = tg.initDataUnsafe?.user;
+    
     if (user) {
-        document.getElementById('header_title').innerText = user.first_name;
-        if (user.photo_url) {
-            document.getElementById('user_avatar').src = user.photo_url;
-            document.getElementById('user_avatar').style.display = 'block';
+        // Ім'я
+        const headerTitle = document.getElementById('header_title');
+        if (headerTitle) headerTitle.innerText = user.first_name;
+        
+        // Аватар
+        const avatarImg = document.getElementById('user_avatar');
+        const defaultAvatar = document.getElementById('default_avatar');
+        
+        if (user.photo_url && avatarImg) {
+            avatarImg.src = user.photo_url;
+            avatarImg.style.display = 'block';
+            if (defaultAvatar) defaultAvatar.style.display = 'none';
         } else {
-             document.getElementById('default_avatar').style.display = 'flex';
+             if (defaultAvatar) defaultAvatar.style.display = 'flex';
         }
     }
 }
-updateRankDisplay();
+updateRankDisplay(); // Оновлюємо ранги при старті
 
-// --- ГОЛОВНА ЛОГІКА ---
-
+// --- ОСНОВНА ЛОГІКА ЗАВАНТАЖЕННЯ ---
 async function loadContent(isMore = false) {
+    // Якщо це не дозавантаження, показуємо спінер або очищаємо контейнер
     if (!isMore) {
-        container.innerHTML = '<p class="loading-status">Завантаження...</p>';
+        // Якщо працює прелоадер, ми не чистимо контейнер, щоб не було миготіння
+        // Але якщо це просто пошук або перемикання вкладок - чистимо
+        const preloader = document.getElementById('preloader');
+        if (!preloader || preloader.style.display === 'none') {
+             container.innerHTML = '<p class="loading-status">Завантаження...</p>';
+        }
         loadMoreBtn.style.display = 'none';
     }
 
     try {
         if (appMode === 'news') {
+            // 1. НОВИНИ
             const data = await fetchNewsData(currentQuery, currentCategory, isMore ? newsPageToken : null);
             
             const items = data.results.map(item => ({
-                id: item.link,
+                id: item.link, // ID новини = посилання
                 title: item.title,
-                desc: item.description, // У новин опис був
+                desc: item.description,
                 img: item.image_url,
                 date: item.pubDate,
                 url: item.link,
@@ -63,14 +80,14 @@ async function loadContent(isMore = false) {
             loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
 
         } else if (appMode === 'movies') {
+            // 2. КІНО
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
             
             const items = data.results.map(item => ({
-                id: item.id,
+                id: item.id, // ID фільму = число
                 title: item.title,
-                // 👇 ОСЬ ТУТ БУЛО ПРОПУЩЕНО ОПИС 👇
-                desc: item.overview, 
+                desc: item.overview, // Тепер опис точно зберігається!
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
                 url: `https://www.themoviedb.org/movie/${item.id}`,
@@ -82,16 +99,18 @@ async function loadContent(isMore = false) {
 
             container.className = 'movies-grid';
             renderMovies(feedMovies, container, savedItems, isMore);
-            loadMoreBtn.style.display = 'block';
+            loadMoreBtn.style.display = 'block'; // У TMDB завжди є що вантажити
         }
     } catch (e) {
         console.error(e);
-        if (!isMore) container.innerHTML = `<div class="empty-state">Помилка: ${e.message}</div>`;
+        if (!isMore) container.innerHTML = `<div class="empty-state"><div class="empty-text">Помилка</div><div class="empty-subtext">${e.message}</div></div>`;
     }
 }
 
-// --- ФУНКЦІЇ ДЛЯ HTML (GLOBAL) ---
 
+// --- ГЛОБАЛЬНІ ФУНКЦІЇ (ДЛЯ HTML) ---
+
+// 1. Перемикання вкладок
 window.switchMode = function(mode) {
     appMode = mode;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -103,12 +122,15 @@ window.switchMode = function(mode) {
 
     const filters = document.getElementById('filters_wrapper');
     const catSelect = document.getElementById('category_select');
+    const searchInput = document.getElementById('search_input');
 
     container.className = '';
 
     if (mode === 'news') {
         filters.style.display = 'flex';
         catSelect.classList.remove('hidden');
+        searchInput.placeholder = "Пошук новин...";
+        
         if (feedNews.length === 0) loadContent();
         else {
              container.className = 'news-container list-view';
@@ -118,6 +140,8 @@ window.switchMode = function(mode) {
     } else if (mode === 'movies') {
         filters.style.display = 'flex';
         catSelect.classList.add('hidden');
+        searchInput.placeholder = "Пошук фільмів...";
+
         if (feedMovies.length === 0) loadContent();
         else {
             container.className = 'movies-grid';
@@ -132,57 +156,93 @@ window.switchMode = function(mode) {
     }
 };
 
+// 2. Пошук
 window.performSearch = function() {
     currentQuery = document.getElementById('search_input').value.trim();
     currentCategory = document.getElementById('category_select').value;
+    
     feedNews = [];
     feedMovies = [];
+    newsPageToken = null;
+    moviePage = 1;
+    
     loadContent();
 };
 
+// 3. Завантажити ще
 window.loadMore = function() {
     loadContent(true);
 };
 
+// 4. Відкрити посилання (+бали)
 window.openLink = function(url) {
     addPoints(2);
     window.Telegram?.WebApp?.openLink(url) || window.open(url, '_blank');
 };
 
+// 5. Поділитися (+бали)
 window.shareItem = function(url, title) {
     addPoints(10);
-    if (navigator.share) navigator.share({ title: title, url: url }).catch(console.error);
-    else window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
+    if (navigator.share) {
+        navigator.share({ title: title, url: url }).catch(console.error);
+    } else {
+        window.Telegram?.WebApp?.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
+    }
 };
 
+// 6. Зберегти / Видалити (+/- бали)
 window.toggleSave = function(idEnc, type, btn) {
     const id = decodeURIComponent(idEnc);
     let item;
     
-    // Шукаємо об'єкт в поточній стрічці
+    // Шукаємо об'єкт спочатку в активних списках
     if (type === 'news') item = feedNews.find(i => i.id == id);
     else if (type === 'movie') item = feedMovies.find(i => i.id == id);
     
-    // Якщо не знайшли в стрічці (наприклад, видаляємо з вкладки збережених), беремо зі збережених
+    // Якщо не знайшли (наприклад, видаляємо зі збережених), шукаємо в збережених
     if (!item) item = savedItems.find(i => i.id == id);
 
     if (!item) return;
 
     const idx = savedItems.findIndex(s => s.id == item.id);
     if (idx === -1) {
+        // Додаємо
         savedItems.push(item);
         btn.classList.add('saved');
         btn.querySelector('svg').setAttribute('fill', 'currentColor');
         addPoints(5);
     } else {
+        // Видаляємо
         savedItems.splice(idx, 1);
         btn.classList.remove('saved');
         btn.querySelector('svg').setAttribute('fill', 'none');
         addPoints(-5);
+        
+        // Якщо ми на вкладці збережених - оновлюємо список відразу
         if (appMode === 'saved') renderList(savedItems, container, savedItems);
     }
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
 };
 
-// СТАРТ
-loadContent();
+
+// --- ПРЕЛОАДЕР ТА СТАРТ ---
+async function initApp() {
+    const preloader = document.getElementById('preloader');
+    
+    // Чекаємо мінімум 2 секунди + завантаження контенту
+    const minTimePromise = new Promise(resolve => setTimeout(resolve, 2000));
+    const contentPromise = loadContent();
+
+    await Promise.all([contentPromise, minTimePromise]);
+
+    // Прибираємо прелоадер
+    if (preloader) {
+        preloader.classList.add('fade-out');
+        setTimeout(() => {
+            preloader.style.display = 'none';
+        }, 500);
+    }
+}
+
+// Запускаємо додаток
+initApp();

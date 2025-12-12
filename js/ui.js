@@ -1,7 +1,6 @@
 // --- СТАН БАЛІВ ---
 export let userPoints = parseInt(localStorage.getItem('userPoints')) || 0;
 
-// Красива іконка "Поділитися" (SVG)
 const shareIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
 
 export function addPoints(amount) {
@@ -46,8 +45,9 @@ export function renderList(items, container, savedItems, isAppend = false) {
         
         const imgHtml = item.img ? `<div class="news-image-container"><img src="${item.img}" onerror="this.style.display='none'"></div>` : '';
 
+        // 👇 ЗМІНЕНО: передаємо safeId в openLink
         card.innerHTML = `
-            <div class="card-content" onclick="window.openLink('${item.url}')">
+            <div class="card-content" onclick="window.openLink('${item.url}', '${safeId}')">
                 ${imgHtml}
                 <div class="news-text-content">
                     <h3>${item.title}</h3>
@@ -79,8 +79,9 @@ export function renderMovies(items, container, savedItems, isAppend = false) {
         const safeId = encodeURIComponent(item.id);
         const imgSrc = item.img || 'https://via.placeholder.com/500x750?text=No+Poster';
 
+        // 👇 ЗМІНЕНО: передаємо safeId в openLink
         card.innerHTML = `
-            <div style="position: relative;" onclick="window.openLink('${item.url}')">
+            <div style="position: relative;" onclick="window.openLink('${item.url}', '${safeId}')">
                 <img src="${imgSrc}" class="movie-poster">
                 <div class="movie-rating">★ ${item.rating}</div>
             </div>

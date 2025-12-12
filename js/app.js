@@ -1,14 +1,16 @@
 import { fetchNewsData, fetchTMDB } from './api.js';
-import { renderList, renderMovies, updateRankDisplay, addPoints, userPoints } from './ui.js';
+import { renderList, renderMovies, updateRankDisplay, addPoints } from './ui.js';
 import { API_URLS } from './config.js'; 
 
-// --- ГЛОБАЛЬНІ ЗМІННІ ---
+// --- ГЛОБАЛЬНІ ЗМІННІ СТАНУ ---
 let appMode = 'news';
 let feedNews = [];
 let feedMovies = [];
+
+// Завантажуємо збережене
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
 
-// 👇 НОВЕ: Список переглянутих матеріалів (щоб не накручували)
+// Завантажуємо історію переглядів (щоб не накручували бали)
 let viewedItems = JSON.parse(localStorage.getItem('viewedItems')) || [];
 
 let newsPageToken = null;
@@ -28,9 +30,11 @@ if (window.Telegram?.WebApp) {
     const user = tg.initDataUnsafe?.user;
     
     if (user) {
+        // Встановлюємо ім'я
         const headerTitle = document.getElementById('header_title');
         if (headerTitle) headerTitle.innerText = user.first_name;
         
+        // Встановлюємо аватар
         const avatarImg = document.getElementById('user_avatar');
         const defaultAvatar = document.getElementById('default_avatar');
         
@@ -43,12 +47,14 @@ if (window.Telegram?.WebApp) {
         }
     }
 }
-updateRankDisplay(); 
+updateRankDisplay(); // Оновлюємо ранги при старті
 
 // --- ОСНОВНА ЛОГІКА ЗАВАНТАЖЕННЯ ---
 async function loadContent(isMore = false) {
+    // Якщо це не дозавантаження, керуємо відображенням статусу
     if (!isMore) {
         const preloader = document.getElementById('preloader');
+        // Якщо прелоадер вже зник, показуємо текст "Завантаження..."
         if (!preloader || preloader.style.display === 'none') {
              container.innerHTML = '<p class="loading-status">Завантаження...</p>';
         }
@@ -57,10 +63,11 @@ async function loadContent(isMore = false) {
 
     try {
         if (appMode === 'news') {
+            // ================== НОВИНИ ==================
             const data = await fetchNewsData(currentQuery, currentCategory, isMore ? newsPageToken : null);
             
             const items = data.results.map(item => ({
-                id: item.link, 
+                id: item.link, // ID новини = її посилання
                 title: item.title,
                 desc: item.description,
                 img: item.image_url,
@@ -77,15 +84,17 @@ async function loadContent(isMore = false) {
             loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
 
         } else if (appMode === 'movies') {
+            // ================== КІНО ==================
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
             
             const items = data.results.map(item => ({
-                id: item.id,
+                id: item.id, // ID фільму = число
                 title: item.title,
-                desc: item.overview, 
+                desc: item.overview, // Зберігаємо опис!
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
+                // Формуємо правильне посилання на сайт TMDB для людей
                 url: `https://www.themoviedb.org/movie/${item.id}`,
                 type: 'movie'
             }));
@@ -95,7 +104,7 @@ async function loadContent(isMore = false) {
 
             container.className = 'movies-grid';
             renderMovies(feedMovies, container, savedItems, isMore);
-            loadMoreBtn.style.display = 'block'; 
+            loadMoreBtn.style.display = 'block'; // У TMDB майже завжди є наступні сторінки
         }
     } catch (e) {
         console.error(e);
@@ -104,8 +113,9 @@ async function loadContent(isMore = false) {
 }
 
 
-// --- ГЛОБАЛЬНІ ФУНКЦІЇ ---
+// --- ГЛОБАЛЬНІ ФУНКЦІЇ (Attached to window) ---
 
+// 1. Перемикання вкладок
 window.switchMode = function(mode) {
     appMode = mode;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -151,34 +161,44 @@ window.switchMode = function(mode) {
     }
 };
 
+// 2. Пошук
 window.performSearch = function() {
     currentQuery = document.getElementById('search_input').value.trim();
     currentCategory = document.getElementById('category_select').value;
+    
+    // Скидаємо списки при новому пошуку
     feedNews = [];
     feedMovies = [];
     newsPageToken = null;
     moviePage = 1;
+    
     loadContent();
 };
 
+// 3. Кнопка "Завантажити ще"
 window.loadMore = function() {
     loadContent(true);
 };
 
-// 👇👇👇 ОНОВЛЕНА ФУНКЦІЯ ВІДКРИТТЯ (ЗАХИСТ ВІД НАКРУТКИ) 👇👇👇
+// 4. Відкриття посилання (з оптимізацією пам'яті)
 window.openLink = function(url, idEncoded) {
-    // Якщо ID передано, перевіряємо, чи ми це вже бачили
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
         
-        // Перевіряємо, чи є цей ID в списку переглянутих
+        // Перевіряємо, чи переглядали ми це раніше
         if (!viewedItems.includes(id.toString())) {
-            addPoints(2); // Нараховуємо бали ТІЛЬКИ якщо це вперше
-            viewedItems.push(id.toString());
+            addPoints(2); // Нараховуємо бали
+            viewedItems.push(id.toString()); // Додаємо в історію
+            
+            // 🛡️ ОПТИМІЗАЦІЯ: Тримаємо тільки останні 200 записів
+            if (viewedItems.length > 200) {
+                viewedItems.shift(); // Видаляємо найстаріший запис
+            }
+            
             localStorage.setItem('viewedItems', JSON.stringify(viewedItems));
         }
     } else {
-        // Якщо раптом ID немає (стара версія), просто даємо бали (але краще передавати ID)
+        // Fallback для старих елементів без ID
         addPoints(2);
     }
 
@@ -189,6 +209,7 @@ window.openLink = function(url, idEncoded) {
     }
 };
 
+// 5. Поділитися
 window.shareItem = function(url, title) {
     addPoints(10);
     if (navigator.share) {
@@ -198,41 +219,63 @@ window.shareItem = function(url, title) {
     }
 };
 
+// 6. Зберегти / Видалити
 window.toggleSave = function(idEnc, type, btn) {
     const id = decodeURIComponent(idEnc);
     let item;
     
+    // Шукаємо об'єкт в поточних списках
     if (type === 'news') item = feedNews.find(i => i.id == id);
     else if (type === 'movie') item = feedMovies.find(i => i.id == id);
+    
+    // Якщо не знайшли (наприклад, ми у вкладці збережених), шукаємо в збережених
     if (!item) item = savedItems.find(i => i.id == id);
 
     if (!item) return;
 
     const idx = savedItems.findIndex(s => s.id == item.id);
+    
     if (idx === -1) {
+        // ЗБЕРІГАЄМО
         savedItems.push(item);
         btn.classList.add('saved');
         btn.querySelector('svg').setAttribute('fill', 'currentColor');
         addPoints(5);
+        
+        if (window.Telegram?.WebApp?.HapticFeedback) 
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
     } else {
+        // ВИДАЛЯЄМО
         savedItems.splice(idx, 1);
         btn.classList.remove('saved');
         btn.querySelector('svg').setAttribute('fill', 'none');
-        addPoints(-5);
+        addPoints(-5); // Забираємо бали назад
+        
+        if (window.Telegram?.WebApp?.HapticFeedback) 
+            window.Telegram.WebApp.HapticFeedback.selectionChanged();
+            
+        // Якщо ми на вкладці збережених - оновлюємо список відразу
         if (appMode === 'saved') renderList(savedItems, container, savedItems);
     }
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
 };
 
+// --- СТАРТ ДОДАТКУ ---
 async function initApp() {
     const preloader = document.getElementById('preloader');
+    
+    // Чекаємо мінімум 2 секунди (щоб показати відео) + завантаження контенту
     const minTimePromise = new Promise(resolve => setTimeout(resolve, 2000));
     const contentPromise = loadContent();
+
     await Promise.all([contentPromise, minTimePromise]);
+
+    // Прибираємо заставку
     if (preloader) {
         preloader.classList.add('fade-out');
         setTimeout(() => { preloader.style.display = 'none'; }, 500);
     }
 }
 
+// Запуск
 initApp();

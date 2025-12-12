@@ -25,11 +25,9 @@ if (window.Telegram?.WebApp) {
     const user = tg.initDataUnsafe?.user;
     
     if (user) {
-        // Ім'я
         const headerTitle = document.getElementById('header_title');
         if (headerTitle) headerTitle.innerText = user.first_name;
         
-        // Аватар
         const avatarImg = document.getElementById('user_avatar');
         const defaultAvatar = document.getElementById('default_avatar');
         
@@ -42,15 +40,13 @@ if (window.Telegram?.WebApp) {
         }
     }
 }
-updateRankDisplay(); // Оновлюємо ранги при старті
+updateRankDisplay(); 
 
 // --- ОСНОВНА ЛОГІКА ЗАВАНТАЖЕННЯ ---
 async function loadContent(isMore = false) {
-    // Якщо це не дозавантаження, показуємо спінер або очищаємо контейнер
     if (!isMore) {
-        // Якщо працює прелоадер, ми не чистимо контейнер, щоб не було миготіння
-        // Але якщо це просто пошук або перемикання вкладок - чистимо
         const preloader = document.getElementById('preloader');
+        // Якщо прелоадер вже зник, показуємо текст завантаження
         if (!preloader || preloader.style.display === 'none') {
              container.innerHTML = '<p class="loading-status">Завантаження...</p>';
         }
@@ -63,7 +59,7 @@ async function loadContent(isMore = false) {
             const data = await fetchNewsData(currentQuery, currentCategory, isMore ? newsPageToken : null);
             
             const items = data.results.map(item => ({
-                id: item.link, // ID новини = посилання
+                id: item.link, 
                 title: item.title,
                 desc: item.description,
                 img: item.image_url,
@@ -85,12 +81,15 @@ async function loadContent(isMore = false) {
             const data = await fetchTMDB(currentQuery, page);
             
             const items = data.results.map(item => ({
-                id: item.id, // ID фільму = число
+                id: item.id,
                 title: item.title,
-                desc: item.overview, // Тепер опис точно зберігається!
+                desc: item.overview, 
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
+                
+                // 👇 ОСЬ ТУТ БУЛА ПРОБЛЕМА. ТЕПЕР ТУТ ТОЧНО ПОСИЛАННЯ НА САЙТ 👇
                 url: `https://www.themoviedb.org/movie/${item.id}`,
+                
                 type: 'movie'
             }));
 
@@ -99,7 +98,7 @@ async function loadContent(isMore = false) {
 
             container.className = 'movies-grid';
             renderMovies(feedMovies, container, savedItems, isMore);
-            loadMoreBtn.style.display = 'block'; // У TMDB завжди є що вантажити
+            loadMoreBtn.style.display = 'block'; 
         }
     } catch (e) {
         console.error(e);
@@ -108,9 +107,8 @@ async function loadContent(isMore = false) {
 }
 
 
-// --- ГЛОБАЛЬНІ ФУНКЦІЇ (ДЛЯ HTML) ---
+// --- ГЛОБАЛЬНІ ФУНКЦІЇ ---
 
-// 1. Перемикання вкладок
 window.switchMode = function(mode) {
     appMode = mode;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -156,7 +154,6 @@ window.switchMode = function(mode) {
     }
 };
 
-// 2. Пошук
 window.performSearch = function() {
     currentQuery = document.getElementById('search_input').value.trim();
     currentCategory = document.getElementById('category_select').value;
@@ -169,18 +166,20 @@ window.performSearch = function() {
     loadContent();
 };
 
-// 3. Завантажити ще
 window.loadMore = function() {
     loadContent(true);
 };
 
-// 4. Відкрити посилання (+бали)
 window.openLink = function(url) {
     addPoints(2);
-    window.Telegram?.WebApp?.openLink(url) || window.open(url, '_blank');
+    // Примусово відкриваємо в новому вікні, якщо це не Telegram-посилання
+    if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.openLink(url);
+    } else {
+        window.open(url, '_blank');
+    }
 };
 
-// 5. Поділитися (+бали)
 window.shareItem = function(url, title) {
     addPoints(10);
     if (navigator.share) {
@@ -190,59 +189,46 @@ window.shareItem = function(url, title) {
     }
 };
 
-// 6. Зберегти / Видалити (+/- бали)
 window.toggleSave = function(idEnc, type, btn) {
     const id = decodeURIComponent(idEnc);
     let item;
     
-    // Шукаємо об'єкт спочатку в активних списках
     if (type === 'news') item = feedNews.find(i => i.id == id);
     else if (type === 'movie') item = feedMovies.find(i => i.id == id);
-    
-    // Якщо не знайшли (наприклад, видаляємо зі збережених), шукаємо в збережених
     if (!item) item = savedItems.find(i => i.id == id);
 
     if (!item) return;
 
     const idx = savedItems.findIndex(s => s.id == item.id);
     if (idx === -1) {
-        // Додаємо
         savedItems.push(item);
         btn.classList.add('saved');
         btn.querySelector('svg').setAttribute('fill', 'currentColor');
         addPoints(5);
     } else {
-        // Видаляємо
         savedItems.splice(idx, 1);
         btn.classList.remove('saved');
         btn.querySelector('svg').setAttribute('fill', 'none');
         addPoints(-5);
-        
-        // Якщо ми на вкладці збережених - оновлюємо список відразу
         if (appMode === 'saved') renderList(savedItems, container, savedItems);
     }
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
 };
 
-
-// --- ПРЕЛОАДЕР ТА СТАРТ ---
+// ПРЕЛОАДЕР ТА СТАРТ
 async function initApp() {
     const preloader = document.getElementById('preloader');
     
-    // Чекаємо мінімум 2 секунди + завантаження контенту
+    // Чекаємо 2 секунди + завантаження
     const minTimePromise = new Promise(resolve => setTimeout(resolve, 2000));
     const contentPromise = loadContent();
 
     await Promise.all([contentPromise, minTimePromise]);
 
-    // Прибираємо прелоадер
     if (preloader) {
         preloader.classList.add('fade-out');
-        setTimeout(() => {
-            preloader.style.display = 'none';
-        }, 500);
+        setTimeout(() => { preloader.style.display = 'none'; }, 500);
     }
 }
 
-// Запускаємо додаток
 initApp();

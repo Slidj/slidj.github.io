@@ -1,5 +1,5 @@
 // ==========================================================
-// 📜 SCRIPT.JS: ФІКС НАКРУТКИ БАЛІВ
+// 📜 SCRIPT.JS: FIXED SAVE & SCORING
 // ==========================================================
 
 // --- КЛЮЧІ API ---
@@ -84,9 +84,7 @@ function updateRankDisplay() {
 
 function addPoints(amount) {
     userPoints += amount;
-    // Захист від від'ємних балів (опціонально)
     if (userPoints < 0) userPoints = 0;
-    
     localStorage.setItem('userPoints', userPoints);
     updateRankDisplay();
 }
@@ -111,7 +109,7 @@ window.switchMode = function(mode) {
     container.className = ''; 
 
     if (mode === 'news') {
-        filtersWrapper.style.display = 'flex'; // Flex для правильних відступів
+        filtersWrapper.style.display = 'flex'; 
         categorySelect.classList.remove('hidden');
         searchInput.placeholder = "Пошук новин...";
         container.classList.add('news-container', 'list-view');
@@ -180,7 +178,7 @@ async function fetchNews(isLoadMore) {
     
     const items = data.results.map(item => ({
         type: 'news',
-        id: item.link, 
+        id: item.link, // ID для новин - це лінк
         title: item.title,
         desc: item.description,
         img: item.image_url,
@@ -215,7 +213,7 @@ async function fetchMovies(isLoadMore) {
 
     const items = data.results.map(item => ({
         type: 'movie',
-        id: item.id,
+        id: item.id, // ID для фільмів - це число
         title: item.title,
         desc: item.overview,
         img: item.poster_path ? API_CONFIG.tmdb.imgBase + item.poster_path : null,
@@ -244,14 +242,17 @@ function renderList(items, append = false) {
     }
 
     items.forEach(item => {
+        // Оновлена перевірка збереження
         const isSaved = savedItems.some(s => s.id == item.id);
         const card = document.createElement('div');
         card.className = 'news-card';
         
         const imageHtml = item.img ? `<div class="news-image-container"><img src="${item.img}" onerror="this.style.display='none'"></div>` : '';
-        const itemData = encodeURIComponent(JSON.stringify(item));
-        // Для новин показуємо дату, для фільмів - рік
         const dateDisplay = item.date ? item.date.substring(0,10) : '';
+
+        // ВАЖЛИВО: Ми передаємо тільки ID та ТИП в функцію toggleSave, а не весь об'єкт
+        // Використовуємо encodeURIComponent для ID, бо там можуть бути спецсимволи (URL)
+        const safeId = encodeURIComponent(item.id);
 
         card.innerHTML = `
             <div class="card-content" onclick="openLink('${item.url}')">
@@ -263,10 +264,10 @@ function renderList(items, append = false) {
             </div>
             <div class="card-footer">
                 <div class="card-actions">
-                    <button class="action-btn share-btn" onclick="shareItem('${item.url}', '${item.title.replace(/'/g, "")}')">
+                    <button class="action-btn share-btn" onclick="shareItem('${item.url}', 'News')">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                     </button>
-                    <button class="action-btn bookmark-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${itemData}', this)">
+                    <button class="action-btn bookmark-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${safeId}', '${item.type}', this)">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="${isSaved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                     </button>
                 </div>
@@ -294,7 +295,7 @@ function renderMovies(items, append = false) {
         card.className = 'movie-card';
         
         const imgSrc = item.img || 'https://via.placeholder.com/500x750?text=No+Poster';
-        const itemData = encodeURIComponent(JSON.stringify(item));
+        const safeId = encodeURIComponent(item.id);
 
         card.innerHTML = `
             <div style="position: relative;" onclick="openLink('${item.url}')">
@@ -306,10 +307,10 @@ function renderMovies(items, append = false) {
                 <div class="movie-year">${item.date ? item.date.substring(0,4) : 'N/A'}</div>
                 
                 <div class="movie-actions">
-                    <button class="action-btn share-btn" onclick="shareItem('${item.url}', '${item.title.replace(/'/g, "")}')">
+                    <button class="action-btn share-btn" onclick="shareItem('${item.url}', 'Movie')">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                     </button>
-                    <button class="action-btn bookmark-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${itemData}', this)">
+                    <button class="action-btn bookmark-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${safeId}', '${item.type}', this)">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="${isSaved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                     </button>
                 </div>
@@ -338,9 +339,25 @@ window.shareItem = function(url, title) {
     else window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
 };
 
-// 👇👇👇 ТУТ ВИПРАВЛЕНА ЛОГІКА БАЛІВ 👇👇👇
-window.toggleSave = function(encodedData, btn) {
-    const item = JSON.parse(decodeURIComponent(encodedData));
+// 👇👇👇 НОВА ФУНКЦІЯ ЗБЕРЕЖЕННЯ (ПОШУК ПО ID) 👇👇👇
+window.toggleSave = function(encodedId, type, btn) {
+    const id = decodeURIComponent(encodedId);
+    
+    // Шукаємо об'єкт у наших масивах
+    let item = null;
+    
+    // 1. Спочатку шукаємо в тому, що зараз на екрані
+    if (type === 'news') item = feedNews.find(i => i.id == id);
+    else if (type === 'movie') item = feedMovies.find(i => i.id == id);
+    
+    // 2. Якщо не знайшли (наприклад ми у вкладці збережених), шукаємо в збережених
+    if (!item) item = savedItems.find(i => i.id == id);
+    
+    if (!item) {
+        console.error("Item not found:", id);
+        return;
+    }
+
     const index = savedItems.findIndex(s => s.id == item.id);
 
     if (index === -1) {
@@ -348,14 +365,23 @@ window.toggleSave = function(encodedData, btn) {
         savedItems.push(item);
         btn.classList.add('saved');
         btn.querySelector('svg').setAttribute('fill', 'currentColor');
-        addPoints(5); // ДАЄМО бали
+        addPoints(5); 
+        
+        if (window.Telegram && window.Telegram.WebApp.HapticFeedback) 
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
     } else {
         // ВИДАЛЕННЯ
         savedItems.splice(index, 1);
         btn.classList.remove('saved');
         btn.querySelector('svg').setAttribute('fill', 'none');
+        
+        addPoints(-5); // ЗАБИРАЄМО БАЛИ
+        
+        if (window.Telegram && window.Telegram.WebApp.HapticFeedback) 
+            window.Telegram.WebApp.HapticFeedback.selectionChanged();
+            
+        // Оновлюємо список, якщо ми у вкладці збережених
         if (appMode === 'saved') renderList(savedItems);
-        addPoints(-5); // ЗАБИРАЄМО бали (щоб не накручували)
     }
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
 };

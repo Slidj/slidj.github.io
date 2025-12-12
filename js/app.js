@@ -265,7 +265,7 @@ async function initApp() {
     const preloader = document.getElementById('preloader');
     
     // Чекаємо мінімум 2 секунди (щоб показати відео) + завантаження контенту
-    const minTimePromise = new Promise(resolve => setTimeout(resolve, 2000));
+    const minTimePromise = new Promise(resolve => setTimeout(resolve, 5000));
     const contentPromise = loadContent();
 
     await Promise.all([contentPromise, minTimePromise]);

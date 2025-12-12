@@ -1,8 +1,10 @@
 /* ==========================================================
-   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (FAB MENU + GOOGLE ANIMATION)
+   🎨 STYLE.CSS: ПОВНА ВЕРСІЯ (FAB MENU + VIDEO + АНІМАЦІЇ)
    ========================================================== */
 
-/* --- 1. БАЗОВІ НАЛАШТУВАННЯ --- */
+/* ----------------------------------------------------------
+   1. БАЗОВІ НАЛАШТУВАННЯ ТА HEADER
+   ---------------------------------------------------------- */
 body {
     background-color: var(--tg-theme-bg-color, #ffffff);
     color: var(--tg-theme-text-color, #000000);
@@ -13,7 +15,6 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* --- 2. HEADER --- */
 header {
     background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
     padding: 15px 20px;
@@ -48,10 +49,7 @@ header {
     justify-content: center;
 }
 
-.avatar-placeholder svg {
-    width: 24px;
-    height: 24px;
-}
+.avatar-placeholder svg { width: 24px; height: 24px; }
 
 .header-text {
     display: flex;
@@ -79,11 +77,13 @@ h1 {
     white-space: nowrap;
 }
 
-/* --- 3. КОНТЕЙНЕР КЕРУВАННЯ (ФІЛЬТРИ) --- */
+
+/* ----------------------------------------------------------
+   2. КОНТЕЙНЕР КЕРУВАННЯ (ПОШУК І ФІЛЬТРИ)
+   ---------------------------------------------------------- */
 .controls-container {
     padding: 15px 20px;
     background-color: var(--tg-theme-bg-color);
-    /* border-bottom більше не обов'язковий, але для відступу залишимо */
     border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
     display: flex;
     flex-direction: column;
@@ -97,7 +97,6 @@ h1 {
     padding-bottom: 5px; 
 }
 
-/* --- 4. ПОШУК І КАТЕГОРІЇ --- */
 .search-container {
     display: flex;
     gap: 10px;
@@ -132,10 +131,7 @@ h1 {
     cursor: pointer;
 }
 
-#search_input {
-    flex-grow: 1;
-    min-width: 0;
-}
+#search_input { flex-grow: 1; min-width: 0; }
 
 #search_button {
     width: 50px;
@@ -150,8 +146,9 @@ h1 {
 }
 
 .hidden { display: none !important; }
-
-/* --- 5. КАРТКИ НОВИН --- */
+/* ----------------------------------------------------------
+   3. СПИСОК НОВИН (З АНІМАЦІЄЮ КЛІКУ)
+   ---------------------------------------------------------- */
 .news-container {
     padding: 5px 0;
     min-height: 300px;
@@ -170,19 +167,18 @@ h1 {
     
     transition: transform 0.1s ease-in-out, opacity 0.1s;
     cursor: pointer;
+    
+    /* Заборона виділення тексту для кращого кліку */
     user-select: none;
     -webkit-user-select: none;
 }
 
 .news-card:active {
-    transform: scale(0.96);
+    transform: scale(0.96); /* Ефект пружини */
     opacity: 0.9;
 }
 
-.card-content {
-    display: flex;
-    gap: 12px;
-}
+.card-content { display: flex; gap: 12px; }
 
 .news-image-container {
     width: 85px;
@@ -190,7 +186,7 @@ h1 {
     flex-shrink: 0;
     border-radius: 10px;
     overflow: hidden;
-    pointer-events: none; 
+    pointer-events: none; /* Клік проходить крізь картинку */
 }
 
 .news-card img {
@@ -200,10 +196,7 @@ h1 {
     display: block;
 }
 
-.news-text-content {
-    flex: 1;
-    min-width: 0;
-}
+.news-text-content { flex: 1; min-width: 0; }
 
 .news-text-content h3 {
     font-size: 15px;
@@ -224,7 +217,11 @@ h1 {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
-/* --- 6. СІТКА ФІЛЬМІВ --- */
+
+
+/* ----------------------------------------------------------
+   4. СІТКА ФІЛЬМІВ (З АНІМАЦІЄЮ КЛІКУ)
+   ---------------------------------------------------------- */
 .movies-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -249,7 +246,7 @@ h1 {
 }
 
 .movie-card:active {
-    transform: scale(0.96);
+    transform: scale(0.96); /* Ефект пружини */
 }
 
 .movie-poster {
@@ -297,6 +294,10 @@ h1 {
     margin-bottom: 8px;
 }
 
+
+/* ----------------------------------------------------------
+   5. ДІЇ (КНОПКИ ТА ФУТЕР КАРТКИ)
+   ---------------------------------------------------------- */
 .movie-actions, .card-footer {
     display: flex;
     justify-content: space-between;
@@ -304,13 +305,10 @@ h1 {
     margin-top: auto; 
     padding-top: 8px;
     border-top: 1px solid rgba(0,0,0,0.05);
-    pointer-events: auto;
+    pointer-events: auto; /* Кнопки повинні клікатися */
 }
 
-.card-actions {
-    display: flex;
-    gap: 15px;
-}
+.card-actions { display: flex; gap: 15px; }
 
 .action-btn {
     background: none;
@@ -323,9 +321,7 @@ h1 {
     align-items: center;
 }
 
-.action-btn:active {
-    transform: scale(0.8);
-}
+.action-btn:active { transform: scale(0.8); }
 
 .bookmark-btn.saved {
     color: var(--tg-theme-button-color, #007aff);
@@ -337,7 +333,10 @@ h1 {
     color: var(--tg-theme-hint-color);
 }
 
-/* --- 7. EMPTY STATES --- */
+
+/* ----------------------------------------------------------
+   6. ЕЛЕМЕНТИ ЗАВАНТАЖЕННЯ ТА ПОРОЖНІ СТАНИ
+   ---------------------------------------------------------- */
 .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -350,154 +349,109 @@ h1 {
 }
 
 .empty-icon {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 20px;
-    color: var(--tg-theme-hint-color);
-    opacity: 0.5;
+    width: 64px; height: 64px; margin-bottom: 20px;
+    color: var(--tg-theme-hint-color); opacity: 0.5;
 }
 
 .empty-text {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--tg-theme-text-color);
-    margin-bottom: 8px;
+    font-size: 16px; font-weight: 500; color: var(--tg-theme-text-color); margin-bottom: 8px;
 }
 
-.empty-subtext {
-    font-size: 14px;
-    color: var(--tg-theme-hint-color);
-}
+.empty-subtext { font-size: 14px; color: var(--tg-theme-hint-color); }
 
-/* --- 8. ЗАВАНТАЖЕННЯ --- */
 .loading-status {
-    text-align: center;
-    padding: 30px;
-    color: var(--tg-theme-hint-color);
-    font-style: italic;
+    text-align: center; padding: 30px; color: var(--tg-theme-hint-color); font-style: italic;
 }
 
 #load_more_container {
-    text-align: center;
-    padding: 10px 0 40px 0;
-    width: 100%;
+    text-align: center; padding: 10px 0 40px 0; width: 100%;
 }
 
 #load_more_button {
-    display: block;
-    width: fit-content;
-    margin: 0 auto;
-    min-width: 180px;
-    padding: 12px 25px;
-    background-color: transparent;
-    color: var(--tg-theme-button-color, #50a8eb);
+    display: block; width: fit-content; margin: 0 auto; min-width: 180px; padding: 12px 25px;
+    background-color: transparent; color: var(--tg-theme-button-color, #50a8eb);
     border: 1.5px solid var(--tg-theme-button-color, #50a8eb);
-    border-radius: 25px;
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    border-radius: 25px; font-weight: 600; font-size: 15px;
+    cursor: pointer; transition: all 0.2s ease;
 }
 
 #load_more_button:active {
-    background-color: var(--tg-theme-button-color, #50a8eb);
-    color: #ffffff;
-    transform: scale(0.96);
+    background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff; transform: scale(0.96);
 }
-/* --- 9. PULL TO REFRESH --- */
+
+/* PULL TO REFRESH */
 #ptr_spinner {
-    position: fixed;
-    top: -50px;
-    left: 0;
-    width: 100%;
-    height: 50px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
-    transition: top 0.3s ease;
+    position: fixed; top: -50px; left: 0; width: 100%; height: 50px;
+    display: flex; justify-content: center; align-items: center; z-index: 999; transition: top 0.3s ease;
 }
 
 .spinner-icon {
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--tg-theme-link-color);
-    border-top: 3px solid transparent;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+    width: 24px; height: 24px; border: 3px solid var(--tg-theme-link-color);
+    border-top: 3px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* --- 10. ВІДЕО-ПРЕЛОАДЕР --- */
+/* ----------------------------------------------------------
+   7. ВІДЕО-ПРЕЛОАДЕР (РЕЖИМ КІНОТЕАТР)
+   ---------------------------------------------------------- */
 #preloader {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     background-color: #000000;
     z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
     transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
 }
 
 #preloader.fade-out {
-    opacity: 0;
-    visibility: hidden;
+    opacity: 0; visibility: hidden;
 }
 
 #preload_video {
     width: 100%;
     height: 100%;
+    /* contain = Вписати повністю, не обрізаючи */
     object-fit: contain;
     border-radius: 0;
     box-shadow: none;
 }
 
-/* ==========================================================
-   🧩 11. FAB MENU (ЛІВИЙ НИЖНІЙ КУТ)
-   ========================================================== */
 
+/* ----------------------------------------------------------
+   8. ГОРИЗОНТАЛЬНЕ МЕНЮ (FAB) - ВНИЗУ ЗЛІВА
+   ---------------------------------------------------------- */
 #fab_wrapper {
     position: fixed;
-    bottom: 30px;
-    left: 20px;
+    bottom: 20px; /* Відступ знизу */
+    left: 20px;   /* Відступ зліва */
     z-index: 900;
+    
     display: flex;
-    flex-direction: column-reverse; /* Меню відкривається вгору */
+    flex-direction: row; /* В РЯДОК */
     align-items: center;
-    gap: 15px;
+    gap: 0;
 }
 
-/* --- ГОЛОВНА КНОПКА --- */
+/* ГОЛОВНА КНОПКА */
 #fab_main {
-    width: 56px;
-    height: 56px;
+    width: 56px; height: 56px;
     border-radius: 18px; /* Squircle */
     background-color: var(--tg-theme-bg-color, #ffffff);
     color: var(--tg-theme-text-color, #000000);
     border: none;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     position: relative;
-    z-index: 2;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10;
+    transition: transform 0.2s;
+    flex-shrink: 0;
 }
 
-#fab_main:active {
-    transform: scale(0.9);
-}
+#fab_main:active { transform: scale(0.9); }
 
-/* --- АНІМАЦІЯ КІЛЬЦЯ (GOOGLE STYLE) --- */
+/* АНІМАЦІЯ КІЛЬЦЯ (Google Style) */
 #fab_main::before {
     content: '';
     position: absolute;
@@ -506,25 +460,17 @@ h1 {
     z-index: -1;
     
     background: conic-gradient(
-        #4285f4, 
-        #ea4335, 
-        #fbbc05, 
-        #34a853, 
-        #4285f4
+        #4285f4, #ea4335, #fbbc05, #34a853, #4285f4
     );
     
-    -webkit-mask: 
-        linear-gradient(#fff 0 0) content-box, 
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    padding: 3px; 
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    padding: 3px;
     
     opacity: 0;
     animation: google-pulse 8s linear infinite;
 }
 
-/* 2 сек крутиться, 6 сек чекає */
 @keyframes google-pulse {
     0% { transform: rotate(0deg); opacity: 0; }
     5% { opacity: 1; }
@@ -533,58 +479,56 @@ h1 {
     100% { transform: rotate(360deg); opacity: 0; }
 }
 
-/* --- СПИСОК КНОПОК МЕНЮ --- */
+/* СПИСОК КНОПОК МЕНЮ */
 .fab-menu {
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: row; /* В рядок */
+    align-items: center;
     gap: 12px;
-    margin-bottom: 5px;
-    pointer-events: none; /* Не клікається, коли закрито */
+    margin-left: 15px; /* Відступ від головної кнопки */
+    pointer-events: none;
+    z-index: 5;
 }
 
 .fab-item {
-    width: 48px;
-    height: 48px;
+    width: 48px; height: 48px;
     border-radius: 14px;
     background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
     color: var(--tg-theme-hint-color, #888);
     border: 1px solid transparent;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     
-    /* Сховано за замовчуванням */
+    /* Сховано ліворуч (під кнопку) */
     opacity: 0;
-    transform: translateY(20px) scale(0.8);
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transform: translateX(-30px) scale(0.8);
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Активна вкладка */
+/* Активна кнопка */
 .fab-item.active {
     background-color: var(--tg-theme-button-color, #50a8eb);
     color: #ffffff;
     box-shadow: 0 4px 12px rgba(80, 168, 235, 0.4);
 }
 
-/* --- ВІДКРИТИЙ СТАН --- */
-#fab_wrapper.open .fab-menu {
-    pointer-events: auto;
-}
+/* ВІДКРИТИЙ СТАН */
+#fab_wrapper.open .fab-menu { pointer-events: auto; }
 
 #fab_wrapper.open .fab-item {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(0) scale(1);
 }
 
-/* Ефект "змійки" (по черзі) */
+/* Почерговий виїзд */
 #fab_wrapper.open .fab-item:nth-child(1) { transition-delay: 0.05s; }
 #fab_wrapper.open .fab-item:nth-child(2) { transition-delay: 0.1s; }
 #fab_wrapper.open .fab-item:nth-child(3) { transition-delay: 0.15s; }
 
-/* Зміна головної кнопки при відкритті */
+/* Поворот головної кнопки */
 #fab_wrapper.open #fab_main {
     background-color: var(--tg-theme-button-color, #50a8eb);
     color: #ffffff;
+    transform: rotate(90deg);
 }

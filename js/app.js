@@ -282,6 +282,89 @@ async function initApp() {
         setTimeout(() => { preloader.style.display = 'none'; }, 500);
     }
 }
+// ... (Ваш код loadContent та інші функції залишаються) ...
+
+// --- НОВА ЛОГІКА МЕНЮ (FAB) ---
+
+window.toggleFab = function() {
+    const wrapper = document.getElementById('fab_wrapper');
+    const iconMenu = document.getElementById('icon_menu');
+    const iconClose = document.getElementById('icon_close');
+    
+    // Перемикаємо клас .open
+    wrapper.classList.toggle('open');
+    
+    // Змінюємо іконку
+    const isOpen = wrapper.classList.contains('open');
+    if (isOpen) {
+        iconMenu.style.display = 'none';
+        iconClose.style.display = 'block';
+        
+        // Вібрація при відкритті
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    } else {
+        iconMenu.style.display = 'block';
+        iconClose.style.display = 'none';
+    }
+};
+
+// --- ОНОВЛЕНЕ ПЕРЕМИКАННЯ ВКЛАДОК ---
+window.switchMode = function(mode) {
+    appMode = mode;
+    
+    // 1. Оновлюємо активний стан у FAB меню (замість старих вкладок)
+    const fabItems = document.querySelectorAll('.fab-item');
+    fabItems.forEach(btn => btn.classList.remove('active'));
+    
+    // Знаходимо кнопку за її onclick атрибутом (простий спосіб)
+    // Або можна дати ID кнопкам, але так теж спрацює
+    const activeBtn = document.querySelector(`.fab-item[onclick="switchMode('${mode}')"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // 2. Закриваємо меню після вибору
+    const wrapper = document.getElementById('fab_wrapper');
+    if (wrapper.classList.contains('open')) {
+        window.toggleFab();
+    }
+
+    // 3. Логіка відображення (фільтри, контейнери) - залишається старою
+    const filters = document.getElementById('filters_wrapper');
+    const catSelect = document.getElementById('category_select');
+    const searchInput = document.getElementById('search_input');
+    const container = document.getElementById('content_container');
+    const loadMoreBtn = document.getElementById('load_more_container');
+
+    container.className = '';
+
+    if (mode === 'news') {
+        filters.style.display = 'flex';
+        catSelect.classList.remove('hidden');
+        searchInput.placeholder = "Пошук новин...";
+        
+        if (feedNews.length === 0) loadContent();
+        else {
+             container.className = 'news-container list-view';
+             renderList(feedNews, container, savedItems);
+             loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
+        }
+    } else if (mode === 'movies') {
+        filters.style.display = 'flex';
+        catSelect.classList.add('hidden');
+        searchInput.placeholder = "Пошук фільмів...";
+
+        if (feedMovies.length === 0) loadContent();
+        else {
+            container.className = 'movies-grid';
+            renderMovies(feedMovies, container, savedItems);
+            loadMoreBtn.style.display = 'block';
+        }
+    } else { // saved
+        filters.style.display = 'none';
+        container.className = 'news-container list-view';
+        loadMoreBtn.style.display = 'none';
+        renderList(savedItems, container, savedItems);
+    }
+};
 
 // Запуск
 initApp();

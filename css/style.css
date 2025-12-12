@@ -426,15 +426,28 @@ h1 {
    ---------------------------------------------------------- */
 #fab_wrapper {
     position: fixed;
-    bottom: 20px; /* Відступ знизу */
-    left: 20px;   /* Відступ зліва */
+    bottom: 25px;
+    left: 20px !important;
+    right: auto;
     z-index: 900;
     
     display: flex;
-    flex-direction: row; /* В РЯДОК */
+    flex-direction: row;
     align-items: center;
     gap: 0;
+    
+    width: auto;
+    max-width: 100%;
+    
+    /* 👇 ВАЖЛИВО: Контейнер пропускає кліки крізь себе */
+    pointer-events: none; 
 }
+
+/* А самі кнопки повинні реагувати на кліки */
+#fab_main, .fab-menu {
+    pointer-events: auto;
+}
+
 
 /* ГОЛОВНА КНОПКА */
 #fab_main {

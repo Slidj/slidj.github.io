@@ -220,7 +220,7 @@ async function initApp() {
     const preloader = document.getElementById('preloader');
     
     // Чекаємо 2 секунди + завантаження
-    const minTimePromise = new Promise(resolve => setTimeout(resolve, 3000));
+    const minTimePromise = new Promise(resolve => setTimeout(resolve, 6000));
     const contentPromise = loadContent();
 
     await Promise.all([contentPromise, minTimePromise]);

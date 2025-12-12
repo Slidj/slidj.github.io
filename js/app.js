@@ -1,6 +1,6 @@
 import { fetchNewsData, fetchTMDB } from './api.js';
 import { renderList, renderMovies, updateRankDisplay, addPoints, userPoints } from './ui.js';
-import { API_URLS } from './config.js'; // Для базового URL картинок
+import { API_URLS } from './config.js'; 
 
 // Глобальні змінні стану
 let appMode = 'news';
@@ -48,7 +48,7 @@ async function loadContent(isMore = false) {
             const items = data.results.map(item => ({
                 id: item.link,
                 title: item.title,
-                desc: item.description,
+                desc: item.description, // У новин опис був
                 img: item.image_url,
                 date: item.pubDate,
                 url: item.link,
@@ -69,6 +69,8 @@ async function loadContent(isMore = false) {
             const items = data.results.map(item => ({
                 id: item.id,
                 title: item.title,
+                // 👇 ОСЬ ТУТ БУЛО ПРОПУЩЕНО ОПИС 👇
+                desc: item.overview, 
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
                 url: `https://www.themoviedb.org/movie/${item.id}`,
@@ -89,8 +91,6 @@ async function loadContent(isMore = false) {
 }
 
 // --- ФУНКЦІЇ ДЛЯ HTML (GLOBAL) ---
-// Оскільки ми використовуємо модулі, функції більше не глобальні.
-// Ми мусимо вручну прикріпити їх до window, щоб HTML їх бачив.
 
 window.switchMode = function(mode) {
     appMode = mode;
@@ -151,16 +151,19 @@ window.openLink = function(url) {
 
 window.shareItem = function(url, title) {
     addPoints(10);
-    // Логіка шерингу...
+    if (navigator.share) navigator.share({ title: title, url: url }).catch(console.error);
+    else window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
 };
 
 window.toggleSave = function(idEnc, type, btn) {
     const id = decodeURIComponent(idEnc);
     let item;
     
-    // Шукаємо об'єкт
+    // Шукаємо об'єкт в поточній стрічці
     if (type === 'news') item = feedNews.find(i => i.id == id);
     else if (type === 'movie') item = feedMovies.find(i => i.id == id);
+    
+    // Якщо не знайшли в стрічці (наприклад, видаляємо з вкладки збережених), беремо зі збережених
     if (!item) item = savedItems.find(i => i.id == id);
 
     if (!item) return;
@@ -183,4 +186,3 @@ window.toggleSave = function(idEnc, type, btn) {
 
 // СТАРТ
 loadContent();
-          

@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (АНІМАЦІЯ КЛІКУ)
+   🎨 STYLE.CSS: ФІНАЛЬНА ВЕРСІЯ (ІДЕАЛЬНИЙ КЛІК)
    ========================================================== */
 
 /* --- 1. БАЗОВІ НАЛАШТУВАННЯ --- */
@@ -10,7 +10,7 @@ body {
     padding: 0;
     margin: 0;
     line-height: 1.5;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: transparent; /* Прибирає стандартне підсвічування Android */
 }
 
 /* --- 2. HEADER --- */
@@ -107,6 +107,7 @@ h1 {
     color: var(--tg-theme-hint-color);
     cursor: pointer;
     transition: all 0.2s;
+    user-select: none; /* Заборона виділення тексту на кнопках */
 }
 
 .tab-btn.active {
@@ -176,7 +177,7 @@ h1 {
 
 .hidden { display: none !important; }
 
-/* --- 5. КАРТКИ НОВИН (З АНІМАЦІЄЮ) --- */
+/* --- 5. КАРТКИ НОВИН (СПИСОК) --- */
 .news-container {
     padding: 5px 0;
     min-height: 300px;
@@ -193,20 +194,23 @@ h1 {
     border-radius: 15px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     
-    /* 👇 ДОДАНО АНІМАЦІЮ ПЕРЕХОДУ */
-    transition: transform 0.15s ease-in-out, background-color 0.2s;
-    cursor: pointer; /* Курсор-рука для ПК */
+    transition: transform 0.1s ease-in-out, opacity 0.1s;
+    cursor: pointer;
+    
+    /* 👇 ЗАБОРОНЯЄМО ВИДІЛЕННЯ ТЕКСТУ, ЩОБ КЛІК ПРАЦЮВАВ КРАЩЕ */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
-/* 👇 ЕФЕКТ НАТИСКАННЯ */
 .news-card:active {
-    transform: scale(0.96); /* Зменшення картки */
-    opacity: 0.9; /* Легка прозорість */
+    transform: scale(0.96);
+    opacity: 0.9;
 }
 
 .card-content {
     display: flex;
     gap: 12px;
+    /* Контент пропускає кліки крізь себе на батьківську картку, окрім кнопок */
 }
 
 .news-image-container {
@@ -215,6 +219,8 @@ h1 {
     flex-shrink: 0;
     border-radius: 10px;
     overflow: hidden;
+    /* Картинка не повинна перехоплювати клік */
+    pointer-events: none; 
 }
 
 .news-card img {
@@ -249,7 +255,7 @@ h1 {
     overflow: hidden;
 }
 
-/* --- 6. СІТКА ФІЛЬМІВ (З АНІМАЦІЄЮ) --- */
+/* --- 6. СІТКА ФІЛЬМІВ --- */
 .movies-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -267,12 +273,14 @@ h1 {
     display: flex;
     flex-direction: column;
     
-    /* 👇 АНІМАЦІЯ */
-    transition: transform 0.15s ease-in-out;
+    transition: transform 0.1s ease-in-out;
     cursor: pointer;
+    
+    /* 👇 ЗАБОРОНЯЄМО ВИДІЛЕННЯ ТЕКСТУ */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
-/* 👇 ЕФЕКТ НАТИСКАННЯ */
 .movie-card:active {
     transform: scale(0.96);
 }
@@ -281,6 +289,9 @@ h1 {
     width: 100%;
     aspect-ratio: 2/3;
     object-fit: cover;
+    
+    /* 👇 КАРТИНКА НЕ БЛОКУЄ НАТИСКАННЯ */
+    pointer-events: none;
 }
 
 .movie-info {
@@ -312,6 +323,7 @@ h1 {
     padding: 4px 8px;
     border-radius: 8px;
     backdrop-filter: blur(4px);
+    pointer-events: none; /* Рейтинг теж пропускає клік */
 }
 
 .movie-year {
@@ -328,14 +340,18 @@ h1 {
     margin-top: auto; 
     padding-top: 8px;
     border-top: 1px solid rgba(0,0,0,0.05);
+    
+    /* Важливо: футер має реагувати на кліки для кнопок */
+    pointer-events: auto;
 }
 
 .card-actions {
     display: flex;
     gap: 15px;
+    /* Забезпечуємо, щоб кліки по кнопках не викликали відкриття новини, 
+       але це вже оброблено в JS (e.target.closest) */
 }
 
-/* Кнопки дій теж мають анімацію */
 .action-btn {
     background: none;
     border: none;
@@ -348,7 +364,7 @@ h1 {
 }
 
 .action-btn:active {
-    transform: scale(0.8); /* Більш сильне зменшення для кнопок */
+    transform: scale(0.8);
 }
 
 .bookmark-btn.saved {

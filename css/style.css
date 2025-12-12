@@ -530,3 +530,20 @@ h1 {
     background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff;
     transform: rotate(90deg);
 }
+
+/* ==========================================================
+   ✨ АНІМАЦІЯ ПЕРЕХОДУ МІЖ ВКЛАДКАМИ
+   ========================================================== */
+
+#content_container {
+    /* Плавна зміна прозорості та положення */
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Клас, який ми будемо додавати перед перемиканням */
+#content_container.fade-out {
+    opacity: 0;
+    transform: translateY(10px); /* Трохи зсуваємо вниз при зникненні */
+   }

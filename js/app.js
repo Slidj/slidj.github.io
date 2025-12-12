@@ -80,7 +80,10 @@ async function loadContent(isMore = false) {
             feedNews = isMore ? [...feedNews, ...items] : items;
             
             container.className = 'news-container list-view';
-            renderList(feedNews, container, savedItems, isMore);
+            
+            // 👇 ВИПРАВЛЕНО: Якщо isMore, передаємо тільки нові items, інакше весь feedNews
+            renderList(isMore ? items : feedNews, container, savedItems, isMore);
+            
             loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
 
         } else if (appMode === 'movies') {
@@ -103,7 +106,10 @@ async function loadContent(isMore = false) {
             feedMovies = isMore ? [...feedMovies, ...items] : items;
 
             container.className = 'movies-grid';
-            renderMovies(feedMovies, container, savedItems, isMore);
+            
+            // 👇 ВИПРАВЛЕНО: Якщо isMore, передаємо тільки нові items, інакше весь feedMovies
+            renderMovies(isMore ? items : feedMovies, container, savedItems, isMore);
+            
             loadMoreBtn.style.display = 'block'; // У TMDB майже завжди є наступні сторінки
         }
     } catch (e) {

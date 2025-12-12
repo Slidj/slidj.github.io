@@ -8,6 +8,9 @@ let feedNews = [];
 let feedMovies = [];
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
 
+// 👇 НОВЕ: Список переглянутих матеріалів (щоб не накручували)
+let viewedItems = JSON.parse(localStorage.getItem('viewedItems')) || [];
+
 let newsPageToken = null;
 let moviePage = 1;
 
@@ -46,7 +49,6 @@ updateRankDisplay();
 async function loadContent(isMore = false) {
     if (!isMore) {
         const preloader = document.getElementById('preloader');
-        // Якщо прелоадер вже зник, показуємо текст завантаження
         if (!preloader || preloader.style.display === 'none') {
              container.innerHTML = '<p class="loading-status">Завантаження...</p>';
         }
@@ -55,7 +57,6 @@ async function loadContent(isMore = false) {
 
     try {
         if (appMode === 'news') {
-            // 1. НОВИНИ
             const data = await fetchNewsData(currentQuery, currentCategory, isMore ? newsPageToken : null);
             
             const items = data.results.map(item => ({
@@ -76,7 +77,6 @@ async function loadContent(isMore = false) {
             loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
 
         } else if (appMode === 'movies') {
-            // 2. КІНО
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
             
@@ -86,10 +86,7 @@ async function loadContent(isMore = false) {
                 desc: item.overview, 
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
-                
-                // 👇 ОСЬ ТУТ БУЛА ПРОБЛЕМА. ТЕПЕР ТУТ ТОЧНО ПОСИЛАННЯ НА САЙТ 👇
                 url: `https://www.themoviedb.org/movie/${item.id}`,
-                
                 type: 'movie'
             }));
 
@@ -157,12 +154,10 @@ window.switchMode = function(mode) {
 window.performSearch = function() {
     currentQuery = document.getElementById('search_input').value.trim();
     currentCategory = document.getElementById('category_select').value;
-    
     feedNews = [];
     feedMovies = [];
     newsPageToken = null;
     moviePage = 1;
-    
     loadContent();
 };
 
@@ -170,9 +165,23 @@ window.loadMore = function() {
     loadContent(true);
 };
 
-window.openLink = function(url) {
-    addPoints(2);
-    // Примусово відкриваємо в новому вікні, якщо це не Telegram-посилання
+// 👇👇👇 ОНОВЛЕНА ФУНКЦІЯ ВІДКРИТТЯ (ЗАХИСТ ВІД НАКРУТКИ) 👇👇👇
+window.openLink = function(url, idEncoded) {
+    // Якщо ID передано, перевіряємо, чи ми це вже бачили
+    if (idEncoded) {
+        const id = decodeURIComponent(idEncoded);
+        
+        // Перевіряємо, чи є цей ID в списку переглянутих
+        if (!viewedItems.includes(id.toString())) {
+            addPoints(2); // Нараховуємо бали ТІЛЬКИ якщо це вперше
+            viewedItems.push(id.toString());
+            localStorage.setItem('viewedItems', JSON.stringify(viewedItems));
+        }
+    } else {
+        // Якщо раптом ID немає (стара версія), просто даємо бали (але краще передавати ID)
+        addPoints(2);
+    }
+
     if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.openLink(url);
     } else {
@@ -215,16 +224,11 @@ window.toggleSave = function(idEnc, type, btn) {
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
 };
 
-// ПРЕЛОАДЕР ТА СТАРТ
 async function initApp() {
     const preloader = document.getElementById('preloader');
-    
-    // Чекаємо 2 секунди + завантаження
-    const minTimePromise = new Promise(resolve => setTimeout(resolve, 6000));
+    const minTimePromise = new Promise(resolve => setTimeout(resolve, 2000));
     const contentPromise = loadContent();
-
     await Promise.all([contentPromise, minTimePromise]);
-
     if (preloader) {
         preloader.classList.add('fade-out');
         setTimeout(() => { preloader.style.display = 'none'; }, 500);

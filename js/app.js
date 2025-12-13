@@ -17,13 +17,13 @@ let currentCategory = '';
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
+const API_KEY = '4f06fae67ddcf28e2e5b3f91193cb555'; // Твій ключ TMDB
 
-// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
+// --- ІНІЦІАЛІЗАЦІЯ ---
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.enableClosingConfirmation();
-    
     if (tg.setHeaderColor) tg.setHeaderColor('#000000');
     if (tg.setBackgroundColor) tg.setBackgroundColor('#000000');
 
@@ -45,6 +45,10 @@ function optimizeImage(url) {
 
 window.closeMoviePage = function() {
     const modal = document.getElementById('movie_details_modal');
+    // Очищаємо iframe трейлера, щоб зупинити звук
+    const content = document.getElementById('movie_details_content');
+    if (content) content.innerHTML = ''; 
+    
     if (modal) {
         modal.style.display = 'none';
         document.body.style.overflow = ''; 
@@ -54,113 +58,148 @@ window.closeMoviePage = function() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
-window.openMoviePage = function(movie) {
+// 🔥 ГОЛОВНА ФУНКЦІЯ ВІДКРИТТЯ КАРТКИ
+window.openMoviePage = async function(movie) {
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
     const fab = document.getElementById('fab_wrapper');
 
     if (!modal || !content) return;
 
+    // 1. Показуємо стан завантаження
+    modal.style.display = 'flex';
+    if (fab) fab.style.display = 'none';
     document.body.style.overflow = 'hidden';
+    content.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:white;">Завантаження деталей...</div>';
 
-    const backdrop = movie.img || ''; 
-    const rating = movie.rating || 'N/A';
+    // 2. Отримуємо повні деталі з TMDB (Трейлер, Час, Вік)
+    let details = {};
+    try {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=uk-UA&append_to_response=videos,release_dates`);
+        details = await res.json();
+    } catch (e) {
+        console.error("Помилка деталей:", e);
+        details = movie; // Якщо помилка, використовуємо те, що є
+    }
+
+    // 3. Обробка даних
+    const backdrop = details.backdrop_path ? API_URLS.tmdbImg + details.backdrop_path : (movie.img || '');
+    const title = details.title || movie.title;
+    const desc = details.overview || movie.desc || 'Опис відсутній.';
+    const year = details.release_date ? details.release_date.split('-')[0] : 'N/A';
     
+    // Час: переводимо хвилини в "1г 45хв"
+    const runtime = details.runtime ? `${Math.floor(details.runtime/60)} год ${details.runtime%60} хв` : '';
+    
+    // Рейтинг (Кільце)
+    const voteAvg = details.vote_average || 0;
+    const votePercent = Math.round(voteAvg * 10);
+    const ringColor = votePercent >= 70 ? '#21d07a' : (votePercent >= 40 ? '#d2d531' : '#db2360');
+    
+    // Вік (Certification)
+    let ageRating = '';
+    if (details.release_dates && details.release_dates.results) {
+        const uaRelease = details.release_dates.results.find(r => r.iso_3166_1 === 'UA') || details.release_dates.results.find(r => r.iso_3166_1 === 'US');
+        if (uaRelease && uaRelease.release_dates.length > 0) {
+            ageRating = uaRelease.release_dates[0].certification;
+        }
+    }
+    
+    // Трейлер (YouTube)
+    let trailerKey = null;
+    if (details.videos && details.videos.results) {
+        const trailer = details.videos.results.find(v => v.site === "YouTube" && v.type === "Trailer");
+        if (trailer) trailerKey = trailer.key;
+    }
+
+    // 4. Малюємо HTML
     content.innerHTML = `
         <div class="movie-backdrop" style="background-image: url('${backdrop}');"></div>
         
         <div class="movie-info-block">
-            <h1 class="movie-main-title">${movie.title}</h1>
+            <h1 class="movie-main-title">${title}</h1>
             
-            <div class="movie-meta-row">
-                <span class="rating-badge">IMDb ${rating}</span>
-                <span>ID: ${movie.id}</span>
+            <div class="meta-tags">
+                <div class="rating-circle" style="background: conic-gradient(${ringColor} ${votePercent}%, #333 ${votePercent}% 100%);">
+                    <div style="background:#0d253f; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                        ${votePercent}<span style="font-size:8px; margin-top:2px;">%</span>
+                    </div>
+                </div>
+
+                <div class="meta-tag">${year}</div>
+                ${runtime ? `<div class="meta-tag">${runtime}</div>` : ''}
+                ${ageRating ? `<div class="age-limit">${ageRating}</div>` : ''}
             </div>
 
             <p class="movie-desc-text">
-                ${movie.desc || 'Опис відсутній.'}
+                ${desc}
             </p>
 
             <div class="movie-actions-row">
-                <button class="btn-primary-action" onclick="openPremiumPlayer('${movie.id}', this)" style="background: linear-gradient(90deg, #FFD700, #FFA500); color: black; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    <span>⭐️ PREMIUM (Дивитися)</span>
+                <button class="btn-primary-action btn-gold" onclick="openPremiumPlayer('${movie.id}', this)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="margin-right:10px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    ДИВИТИСЬ
                 </button>
 
-                <button class="btn-secondary-action" onclick="searchOnline('${movie.title}')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    Знайти (Eneyida / UaKino)
+                <button class="btn-secondary-action" onclick="searchOnline('${title}')" style="justify-content: space-between;">
+                    <span>Знайти на Eneyida / UaKino</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </button>
-
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="btn-secondary-action" style="flex:1;" onclick="openTrailer('${movie.title}')">Трейлер</button>
-                    <button class="btn-secondary-action" style="flex:1;" onclick="openTMDB('${movie.id}')">Інфо</button>
-                </div>
             </div>
+
+            ${trailerKey ? `
+                <div class="trailer-container">
+                    <iframe src="https://www.youtube.com/embed/${trailerKey}?modestbranding=1&rel=0" frameborder="0" allowfullscreen></iframe>
+                </div>
+            ` : ''}
             
             <div style="height: 50px;"></div>
         </div>
     `;
 
-    modal.style.display = 'flex';
-    if (fab) fab.style.display = 'none';
-
+    // Вмикаємо системну кнопку "Назад" в Telegram
     if (window.Telegram?.WebApp?.BackButton) {
         window.Telegram.WebApp.BackButton.show();
         window.Telegram.WebApp.BackButton.onClick(closeMoviePage);
     }
 };
 
-// --- 🔥 ФУНКЦІЯ ДЛЯ ВАШОГО ПЛЕЄРА (З КОНВЕРТАЦІЄЮ ID) ---
+// --- ІНШІ ФУНКЦІЇ ---
+
 window.openPremiumPlayer = async function(tmdbId, btnElement) {
-    // 1. Показуємо користувачеві, що йде завантаження
-    const originalText = btnElement ? btnElement.querySelector('span').innerText : "Premium";
-    if (btnElement) btnElement.querySelector('span').innerText = "Шукаю ID...";
+    const originalText = btnElement ? btnElement.innerHTML : "ДИВИТИСЬ";
+    if (btnElement) btnElement.innerHTML = "Завантаження...";
 
     let kpId = null;
-
     try {
-        // 2. Конвертуємо TMDB ID -> Kinopoisk ID через Alloha API
-        // Використовуємо твій токен, щоб дізнатися ID
         const response = await fetch(`https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`);
         const data = await response.json();
-
         if (data.status === 'success' && data.data && data.data.id_kp) {
             kpId = data.data.id_kp;
         } else {
-            alert("Не вдалося знайти ID Кінопошуку для цього фільму. Спробуйте кнопку 'Знайти'.");
-            if (btnElement) btnElement.querySelector('span').innerText = originalText;
+            alert("Файл не знайдено на сервері. Спробуйте кнопку 'Знайти'.");
+            if (btnElement) btnElement.innerHTML = originalText;
             return;
         }
-
     } catch (e) {
-        console.error("ID Conversion Error:", e);
-        // Якщо конвертація не вдалася, пробуємо просто запустити (шанс малий, але є)
-        // kpId = null; 
-        alert("Помилка з'єднання. Спробуйте пізніше.");
-        if (btnElement) btnElement.querySelector('span').innerText = originalText;
+        alert("Помилка з'єднання.");
+        if (btnElement) btnElement.innerHTML = originalText;
         return;
     }
 
-    // 3. Якщо ID знайдено - відкриваємо плеєр
     if (kpId) {
         const modal = document.getElementById('player_modal');
         const iframe = document.getElementById('video_frame');
         const moviePage = document.getElementById('movie_details_modal');
 
-        // Ховаємо картку
         if (moviePage) moviePage.style.display = 'none';
 
-        // ВАШ ТОКЕН ПЛЕЄРА
         const playerToken = "eyJhbGciOiJIUzI1NiJ9.eyJ3ZWJTaXRlIjoiMzQiLCJpc3MiOiJhcGktd2VibWFzdGVyIiwic3ViIjoiNDEiLCJpYXQiOjE3NDMwNjA3ODAsImp0aSI6IjIzMTQwMmE0LTM3NTMtNGQ3OS1hNDBjLTA2YTY0MTE0MzNhOSIsInNjb3BlIjoiRExFIn0.4PmKGf512P-ov-tEjwr3gfOVxccjx8SSt28slJXypYU";
-        
-        // Вставляємо отриманий KP ID
         const url = `https://api.rstprgapipt.com/balancer-api/iframe?kp=${kpId}&token=${playerToken}&disabled_share=1`;
 
         iframe.src = url;
         modal.style.display = 'flex';
         
-        // Кнопка закриття повертає назад
         const closeBtn = modal.querySelector('.close-player');
         closeBtn.onclick = function() {
             modal.style.display = 'none';
@@ -169,11 +208,9 @@ window.openPremiumPlayer = async function(tmdbId, btnElement) {
         };
     }
     
-    // Повертаємо текст кнопки
-    if (btnElement) btnElement.querySelector('span').innerText = originalText;
+    if (btnElement) btnElement.innerHTML = originalText;
 };
 
-// --- ІНШІ ФУНКЦІЇ ---
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
@@ -190,19 +227,7 @@ window.searchOnline = function(title) {
     else window.open(url, '_blank');
 };
 
-window.openTrailer = function(title) {
-    const url = `https://www.youtube.com/results?search_query=трейлер+українською+${encodeURIComponent(title)}`;
-    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
-    else window.open(url, '_blank');
-};
-
-window.openTMDB = function(id) {
-    const url = `https://www.themoviedb.org/movie/${id}`;
-    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
-    else window.open(url, '_blank');
-};
-
-// --- ЗАВАНТАЖЕННЯ ДАНИХ ---
+// --- ЗАВАНТАЖЕННЯ ДАНИХ (Стандартне) ---
 async function loadContent(isMore = false) {
     if (!isMore) {
         const preloader = document.getElementById('preloader');
@@ -223,7 +248,7 @@ async function loadContent(isMore = false) {
                         let rawUrl = null;
                         if (item.pagemap?.cse_thumbnail?.length > 0) rawUrl = item.pagemap.cse_thumbnail[0].src;
                         else if (item.pagemap?.cse_image?.length > 0) rawUrl = item.pagemap.cse_image[0].src;
-                        return { id: item.link, title: item.title, desc: item.snippet, img: optimizeImage(rawUrl), date: "З інтернету", url: item.link, type: 'news' };
+                        return { id: item.link, title: item.title, desc: item.snippet, img: optimizeImage(rawUrl), date: "Web", url: item.link, type: 'news' };
                     });
                 }
                 googlePage = pageNum;

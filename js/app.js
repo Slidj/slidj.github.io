@@ -24,7 +24,7 @@ if (window.Telegram?.WebApp) {
     tg.ready();
     tg.enableClosingConfirmation();
     
-    // Встановлюємо чорний колір хедера для краси
+    // Встановлюємо чорний колір хедера
     if (tg.setHeaderColor) tg.setHeaderColor('#000000');
     if (tg.setBackgroundColor) tg.setBackgroundColor('#000000');
 
@@ -99,20 +99,26 @@ window.openMoviePage = function(movie) {
             </p>
 
             <div class="movie-actions-row">
-                <button class="btn-primary-action" onclick="searchOnline('${movie.title}')">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <button class="btn-primary-action" onclick="openAlloha('${movie.id}')" style="background: linear-gradient(90deg, #6a11cb, #2575fc);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Дивитися (Server Alloha)
+                </button>
+
+                <button class="btn-secondary-action" onclick="searchOnline('${movie.title}')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     Знайти (Eneyida / UaKino)
                 </button>
 
-                <button class="btn-secondary-action" onclick="openTrailer('${movie.title}')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
-                    Трейлер
-                </button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-secondary-action" style="flex:1;" onclick="openTrailer('${movie.title}')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
+                        Трейлер
+                    </button>
 
-                <button class="btn-secondary-action" onclick="openTMDB('${movie.id}')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    Інформація TMDB
-                </button>
+                    <button class="btn-secondary-action" style="flex:1;" onclick="openTMDB('${movie.id}')">
+                        TMDB Info
+                    </button>
+                </div>
             </div>
         </div>
     `;
@@ -130,9 +136,18 @@ window.openMoviePage = function(movie) {
     }
 };
 
-// --- ФУНКЦІЇ ДЛЯ КНОПОК КАРТКИ ---
+// --- ФУНКЦІЇ ДЛЯ КНОПОК ---
+
+// 👇 ТУТ ТВОЯ НОВА ФУНКЦІЯ ALLOHA
+window.openAlloha = function(tmdbId) {
+    // Використовуємо твій токен, але міняємо kp на tmdb
+    const url = `https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`;
+    
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
+    else window.open(url, '_blank');
+};
+
 window.searchOnline = function(title) {
-    // Розумний пошук через Google по українських сайтах
     const query = `дивитися онлайн українською ${title} (eneyida OR uakino OR hdrezka)`;
     const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
     
@@ -213,7 +228,7 @@ async function loadContent(isMore = false) {
                 desc: item.overview,
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
-                url: item.id, // Зберігаємо ID, щоб потім знайти фільм
+                url: item.id, // Зберігаємо ID
                 type: 'movie'
             }));
 

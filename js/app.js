@@ -14,9 +14,7 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
-
-// Зберігаємо поточний фільм, щоб знати його назву для пошуку
-let currentMovie = null; 
+let currentMovie = null; // Зберігаємо інфо про фільм
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
@@ -45,45 +43,51 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 МЕНЕДЖЕР СЕРВЕРІВ ---
-// Тут ми змішуємо плеєри та кнопки пошуку
+// --- 🎬 СПИСОК СЕРВЕРІВ ---
 const MOVIE_SERVERS = [
-    { type: 'embed', name: "Server 1 (Eng)", url: (id) => `https://vidsrc.pro/embed/movie/${id}` },
-    { type: 'embed', name: "Server 2 (Eng)", url: (id) => `https://www.2embed.cc/embed/${id}` },
-    { type: 'embed', name: "Server 3 (Multi)", url: (id) => `https://autoembed.co/movie/tmdb/${id}` },
-    // 👇 КНОПКИ ПОШУКУ (Якщо треба УКР озвучка)
-    { type: 'search', name: "🇺🇦 Eneyida", url: (title) => `https://eneyida.tv/index.php?do=search&subaction=search&story=${encodeURIComponent(title)}` },
-    { type: 'search', name: "🔍 Google UA", url: (title) => `https://www.google.com/search?q=дивитися+онлайн+українською+${encodeURIComponent(title)}` }
+    // 1. VOIDBOOST (Найкраща надія на УКР озвучку через ID)
+    // Шукайте в плеєрі прапорець або шестерню -> Audio
+    { name: "Server UA (Void)", url: (id) => `https://voidboost.net/embed/movie/${id}` },
+    
+    // 2. ДЗЕРКАЛА (Якщо Voidboost заблокований)
+    { name: "Mirror 1", url: (id) => `https://player.svetacdn.in/embed/movie/${id}` },
+    { name: "Mirror 2", url: (id) => `https://filmino.net/embed/movie/${id}` },
+    
+    // 3. МІЖНАРОДНИЙ (Завжди працює, англ)
+    { name: "Global (Eng)", url: (id) => `https://vidsrc.pro/embed/movie/${id}` },
+
+    // 4. ПОШУК НА САЙТАХ З ASHDI (Це ті самі "танці", але в один клік)
+    // Ми не можемо вбудувати Ashdi, тому відкриваємо його у вікні
+    { name: "🇺🇦 Eneyida", type: 'search', url: (title) => `https://eneyida.tv/index.php?do=search&subaction=search&story=${encodeURIComponent(title)}` },
+    { name: "🇺🇦 UaKino", type: 'search', url: (title) => `https://uakino.club/index.php?do=search&subaction=search&story=${encodeURIComponent(title)}` }
 ];
 
 window.changeServer = function(index) {
     const server = MOVIE_SERVERS[index];
     if (!server) return;
 
-    // Якщо це кнопка пошуку -> відкриваємо нове вікно
+    // Кнопки пошуку (Ashdi/Eneyida)
     if (server.type === 'search') {
-        if (!currentMovie || !currentMovie.title) {
-            alert("Назву фільму не знайдено");
-            return;
-        }
+        if (!currentMovie || !currentMovie.title) return;
         const link = server.url(currentMovie.title);
+        
+        // Відкриваємо в браузері, бо ці сайти забороняють iframe
         if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(link);
         else window.open(link, '_blank');
         return;
     }
 
-    // Якщо це плеєр -> міняємо iframe
+    // Перемикання вбудованого плеєра
     const iframe = document.getElementById('video_frame');
     const btns = document.querySelectorAll('.server-btn');
     
-    // Підсвічуємо кнопку
     btns.forEach((btn, i) => {
         if (i === index) {
             btn.style.backgroundColor = '#50a8eb';
             btn.style.color = 'white';
         } else {
-            btn.style.backgroundColor = '#333';
-            btn.style.color = '#ccc';
+            btn.style.backgroundColor = '#222';
+            btn.style.color = '#888';
         }
     });
 
@@ -104,7 +108,7 @@ window.closePlayer = function() {
 };
 
 window.openPlayer = function(tmdbId) {
-    // Шукаємо фільм у завантаженому списку, щоб знати назву
+    // Знаходимо фільм, щоб знати його назву для кнопок пошуку
     currentMovie = feedMovies.find(m => m.id == tmdbId) || { id: tmdbId, title: '' };
     
     const modal = document.getElementById('player_modal');
@@ -114,16 +118,16 @@ window.openPlayer = function(tmdbId) {
 
     if (!modal || !iframe) return;
 
-    // --- МАЛЮЄМО КНОПКИ ---
+    // --- СТВОРЮЄМО МЕНЮ ---
     let controls = document.getElementById('server_controls');
     if (!controls) {
         controls = document.createElement('div');
         controls.id = 'server_controls';
         controls.style.cssText = `
-            position: absolute; top: 50px; left: 0; width: 100%; 
+            position: absolute; top: 60px; left: 0; width: 100%; 
             display: flex; justify-content: center; gap: 8px; 
-            z-index: 10001; flex-wrap: wrap; padding: 5px; box-sizing: border-box;
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            z-index: 10001; flex-wrap: wrap; padding: 0 10px; box-sizing: border-box;
+            pointer-events: none; /* Щоб кліки проходили крізь пусте місце */
         `;
         
         MOVIE_SERVERS.forEach((server, index) => {
@@ -132,13 +136,13 @@ window.openPlayer = function(tmdbId) {
             btn.innerText = server.name;
             btn.onclick = () => window.changeServer(index);
             
-            // Різні кольори для плеєра і пошуку
-            const bgColor = server.type === 'search' ? '#2e7d32' : '#333'; // Зелений для пошуку
-            
+            const isSearch = server.type === 'search';
             btn.style.cssText = `
-                padding: 6px 10px; border: none; border-radius: 6px; 
-                background: ${bgColor}; color: #ccc; font-size: 11px; cursor: pointer;
-                transition: 0.2s; font-weight: bold;
+                pointer-events: auto; /* Кнопки клікабельні */
+                padding: 8px 12px; border: 1px solid #444; border-radius: 8px; 
+                background: ${isSearch ? '#e67e22' : '#222'}; 
+                color: #ccc; font-size: 11px; cursor: pointer;
+                transition: all 0.2s; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
             `;
             controls.appendChild(btn);
         });
@@ -148,14 +152,14 @@ window.openPlayer = function(tmdbId) {
 
     iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
     
-    // Запускаємо перший сервер (English) за замовчуванням
+    // Старт з першого сервера (Voidboost)
     window.changeServer(0);
     
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
 };
 
-// --- ВІДКРИТТЯ ---
+// --- ВІДКРИТТЯ ПОСИЛАНЬ ---
 window.openLink = function(url, idEncoded) {
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
@@ -170,7 +174,7 @@ window.openLink = function(url, idEncoded) {
 
     const target = url.toString();
 
-    // Перевірка ID
+    // Якщо це цифри або лінк TMDB -> Плеєр
     if (/^\d+$/.test(target)) {
         window.openPlayer(target);
         return;
@@ -183,7 +187,7 @@ window.openLink = function(url, idEncoded) {
         }
     }
 
-    // Новини
+    // Якщо новина -> Браузер
     if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(target);
     else window.open(target, '_blank');
 };

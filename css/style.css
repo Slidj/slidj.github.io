@@ -121,3 +121,147 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
     width: 50px; height: 50px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
 }
+
+
+/* --- СТОРІНКА ФІЛЬМУ (ОКРЕМА) --- */
+.movie-details-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    z-index: 20000; /* Поверх усього */
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Дозволяє скрол */
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.movie-details-content {
+    width: 100%;
+    min-height: 100%;
+    position: relative;
+    padding-bottom: 50px;
+}
+
+.close-movie-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 20001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.close-movie-btn:active {
+    transform: scale(0.9);
+}
+
+/* Елементи всередині картки (яку генерує JS) */
+.movie-backdrop {
+    width: 100%;
+    height: 40vh; /* 40% висоти екрану */
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.movie-backdrop::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent 0%, #000 100%);
+}
+
+.movie-info-block {
+    padding: 20px;
+    margin-top: -60px; /* Наїжджаємо на картинку */
+    position: relative;
+    z-index: 2;
+}
+
+.movie-main-title {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0 0 10px 0;
+    line-height: 1.1;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+.movie-meta-row {
+    display: flex;
+    gap: 15px;
+    font-size: 14px;
+    color: #aaa;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.rating-badge {
+    background: #e5a00d;
+    color: #000;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.movie-desc-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #ccc;
+    margin-bottom: 30px;
+}
+
+.movie-actions-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-primary-action {
+    background: linear-gradient(90deg, #007AFF, #0056b3);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+}
+
+.btn-secondary-action {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}

@@ -17,7 +17,7 @@ let currentCategory = '';
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
-const API_KEY = '4f06fae67ddcf28e2e5b3f91193cb555'; // Твій ключ TMDB
+const API_KEY = '4f06fae67ddcf28e2e5b3f91193cb555'; 
 
 // --- ІНІЦІАЛІЗАЦІЯ ---
 if (window.Telegram?.WebApp) {
@@ -45,10 +45,8 @@ function optimizeImage(url) {
 
 window.closeMoviePage = function() {
     const modal = document.getElementById('movie_details_modal');
-    // Очищаємо iframe трейлера
     const content = document.getElementById('movie_details_content');
     if (content) content.innerHTML = ''; 
-    
     if (modal) {
         modal.style.display = 'none';
         document.body.style.overflow = ''; 
@@ -58,7 +56,6 @@ window.closeMoviePage = function() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
-// 🔥 ГОЛОВНА ФУНКЦІЯ ВІДКРИТТЯ КАРТКИ
 window.openMoviePage = async function(movie) {
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
@@ -66,110 +63,114 @@ window.openMoviePage = async function(movie) {
 
     if (!modal || !content) return;
 
-    // 1. Показуємо стан завантаження
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
     document.body.style.overflow = 'hidden';
-    content.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:white;">Завантаження деталей...</div>';
+    content.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:white;">Завантаження...</div>';
 
-    // 2. Отримуємо повні деталі з TMDB (Трейлер, Час, Вік, ЛОГОТИПИ)
+    // Отримуємо деталі
     let details = {};
     let logoUrl = null;
+    let actors = [];
 
     try {
-        // Додали images до запиту
-        const res = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=uk-UA&append_to_response=videos,release_dates,images&include_image_language=uk,en,null`);
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=uk-UA&append_to_response=videos,release_dates,images,credits&include_image_language=uk,en,null`);
         details = await res.json();
 
-        // Шукаємо логотип (спочатку укр, потім англ)
+        // Логотип
         if (details.images && details.images.logos && details.images.logos.length > 0) {
             const logo = details.images.logos.find(l => l.iso_639_1 === 'uk') || details.images.logos.find(l => l.iso_639_1 === 'en') || details.images.logos[0];
             if (logo) logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
+        
+        // Актори (перші 3)
+        if (details.credits && details.credits.cast) {
+            actors = details.credits.cast.slice(0, 3).map(a => a.name).join(', ');
+        }
 
     } catch (e) {
-        console.error("Помилка деталей:", e);
+        console.error(e);
         details = movie; 
     }
 
-    // 3. Обробка даних
     const backdrop = details.backdrop_path ? API_URLS.tmdbImg + details.backdrop_path : (movie.img || '');
     const title = details.title || movie.title;
     const desc = details.overview || movie.desc || 'Опис відсутній.';
-    const year = details.release_date ? details.release_date.split('-')[0] : 'N/A';
-    
-    // Час
+    const year = details.release_date ? details.release_date.split('-')[0] : '2025';
     const runtime = details.runtime ? `${Math.floor(details.runtime/60)} год ${details.runtime%60} хв` : '';
     
-    // Рейтинг
+    // Розрахунок "Збігу" (Match) як у Netflix
     const voteAvg = details.vote_average || 0;
-    const votePercent = Math.round(voteAvg * 10);
-    const ringColor = votePercent >= 70 ? '#21d07a' : (votePercent >= 40 ? '#d2d531' : '#db2360');
-    
+    const matchPercent = Math.round(voteAvg * 10); // 8.0 -> 80%
+
     // Вік
-    let ageRating = '';
-    if (details.release_dates && details.release_dates.results) {
-        const uaRelease = details.release_dates.results.find(r => r.iso_3166_1 === 'UA') || details.release_dates.results.find(r => r.iso_3166_1 === 'US');
-        if (uaRelease && uaRelease.release_dates.length > 0) {
-            ageRating = uaRelease.release_dates[0].certification;
-        }
+    let ageRating = '16+';
+    if (details.release_dates?.results) {
+        const rel = details.release_dates.results.find(r => r.iso_3166_1 === 'US');
+        if (rel?.release_dates[0]?.certification) ageRating = rel.release_dates[0].certification;
     }
     
     // Трейлер
     let trailerKey = null;
-    if (details.videos && details.videos.results) {
+    if (details.videos?.results) {
         const trailer = details.videos.results.find(v => v.site === "YouTube" && v.type === "Trailer");
         if (trailer) trailerKey = trailer.key;
     }
 
-    // 4. Малюємо HTML
-    // ЛОГІКА ЗАГОЛОВКУ: Якщо є картинка-лого -> показуємо її, якщо ні -> показуємо текст h1
-    const headerHtml = logoUrl 
-        ? `<img src="${logoUrl}" class="movie-logo-img" alt="${title}">` 
-        : `<h1 class="movie-main-title">${title}</h1>`;
+    // --- NETFLIX LAYOUT HTML ---
+    
+    // Якщо є лого - показуємо його, якщо ні - текст
+    const headerElement = logoUrl 
+        ? `<img src="${logoUrl}" class="nf-logo" alt="${title}">` 
+        : `<div class="nf-title">${title}</div>`;
 
     content.innerHTML = `
-        <div class="movie-backdrop" style="background-image: url('${backdrop}');"></div>
-        
-        <div class="movie-info-block">
-            ${headerHtml}
-            
-            <div class="meta-tags">
-                <div class="rating-circle" style="background: conic-gradient(${ringColor} ${votePercent}%, #333 ${votePercent}% 100%);">
-                    <div style="background:#0d253f; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                        ${votePercent}<span style="font-size:8px; margin-top:2px;">%</span>
-                    </div>
+        <div class="nf-container">
+            <div class="nf-backdrop-container">
+                <div class="nf-backdrop" style="background-image: url('${backdrop}');"></div>
+                <div class="nf-gradient-overlay">
+                    ${headerElement}
                 </div>
-
-                <div class="meta-tag">${year}</div>
-                ${runtime ? `<div class="meta-tag">${runtime}</div>` : ''}
-                ${ageRating ? `<div class="age-limit">${ageRating}</div>` : ''}
             </div>
 
-            <p class="movie-desc-text">
-                ${desc}
-            </p>
+            <div class="nf-meta-row">
+                <span class="nf-match">${matchPercent}% збігу</span>
+                <span>${year}</span>
+                <span class="nf-age">${ageRating}</span>
+                <span>${runtime}</span>
+                <span style="border:1px solid #777; padding:0 4px; border-radius:2px; font-size:10px;">HD</span>
+            </div>
 
-            <div class="movie-actions-row">
-                <button class="btn-primary-action btn-gold" onclick="openPremiumPlayer('${movie.id}', this)">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="margin-right:10px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <div class="nf-actions">
+                <button class="nf-btn nf-btn-play" onclick="openPremiumPlayer('${movie.id}', this)" style="background-color: #FFD700;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                     ДИВИТИСЬ
                 </button>
 
-                <button class="btn-secondary-action" onclick="searchOnline('${title}')" style="justify-content: space-between;">
-                    <span>Знайти на Eneyida / UaKino</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <button class="nf-btn nf-btn-secondary" onclick="searchOnline('${title}')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    Знайти (Eneyida / UaKino)
                 </button>
             </div>
 
+            <div class="nf-desc">
+                ${desc}
+            </div>
+            
+            ${actors ? `<div class="nf-cast">У ролях: <span>${actors}</span></div>` : ''}
+
             ${trailerKey ? `
-                <div class="trailer-container">
-                    <iframe src="https://www.youtube.com/embed/${trailerKey}?modestbranding=1&rel=0" frameborder="0" allowfullscreen></iframe>
+                <div style="padding: 0 16px;">
+                    <h3 style="font-size:14px; margin-bottom:10px; font-weight:bold;">Трейлер</h3>
+                    <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
+                        <iframe style="position:absolute; top:0; left:0; width:100%; height:100%;" 
+                            src="https://www.youtube.com/embed/${trailerKey}" frameborder="0" allowfullscreen>
+                        </iframe>
+                    </div>
                 </div>
             ` : ''}
-            
-            <div style="height: 50px;"></div>
-        </div>
+
+            <div style="height: 60px;"></div> </div>
     `;
 
     if (window.Telegram?.WebApp?.BackButton) {
@@ -182,6 +183,7 @@ window.openMoviePage = async function(movie) {
 
 window.openPremiumPlayer = async function(tmdbId, btnElement) {
     const originalText = btnElement ? btnElement.innerHTML : "ДИВИТИСЬ";
+    // Робимо спіннер або текст
     if (btnElement) btnElement.innerHTML = "Завантаження...";
 
     let kpId = null;

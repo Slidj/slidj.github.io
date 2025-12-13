@@ -1,4 +1,4 @@
-// Налаштування та Ключі
+// Налаштування та Ключіі
 export const KEYS = {
     NEWSDATA: "pub_22e4e8780f9349e7a64a65f886ecae3a",
     GNEWS: "988894076e3186f8fbd93db235ee6fe9",

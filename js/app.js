@@ -22,6 +22,7 @@ const loadMoreBtn = document.getElementById('load_more_container');
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
+    tg.expand(); // Розгортаємо на весь екран
     const user = tg.initDataUnsafe?.user;
     if (user) {
         document.getElementById('header_title').innerText = user.first_name;
@@ -35,47 +36,15 @@ if (window.Telegram?.WebApp) {
 }
 updateRankDisplay(); 
 
-// --- ОПТИМІЗАЦІЯ КАРТИНОК ---
 function optimizeImage(url) {
     if (!url) return null;
     if (url.includes('tmdb.org')) return url;
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 ЛОГІКА ПЛЕЄРА (AUTOEMBED) ---
-window.closePlayer = function() {
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    
-    // Очищаємо посилання, щоб зупинити звук і відео
-    if (iframe) iframe.src = ''; 
-    if (modal) modal.style.display = 'none';
-    
-    // Повертаємо меню FAB
-    const fab = document.getElementById('fab_wrapper');
-    if (fab) fab.style.display = 'flex';
-};
-
-window.openPlayer = function(tmdbId) {
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    const fab = document.getElementById('fab_wrapper');
-
-    if (!modal || !iframe) return;
-
-    // ВАЖЛИВО: Максимальні дозволи для плеєра
-    iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
-    
-    // AutoEmbed автоматично підбирає робочий сервер
-    iframe.src = `https://autoembed.co/movie/tmdb/${tmdbId}`;
-    
-    modal.style.display = 'flex';
-    if (fab) fab.style.display = 'none';
-};
-
-// --- ВІДКРИТТЯ (Плеєр або Сайт) ---
+// --- ВІДКРИТТЯ ПОСИЛАНЬ (ФІЛЬМИ -> ВІДКРИВАЄМО ПЛЕЄР У БРАУЗЕРІ) ---
 window.openLink = function(url, idEncoded) {
-    // 1. Статистика
+    // 1. Зберігаємо бали
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
         if (!viewedItems.includes(id.toString())) {
@@ -88,30 +57,50 @@ window.openLink = function(url, idEncoded) {
     }
 
     const target = url.toString();
+    let movieUrl = null;
 
-    // 2. ПЕРЕВІРКА: Це ID фільму?
-    // Якщо це просто цифри (наприклад "550") -> Вмикаємо плеєр
+    // 2. ПЕРЕВІРКА: Це фільм?
+    
+    // Якщо прийшов чистий ID (цифри)
     if (/^\d+$/.test(target)) {
-        window.openPlayer(target);
-        return;
+        // Формуємо посилання на Voidboost (там є укр. мова)
+        movieUrl = `https://voidboost.net/embed/movie/${target}`;
     }
-
-    // Якщо це старе посилання TMDB -> Пробуємо витягнути ID
-    if (target.includes('themoviedb.org') || target.includes('/movie/')) {
+    // Якщо прийшло посилання TMDB
+    else if (target.includes('themoviedb.org') || target.includes('/movie/')) {
         const matches = target.match(/movie\/(\d+)/);
         if (matches && matches[1]) {
-            window.openPlayer(matches[1]);
-            return;
+            movieUrl = `https://voidboost.net/embed/movie/${matches[1]}`;
         }
     }
 
-    // 3. Якщо це новина -> Відкриваємо браузер
+    // 3. ЯКЩО ЦЕ ФІЛЬМ -> ВІДКРИВАЄМО ПЛЕЄР
+    if (movieUrl) {
+        if (window.Telegram?.WebApp) {
+            // openLink відкриє системний браузер, де нічого не блокується
+            window.Telegram.WebApp.openLink(movieUrl);
+        } else {
+            window.open(movieUrl, '_blank');
+        }
+        return;
+    }
+
+    // 4. ЯКЩО ЦЕ НОВИНА -> ВІДКРИВАЄМО САЙТ
     if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.openLink(target);
     } else {
         window.open(target, '_blank');
     }
 };
+
+// --- ФУНКЦІЇ ПЛЕЄРА (Вже не використовуються, але залишимо щоб не було помилок) ---
+window.closePlayer = function() {
+    const modal = document.getElementById('player_modal');
+    if (modal) modal.style.display = 'none';
+    const fab = document.getElementById('fab_wrapper');
+    if (fab) fab.style.display = 'flex';
+};
+window.openPlayer = function(id) { window.openLink(id); }; // Перенаправлення
 
 // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
 async function loadContent(isMore = false) {
@@ -125,7 +114,6 @@ async function loadContent(isMore = false) {
 
     try {
         if (appMode === 'news') {
-            // ... НОВИНИ ...
             let items = [];
             if (currentQuery) {
                 const pageNum = isMore ? googlePage + 1 : 1;
@@ -149,7 +137,6 @@ async function loadContent(isMore = false) {
             renderList(isMore ? items : feedNews, container, savedItems, isMore);
 
         } else if (appMode === 'movies') {
-            // ... ФІЛЬМИ ...
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
             
@@ -159,16 +146,12 @@ async function loadContent(isMore = false) {
                 desc: item.overview,
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
-                
-                // Зберігаємо тільки ID, щоб запустити плеєр
-                url: item.id, 
-                
+                url: item.id, // Передаємо ID
                 type: 'movie'
             }));
 
             moviePage = page;
             feedMovies = isMore ? [...feedMovies, ...items] : items;
-
             container.className = 'movies-grid';
             renderMovies(isMore ? items : feedMovies, container, savedItems, isMore);
             loadMoreBtn.style.display = 'block'; 
@@ -179,7 +162,7 @@ async function loadContent(isMore = false) {
     }
 }
 
-// --- FAB МЕНЮ ТА ІНШЕ ---
+// --- ІНТЕРФЕЙС ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
     const iconMenu = document.getElementById('icon_menu');
@@ -198,20 +181,17 @@ window.switchMode = function(mode) {
     const fabItems = document.querySelectorAll('.fab-item');
     fabItems.forEach(btn => btn.classList.remove('active'));
     document.querySelector(`.fab-item[onclick*="${mode}"]`)?.classList.add('active');
-
     const wrapper = document.getElementById('fab_wrapper');
     if (wrapper.classList.contains('open')) window.toggleFab();
-
     const container = document.getElementById('content_container');
     container.classList.add('fade-out');
 
     setTimeout(() => {
         appMode = mode;
+        container.className = 'fade-out'; 
         const filters = document.getElementById('filters_wrapper');
         const catSelect = document.getElementById('category_select');
         const searchInput = document.getElementById('search_input');
-
-        container.className = 'fade-out'; 
 
         if (mode === 'news') {
             filters.style.display = 'flex'; catSelect.classList.remove('hidden'); searchInput.placeholder = "Пошук новин...";
@@ -233,7 +213,6 @@ window.switchMode = function(mode) {
             filters.style.display = 'none'; container.classList.add('news-container', 'list-view'); 
             loadMoreBtn.style.display = 'none'; renderList(savedItems, container, savedItems);
         }
-
         window.scrollTo({ top: 0, behavior: 'auto' });
         requestAnimationFrame(() => container.classList.remove('fade-out'));
     }, 200);

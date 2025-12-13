@@ -42,11 +42,12 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 ЛОГІКА ПЛЕЄРА (VIDSRC) ---
+// --- 🎬 ЛОГІКА ПЛЕЄРА (VOIDBOOST - З УКРАЇНСЬКОЮ) ---
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     
+    // Очищаємо посилання, щоб зупинити звук і відео
     if (iframe) iframe.src = ''; 
     if (modal) modal.style.display = 'none';
     
@@ -62,8 +63,12 @@ window.openPlayer = function(tmdbId) {
 
     if (!modal || !iframe) return;
 
-    // Вставляємо посилання на плеєр
-    iframe.src = `https://vidsrc.xyz/embed/movie/${tmdbId}`;
+    // 1. ВАЖЛИВО: Дозволи для плеєра (щоб працював повний екран і не було помилок)
+    iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+    
+    // 2. Джерело відео (Voidboost)
+    // Воно підтримує вибір озвучки. Якщо не працює - спробуйте увімкнути VPN.
+    iframe.src = `https://voidboost.net/embed/movie/${tmdbId}`;
     
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
@@ -156,9 +161,7 @@ async function loadContent(isMore = false) {
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
                 
-                // 👇 ТУТ ГОЛОВНА ЗМІНА:
-                // Ми записуємо ТІЛЬКИ ID (число), а не посилання.
-                // Це змусить openLink запустити плеєр.
+                // Зберігаємо тільки ID, щоб запустити плеєр
                 url: item.id, 
                 
                 type: 'movie'
@@ -177,7 +180,7 @@ async function loadContent(isMore = false) {
     }
 }
 
-// --- FAB МЕНЮ ---
+// --- FAB МЕНЮ ТА ІНШЕ ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
     const iconMenu = document.getElementById('icon_menu');

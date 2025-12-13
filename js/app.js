@@ -1,12 +1,24 @@
 // ============================================================
-// 🎬 MEDIA HUB: APP CORE (INFINITE SCROLL)
+// 🎬 MEDIA HUB: APP CORE (NO IMPORTS / STANDALONE)
 // ============================================================
 
+// --- АВАРІЙНИЙ ВИХІД ---
+// Якщо через 4 секунди скрипт не завантажиться, прибираємо прелоадер силою
+setTimeout(() => {
+    const preloader = document.getElementById('preloader');
+    if (preloader && preloader.style.display !== 'none') {
+        console.warn("Forcing preloader hide...");
+        preloader.style.display = 'none';
+    }
+}, 4000);
+
+// --- 1. НАЛАШТУВАННЯ ---
 const API_KEY = '4f06fae67ddcf28e2e5b3f91193cb555';
 const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280'; 
 
 let currentTab = 'home';
+let feedMovies = [];
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
 let currentHeroMovie = null;
 let searchTimeout;
@@ -14,50 +26,61 @@ let searchTimeout;
 // Змінні для скролу
 let currentPage = 1;
 let isLoading = false;
-let currentGenre = ''; // Для категорій
+let currentGenre = '';
 
-// --- 1. ЗАПУСК ---
-const tg = window.Telegram?.WebApp;
-if (tg) {
-    try {
-        tg.ready(); tg.expand();
-        if(tg.setHeaderColor) tg.setHeaderColor('#000000');
-        if(tg.setBackgroundColor) tg.setBackgroundColor('#000000');
-        if(tg.initDataUnsafe?.user?.photo_url) {
-            document.getElementById('user_avatar').src = tg.initDataUnsafe.user.photo_url;
-            document.getElementById('user_avatar').style.display = 'block';
-            document.getElementById('default_avatar').style.display = 'none';
-        }
-    } catch(e){}
-}
-
-initApp();
+// --- 2. ЗАПУСК ДОДАТКУ ---
+document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
-    setupInfiniteScroll(); // Вмикаємо спостерігача
+    console.log("App initializing...");
     
-    // Вмикаємо головну
+    // Ініціалізація Telegram
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        try {
+            tg.ready(); tg.expand();
+            if(tg.setHeaderColor) tg.setHeaderColor('#000000');
+            if(tg.setBackgroundColor) tg.setBackgroundColor('#000000');
+            if(tg.initDataUnsafe?.user?.photo_url) {
+                const ava = document.getElementById('user_avatar');
+                const def = document.getElementById('default_avatar');
+                if(ava) { ava.src = tg.initDataUnsafe.user.photo_url; ava.style.display = 'block'; }
+                if(def) def.style.display = 'none';
+            }
+        } catch(e) { console.log("TG Error", e); }
+    }
+
+    // Вмикаємо спостерігача за скролом
+    setupInfiniteScroll(); 
+    
+    // Вмикаємо головну сторінку
     switchMode('home'); 
     
-    // Завантажуємо першу сторінку
-    await loadHomeContent(1);
+    // Вантажимо контент
+    try {
+        await loadHomeContent(1);
+    } catch(e) {
+        console.error("Load Error", e);
+    }
 
-    // Прибираємо прелоадер
-    setTimeout(() => {
-        const preloader = document.getElementById('preloader');
-        if(preloader) {
-            preloader.style.opacity = '0';
-            setTimeout(() => preloader.style.display = 'none', 500);
-        }
-    }, 800);
+    // Прибираємо прелоадер (плавно)
+    const preloader = document.getElementById('preloader');
+    if(preloader) {
+        preloader.style.opacity = '0';
+        setTimeout(() => preloader.style.display = 'none', 500);
+    }
 }
 
-// --- 2. БЕЗКІНЕЧНИЙ СКРОЛ (OBSERVER) ---
+// --- 3. БЕЗКІНЕЧНИЙ СКРОЛ ---
 function setupInfiniteScroll() {
     const trigger = document.getElementById('infinite_trigger');
+    
+    // Перевірка підтримки браузером
+    if (!('IntersectionObserver' in window)) return;
+
     const observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && currentTab === 'home' && !isLoading) {
-            // Коли бачимо низ сторінки - вантажимо далі
+            console.log("Loading next page...");
             currentPage++;
             loadHomeContent(currentPage, true);
         }
@@ -66,23 +89,26 @@ function setupInfiniteScroll() {
     if(trigger) observer.observe(trigger);
 }
 
-// --- 3. НАВІГАЦІЯ ---
+// --- 4. НАВІГАЦІЯ ---
 window.switchMode = function(tab) {
     currentTab = tab;
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     
-    // Підсвітка
+    // UI кнопок
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const navs = document.querySelectorAll('.nav-item');
-    if(tab==='home') navs[0].classList.add('active');
-    if(tab==='search') navs[1].classList.add('active');
-    if(tab==='saved') navs[2].classList.add('active');
+    // Безпечний вибір кнопок за індексом
+    if(tab==='home' && navs[0]) navs[0].classList.add('active');
+    if(tab==='search' && navs[1]) navs[1].classList.add('active');
+    if(tab==='saved' && navs[2]) navs[2].classList.add('active');
 
-    // UI
+    // UI Блоків
     const hero = document.getElementById('hero_section');
     const filters = document.getElementById('filters_wrapper');
     const search = document.getElementById('search_bar_container');
     const content = document.getElementById('content_container');
     const trigger = document.getElementById('infinite_trigger');
+
+    if (!hero || !content) return;
 
     window.scrollTo({top:0});
 
@@ -91,9 +117,9 @@ window.switchMode = function(tab) {
         filters.style.display = 'flex';
         search.style.display = 'none';
         content.style.display = 'grid';
-        trigger.style.display = 'flex'; // Вмикаємо скрол
+        if(trigger) trigger.style.display = 'flex';
         
-        // Якщо пусто, вантажимо заново
+        // Якщо пусто, перезавантажити
         if (content.children.length === 0) {
             currentPage = 1;
             loadHomeContent(1);
@@ -104,34 +130,42 @@ window.switchMode = function(tab) {
         filters.style.display = 'none';
         search.style.display = 'block';
         content.style.display = 'grid';
-        trigger.style.display = 'none'; // Вимикаємо скрол
+        if(trigger) trigger.style.display = 'none';
         content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Пошук...</div>';
-        document.getElementById('search_input').focus();
     } 
     else if (tab === 'saved') {
         hero.style.display = 'none';
         filters.style.display = 'none';
         search.style.display = 'none';
         content.style.display = 'grid';
-        trigger.style.display = 'none'; // Вимикаємо скрол
-        renderGrid(savedItems, false); // false = перезаписати
+        if(trigger) trigger.style.display = 'none';
+        
+        if (savedItems.length === 0) {
+            content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Список пустий</div>';
+        } else {
+            renderGrid(savedItems, false);
+        }
     }
 };
 
 window.setCategory = function(catId) {
-    // UI
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    const btn = document.querySelector(`.cat-btn[onclick="setCategory('${catId}')"]`);
-    if(btn) btn.classList.add('active');
+    // Шукаємо кнопку, по якій клікнули (this не працює в inline, тому шукаємо по onclick)
+    // Або просто додаємо клас вручну, якщо передати element. 
+    // Спростимо:
+    const btns = document.querySelectorAll('.cat-btn');
+    // Це примітивна логіка підсвітки, для прототипу ок
+    for(let btn of btns) {
+        if(btn.getAttribute('onclick').includes(catId)) btn.classList.add('active');
+    }
 
-    // Logic
     currentGenre = catId;
     currentPage = 1;
-    document.getElementById('content_container').innerHTML = ''; // Очищаємо
-    loadHomeContent(1); // Вантажимо з нуля з новою категорією
+    document.getElementById('content_container').innerHTML = ''; 
+    loadHomeContent(1); 
 };
 
-// --- 4. ДАНІ ---
+// --- 5. ЗАВАНТАЖЕННЯ ДАНИХ (TMDB) ---
 async function loadHomeContent(page = 1, isAppend = false) {
     isLoading = true;
     const loader = document.getElementById('scroll_loader');
@@ -140,16 +174,13 @@ async function loadHomeContent(page = 1, isAppend = false) {
     try {
         let url = '';
         if (currentGenre === '') {
-            // Тренди
             url = `https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=uk-UA&page=${page}`;
         } else if (currentGenre === 'movie') {
-            // Просто фільми
             url = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=uk-UA&sort_by=popularity.desc&page=${page}`;
         } else if (currentGenre === 'tv') {
-            // Серіали
             url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=uk-UA&sort_by=popularity.desc&page=${page}`;
         } else {
-            // По жанрах (бойовики, мультики)
+            // Жанри
             url = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=uk-UA&with_genres=${currentGenre}&sort_by=popularity.desc&page=${page}`;
         }
 
@@ -159,9 +190,11 @@ async function loadHomeContent(page = 1, isAppend = false) {
         if (data.results) {
             const items = data.results.map(mapTMDB);
             
-            // Якщо це 1 сторінка і ми не "додаємо", ставимо Hero
+            // Якщо це перша сторінка і не скрол - ставимо Hero
             if (page === 1 && !isAppend && items.length > 0) {
-                setupHero(items[0]);
+                // Беремо випадковий з перших 5
+                const rand = Math.floor(Math.random() * Math.min(5, items.length));
+                setupHero(items[rand]);
             }
             
             renderGrid(items, isAppend);
@@ -187,19 +220,13 @@ function mapTMDB(item) {
     };
 }
 
-// --- 5. РЕНДЕРИНГ (Grid) ---
+// --- 6. РЕНДЕРИНГ ---
 function renderGrid(items, isAppend) {
     const container = document.getElementById('content_container');
     if (!container) return;
     
-    // Якщо не append (не довантаження), очищаємо сітку
     if (!isAppend) container.innerHTML = '';
     
-    if (items.length === 0 && !isAppend) {
-        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:20px;">Нічого не знайдено</div>';
-        return;
-    }
-
     items.forEach(item => {
         const div = document.createElement('div');
         div.className = 'movie-poster-card';
@@ -227,6 +254,7 @@ function setupHero(movie) {
     }
 }
 
+// Кнопки на банері
 window.playHeroMovie = function() {
     if (currentHeroMovie) window.openPremiumPlayer(currentHeroMovie.id, null);
 };
@@ -234,7 +262,7 @@ window.infoHeroMovie = function() {
     if (currentHeroMovie) window.openMoviePage(currentHeroMovie);
 };
 
-// --- 6. ПОШУК ---
+// --- 7. ПОШУК ---
 window.performSearchDelayed = function() {
     clearTimeout(searchTimeout);
     const query = document.getElementById('search_input').value;
@@ -253,7 +281,7 @@ window.performSearchDelayed = function() {
     }, 600);
 };
 
-// --- 7. СТОРІНКА ДЕТАЛЕЙ ---
+// --- 8. СТОРІНКА ДЕТАЛЕЙ (NETFLIX STYLE) ---
 window.openMoviePage = async function(movie) {
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
@@ -277,25 +305,19 @@ window.openMoviePage = async function(movie) {
             const data = await res.json();
             details.desc = data.overview || movie.desc;
             
-            // Runtime (logic for TV vs Movie)
-            if (data.runtime) {
-                details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
-            } else if (data.episode_run_time && data.episode_run_time.length > 0) {
-                details.runtime = `${data.episode_run_time[0]} хв (серія)`;
-            }
+            if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
+            else if (data.episode_run_time?.length) details.runtime = `${data.episode_run_time[0]} хв`;
 
-            // Logo
             if (data.images?.logos?.length > 0) {
                 const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
                 logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
             }
-            // Trailer
             if (data.videos?.results) {
                 const tr = data.videos.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
-                if (tr) trailerKey = tr.key;
+                if(tr) trailerKey = tr.key;
             }
         }
-    } catch (e) { console.log("Detail fetch error"); }
+    } catch (e) {}
 
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const bgImage = details.backdrop || details.img;
@@ -305,7 +327,6 @@ window.openMoviePage = async function(movie) {
             <div class="nf-hero">
                 <div class="nf-backdrop" style="background-image: url('${bgImage}');"></div>
                 <div class="nf-gradient"></div>
-                
                 <div class="nf-hero-content">
                     ${titleHtml}
                     <div class="nf-meta">
@@ -353,7 +374,7 @@ window.closeMoviePage = function() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
-// --- 8. ВІДКРИТТЯ ПЛЕЄРА ---
+// --- 9. ВІДКРИТТЯ ПЛЕЄРА ---
 window.openPremiumPlayer = async function(tmdbId, btn) {
     const originalText = btn ? btn.querySelector('span').innerText : "";
     
@@ -371,7 +392,7 @@ window.openPremiumPlayer = async function(tmdbId, btn) {
         if(data.data && data.data.id_kp) kpId = data.data.id_kp;
         
         if(!kpId) {
-            alert("Фільм не знайдено.");
+            alert("На жаль, фільм не знайдено.");
             resetBtn(btn, originalText);
             return;
         }
@@ -409,45 +430,39 @@ window.closePlayer = function() {
     document.getElementById('movie_details_modal').style.display = 'block';
 };
 
-// --- 9. ЗБЕРЕЖЕННЯ ---
+// --- 10. ЗБЕРЕЖЕННЯ ---
 window.toggleSave = function(id, btn) {
-    let movie = savedItems.find(m => m.id == id);
-    // Якщо немає в збережених, шукаємо в поточному hero
+    let movie = feedMovies.find(m => m.id == id);
     if (!movie && currentHeroMovie && currentHeroMovie.id == id) movie = currentHeroMovie;
-    // Або просто створюємо об'єкт (у спрощеному варіанті)
-    // Краще шукати у списку
+    if (!movie) movie = savedItems.find(m => m.id == id);
+
+    if (!movie) return;
+
+    const index = savedItems.findIndex(m => m.id == id);
     
-    if (isSaved(id)) {
-        const index = savedItems.findIndex(m => m.id == id);
-        savedItems.splice(index, 1);
-        if(btn) {
-            btn.querySelector('span').innerText = "Зберегти";
-            btn.querySelector('svg').setAttribute('fill', 'none');
-        }
-    } else {
-        // Ми повинні зберегти повний об'єкт. 
-        // Тут для спрощення я не шукаю повний об'єкт, якщо його немає під рукою
-        // Але у реальному сценарії краще передавати весь об'єкт у функцію.
-        // Поки що збережемо currentHeroMovie, якщо ID збігається
-        if (currentHeroMovie && currentHeroMovie.id == id) {
-            savedItems.push(currentHeroMovie);
-        } else {
-             // Спробуємо знайти в сітці?
-             // Це складний момент при чистому JS. 
-             // Пропустимо поки, щоб не ламати код.
-             // (Користувач зазвичай зберігає те, що відкрив)
-        }
-        
-        if(btn) {
+    if (index === -1) {
+        savedItems.push(movie);
+        if (btn) {
             btn.querySelector('span').innerText = "Збережено";
             btn.querySelector('svg').setAttribute('fill', 'white');
         }
+    } else {
+        savedItems.splice(index, 1);
+        if (btn) {
+            btn.querySelector('span').innerText = "Зберегти";
+            btn.querySelector('svg').setAttribute('fill', 'none');
+        }
+        if (currentTab === 'saved') renderGrid(savedItems, false);
     }
-    
-    if(currentTab === 'saved') renderGrid(savedItems, false);
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
 };
 
 function isSaved(id) {
     return savedItems.some(m => m.id == id);
 }
+
+// --- 11. ГЛОБАЛЬНИЙ ПОШУК (ЗАПАСНИЙ) ---
+window.searchOnline = function(t) {
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(`https://www.google.com/search?q=дивитися+онлайн+${encodeURIComponent(t)}+eneyida`);
+    else window.open(`https://www.google.com/search?q=дивитися+онлайн+${encodeURIComponent(t)}+eneyida`, '_blank');
+};

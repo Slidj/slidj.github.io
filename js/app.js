@@ -14,12 +14,11 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
-let currentMovie = null;
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
 
-// --- ІНІЦІАЛІЗАЦІЯ ---
+// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
@@ -38,53 +37,12 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 СЕРВЕРИ (З ЧИСТИМИ ПЛЕЄРАМИ) ---
-const MOVIE_SERVERS = [
-    // 1. VidSrc SU (Найбільш стабільний, є вибір озвучки в налаштуваннях)
-    { name: "Server 1 (Best)", url: (id) => `https://vidsrc.su/embed/movie/${id}` },
-    
-    // 2. SuperEmbed (Дуже швидкий, англ + субтитри)
-    { name: "Server 2 (Fast)", url: (id) => `https://www.2embed.cc/embed/${id}` },
-    
-    // 3. Voidboost (Для спроби знайти укр. озвучку)
-    { name: "Server 3 (UA?)", url: (id) => `https://voidboost.net/embed/movie/${id}` },
-    
-    // 4. Pro (Резерв)
-    { name: "Server 4 (Pro)", url: (id) => `https://vidsrc.pro/embed/movie/${id}` }
-];
-
-window.changeServer = function(index) {
-    const iframe = document.getElementById('video_frame');
-    const btns = document.querySelectorAll('.server-btn');
-    const server = MOVIE_SERVERS[index];
-    
-    if (!server) return;
-
-    // Підсвічування кнопок
-    btns.forEach((btn, i) => {
-        if (i === index) {
-            btn.style.backgroundColor = '#50a8eb';
-            btn.style.color = 'white';
-        } else {
-            btn.style.backgroundColor = '#222';
-            btn.style.color = '#888';
-        }
-    });
-
-    if (currentMovie && currentMovie.id) {
-        iframe.src = server.url(currentMovie.id);
-    }
-};
-
+// --- 🎬 ПРОСТИЙ ПЛЕЄР ---
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     
-    if (iframe) {
-        iframe.src = ''; 
-        // Знімаємо блокування, щоб не заважало іншим елементам (про всяк випадок)
-        iframe.removeAttribute('sandbox');
-    }
+    if (iframe) iframe.src = ''; 
     if (modal) modal.style.display = 'none';
     
     const fab = document.getElementById('fab_wrapper');
@@ -92,54 +50,18 @@ window.closePlayer = function() {
 };
 
 window.openPlayer = function(tmdbId) {
-    currentMovie = feedMovies.find(m => m.id == tmdbId) || { id: tmdbId };
-    
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     const fab = document.getElementById('fab_wrapper');
-    const contentDiv = modal.querySelector('.player-content');
-
+    
     if (!modal || !iframe) return;
 
-    // --- КНОПКИ ПЕРЕМИКАННЯ ---
-    let controls = document.getElementById('server_controls');
-    if (!controls) {
-        controls = document.createElement('div');
-        controls.id = 'server_controls';
-        controls.style.cssText = `
-            position: absolute; top: 60px; left: 0; width: 100%; 
-            display: flex; justify-content: center; gap: 8px; 
-            z-index: 10001; flex-wrap: wrap; padding: 0 10px; box-sizing: border-box;
-            pointer-events: none;
-        `;
-        
-        MOVIE_SERVERS.forEach((server, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'server-btn';
-            btn.innerText = server.name;
-            btn.onclick = () => window.changeServer(index);
-            btn.style.cssText = `
-                pointer-events: auto; padding: 6px 12px; border: 1px solid #444; border-radius: 20px; 
-                background: #222; color: #ccc; font-size: 11px; cursor: pointer;
-                transition: all 0.2s; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            `;
-            controls.appendChild(btn);
-        });
-        contentDiv.insertBefore(controls, iframe);
-    }
-
-    // --- 🛡️ БЛОКУВАННЯ ПЕРЕАДРЕСАЦІЇ (SANDBOX) ---
-    // Це найважливіший рядок. Він забороняє плеєру відкривати нові вікна.
-    // allow-scripts: дозволяє працювати плеєру
-    // allow-same-origin: дозволяє вантажити відео
-    // allow-presentation: дозволяє повний екран
-    // ВІДСУТНІЙ allow-top-navigation: ЗАБОРОНЯЄ перекидати вас на інші сайти!
-    iframe.setAttribute('sandbox', 'allow-forms allow-scripts allow-same-origin allow-presentation');
+    // 👇 ОДНЕ СТАБІЛЬНЕ ПОСИЛАННЯ (VideoCDN через дзеркало)
+    // Це дзеркало зазвичай працює в Україні і має укр. озвучку в налаштуваннях
+    iframe.src = `https://44.svetacdn.in/embed/movie?tmdb_id=${tmdbId}`;
     
+    // Дозволяємо все, щоб працювало як на сайті
     iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
-    
-    // Запускаємо Server 1
-    window.changeServer(0);
     
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
@@ -160,7 +82,7 @@ window.openLink = function(url, idEncoded) {
 
     const target = url.toString();
 
-    // Якщо це цифри або TMDB -> Плеєр
+    // Якщо це цифри або лінк TMDB -> Плеєр
     if (/^\d+$/.test(target)) {
         window.openPlayer(target);
         return;

@@ -1,11 +1,12 @@
 /* ==========================================================
-   🎨 STYLE.CSS: ПОВНА ВЕРСІЯ (FAB MENU + VIDEO PLAYER)
+   🎨 STYLE.CSS: MEDIA HUB (NETFLIX STYLE)
    ========================================================== */
 
+/* --- ОСНОВНІ НАЛАШТУВАННЯ --- */
 body {
     background-color: var(--tg-theme-bg-color, #ffffff);
     color: var(--tg-theme-text-color, #000000);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     padding: 0; margin: 0; line-height: 1.5;
     -webkit-tap-highlight-color: transparent;
 }
@@ -43,7 +44,7 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
 #content_container { transition: opacity 0.2s ease-out, transform 0.2s ease-out; opacity: 1; transform: translateY(0); }
 #content_container.fade-out { opacity: 0; transform: translateY(10px); }
 
-/* --- КАРТКИ --- */
+/* --- КАРТКИ НОВИН --- */
 .news-container { padding: 5px 0; min-height: 300px; display: flex; flex-direction: column; }
 .news-card { display: flex; flex-direction: column; background-color: var(--tg-theme-secondary-bg-color, #f5f5f5); margin: 12px 15px; padding: 15px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); transition: transform 0.1s ease-in-out, opacity 0.1s; cursor: pointer; }
 .news-card:active { transform: scale(0.96); opacity: 0.9; }
@@ -53,8 +54,14 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
 .news-text-content { flex: 1; min-width: 0; }
 .news-text-content h3 { font-size: 15px; margin: 0 0 4px 0; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .news-text-content p { font-size: 13px; margin: 0; color: var(--tg-theme-hint-color); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); pointer-events: auto; }
+.card-actions { display: flex; gap: 15px; }
+.action-btn { background: none; border: none; cursor: pointer; padding: 0; color: var(--tg-theme-hint-color); transition: transform 0.2s; display: flex; align-items: center; }
+.action-btn:active { transform: scale(0.8); }
+.bookmark-btn.saved { color: var(--tg-theme-button-color, #007aff); fill: var(--tg-theme-button-color, #007aff); }
+.news-date { font-size: 11px; color: var(--tg-theme-hint-color); }
 
-/* --- КІНО --- */
+/* --- КІНО (СІТКА) --- */
 .movies-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px; }
 .movie-card { background-color: var(--tg-theme-secondary-bg-color); border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: transform 0.1s ease-in-out; cursor: pointer; }
 .movie-card:active { transform: scale(0.96); }
@@ -62,15 +69,9 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
 .movie-info { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; }
 .movie-title { font-size: 14px; font-weight: 700; margin-bottom: 5px; color: var(--tg-theme-text-color); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .movie-rating { position: absolute; top: 8px; right: 8px; background-color: rgba(0,0,0,0.7); color: #ffc107; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 8px; backdrop-filter: blur(4px); pointer-events: none; }
+.movie-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); pointer-events: auto; }
 
-.movie-actions, .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); pointer-events: auto; }
-.card-actions { display: flex; gap: 15px; }
-.action-btn { background: none; border: none; cursor: pointer; padding: 0; color: var(--tg-theme-hint-color); transition: transform 0.2s; display: flex; align-items: center; }
-.action-btn:active { transform: scale(0.8); }
-.bookmark-btn.saved { color: var(--tg-theme-button-color, #007aff); fill: var(--tg-theme-button-color, #007aff); }
-.news-date { font-size: 11px; color: var(--tg-theme-hint-color); }
-
-/* --- LOADING & OTHER --- */
+/* --- ІНШЕ --- */
 .empty-state { text-align: center; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; flex-grow: 1; }
 .empty-text { font-size: 16px; font-weight: 500; color: var(--tg-theme-text-color); margin-bottom: 8px; }
 .loading-status { text-align: center; padding: 30px; color: var(--tg-theme-hint-color); font-style: italic; }
@@ -104,7 +105,7 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
 #fab_wrapper.open .fab-item:nth-child(3) { transition-delay: 0.15s; }
 #fab_wrapper.open #fab_main { background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff; transform: rotate(90deg); }
 
-/* 👇👇👇 ПЛЕЄР (НОВЕ) 👇👇👇 */
+/* --- ВІКНО ПЛЕЄРА --- */
 .player-modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: #000000;
@@ -122,322 +123,31 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
     display: flex; align-items: center; justify-content: center;
 }
 
-
-/* --- СТОРІНКА ФІЛЬМУ (ОКРЕМА) --- */
+/* --- ВІКНО КАРТКИ ФІЛЬМУ --- */
 .movie-details-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #000;
-    z-index: 20000; /* Поверх усього */
-    display: flex;
-    flex-direction: column;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #000; /* Чорний фон для всього вікна */
+    z-index: 20000; /* Найвищий пріоритет */
+    display: flex; flex-direction: column;
     overflow-y: auto; /* Дозволяє скрол */
     animation: slideIn 0.3s ease-out;
 }
 
-@keyframes slideIn {
-    from { transform: translateY(100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
+@keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-.movie-details-content {
-    width: 100%;
-    min-height: 100%;
-    position: relative;
-    padding-bottom: 50px;
-}
+.movie-details-content { width: 100%; min-height: 100%; position: relative; padding-bottom: 50px; }
 
 .close-movie-btn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 20001;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: fixed; top: 20px; right: 20px; width: 40px; height: 40px;
+    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%;
+    color: white; font-size: 24px; cursor: pointer; z-index: 20001;
+    display: flex; align-items: center; justify-content: center;
     transition: transform 0.2s;
 }
+.close-movie-btn:active { transform: scale(0.9); }
 
-.close-movie-btn:active {
-    transform: scale(0.9);
-}
-
-/* Елементи всередині картки (яку генерує JS) */
-.movie-backdrop {
-    width: 100%;
-    height: 40vh; /* 40% висоти екрану */
-    background-size: cover;
-    background-position: center;
-    position: relative;
-}
-
-.movie-backdrop::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to bottom, transparent 0%, #000 100%);
-}
-
-.movie-info-block {
-    padding: 20px;
-    margin-top: -60px; /* Наїжджаємо на картинку */
-    position: relative;
-    z-index: 2;
-}
-
-.movie-main-title {
-    font-size: 28px;
-    font-weight: 800;
-    margin: 0 0 10px 0;
-    line-height: 1.1;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-}
-
-.movie-meta-row {
-    display: flex;
-    gap: 15px;
-    font-size: 14px;
-    color: #aaa;
-    margin-bottom: 20px;
-    align-items: center;
-}
-
-.rating-badge {
-    background: #e5a00d;
-    color: #000;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: bold;
-}
-
-.movie-desc-text {
-    font-size: 15px;
-    line-height: 1.6;
-    color: #ccc;
-    margin-bottom: 30px;
-}
-
-.movie-actions-row {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.btn-primary-action {
-    background: linear-gradient(90deg, #007AFF, #0056b3);
-    color: white;
-    border: none;
-    padding: 16px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
-}
-
-.btn-secondary-action {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: none;
-    padding: 14px;
-    border-radius: 12px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-
-/* --- ОНОВЛЕННЯ ДЛЯ КАРТКИ ФІЛЬМУ --- */
-
-/* Фон фільму: фокус на верхню частину, щоб не різати голови */
-.movie-backdrop {
-    background-position: top center !important; 
-    height: 50vh; /* Трохи вище, щоб більше влазило */
-    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-}
-
-/* Кільце рейтингу */
-.rating-circle {
-    position: relative;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #0d253f; /* Темно-синій фон TMDB */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 12px;
-    color: white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
-/* Мета-інформація (Рік, Час, Вік) */
-.meta-tags {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-}
-
-.meta-tag {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 13px;
-    color: #ddd;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.age-limit {
-    border: 1px solid #ccc;
-    padding: 2px 6px;
-    font-size: 12px;
-    border-radius: 2px;
-    color: #fff;
-}
-
-/* Трейлер */
-.trailer-container {
-    margin-top: 20px;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
-    height: 0;
-    background: #000;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.trailer-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
-/* Оновлена Золота Кнопка */
-.btn-gold {
-    background: #FFD700 !important; /* Чисте золото */
-    color: #000000 !important; /* Чорний текст для контрасту */
-    font-weight: 800 !important;
-    border: none !important;
-    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
-    text-transform: uppercase;
-    font-size: 16px;
-    padding: 16px;
-}
-
-
-/* Логотип фільму замість тексту */
-.movie-logo-img {
-    max-width: 80%;       /* Не ширше 80% екрану */
-    max-height: 120px;    /* Не вище 120 пікселів */
-    width: auto;
-    object-fit: contain;  /* Зберігати пропорції */
-    display: block;
-    margin-bottom: 15px;
-    filter: drop-shadow(0 2px 10px rgba(0,0,0,0.8)); /* Тінь, щоб читалось на світлому фоні */
-}
-
-
-/* --- NETFLIX STYLE DESIGN --- */
-
-.nf-container {
-    background-color: #000;
-    color: #fff;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    padding-bottom: 40px;
-}
-
-/* Верхня картинка */
-.nf-backdrop-container {
-    position: relative;
-    width: 100%;
-    height: 55vh; /* Висока картинка */
-}
-
-.nf-backdrop {
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center top;
-}
-
-/* Градієнт, щоб текст читався */
-.nf-gradient-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to bottom, 
-        rgba(0,0,0,0) 0%, 
-        rgba(0,0,0,0.2) 50%, 
-        rgba(0,0,0,0.8) 80%, 
-        #000 100%);
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: 20px;
-}
-
-/* Логотип поверх картинки */
-.nf-logo {
-    width: 70%;
-    max-width: 300px;
-    max-height: 100px;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-    margin-bottom: 10px;
-}
-
-/* Якщо лого немає - гарний заголовок */
-.nf-title {
-    font-size: 32px;
-    font-weight: 800;
-    text-align: center;
-    text-transform: uppercase;
-    line-height: 1.1;
-    margin-bottom: 10px;
-    padding: 0 15px;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-}
-
-/* Інфо-блок (Рік, Вік, Час) */
-.nf-meta-row {
-    padding: 0 16px;
-    margin-top: -10px; /* Трохи наїжджаємо на градієнт */
-    margin-bottom: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center; /* По центру, як в Netflix */
-/* --- NETFLIX STYLE FIX --- */
+/* --- 🌟 NETFLIX STYLE DESIGN 🌟 --- */
 
 .nf-container {
     background-color: #000;
@@ -446,11 +156,11 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
     min-height: 100vh;
 }
 
-/* 1. Блок з картинкою (фіксована висота) */
+/* 1. HERO BLOCK (Картинка) */
 .nf-hero {
     position: relative;
     width: 100%;
-    height: 60vh; /* Займає 60% екрану */
+    height: 60vh; /* 60% екрану */
     overflow: hidden;
 }
 
@@ -461,138 +171,72 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
     background-position: center top;
 }
 
-/* 2. Потужний градієнт (плавний перехід у чорний) */
+/* 2. ГРАДІЄНТ (Плавний перехід у чорний) */
 .nf-gradient {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%; /* Градієнт на всю висоту картинки */
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
     background: linear-gradient(to bottom, 
         rgba(0,0,0,0) 0%, 
         rgba(0,0,0,0.1) 40%, 
         rgba(0,0,0,0.6) 75%, 
-        #000 100%); /* Внизу суцільний чорний */
+        #000 100%);
     z-index: 2;
 }
 
-/* 3. Контент, що лежить ПОВЕРХ картинки знизу */
+/* 3. КОНТЕНТ НА КАРТИНЦІ */
 .nf-hero-content {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 0 20px 10px 20px; /* Відступи збоку */
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Все по центру */
+    position: absolute; bottom: 0; left: 0; width: 100%;
+    padding: 0 20px 10px 20px; z-index: 3;
+    display: flex; flex-direction: column; align-items: center;
 }
 
 /* Логотип */
 .nf-logo {
-    width: 80%;
-    max-width: 280px;
-    height: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));
+    width: 80%; max-width: 280px; height: auto;
+    object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));
     margin-bottom: 15px;
 }
 
+/* Текстовий заголовок (якщо немає лого) */
 .nf-title-text {
-    font-size: 36px;
-    font-weight: 900;
-    text-transform: uppercase;
-    text-align: center;
-    line-height: 1;
-    margin-bottom: 15px;
+    font-size: 32px; font-weight: 900; text-transform: uppercase;
+    text-align: center; line-height: 1.1; margin-bottom: 15px;
     text-shadow: 0 4px 15px rgba(0,0,0,1);
 }
 
-/* 4. Мета-інформація (Рядок під назвою) */
+/* 4. МЕТА ДАНІ (Рядок під назвою) */
 .nf-meta {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    color: #e5e5e5;
-    margin-bottom: 20px;
-    font-weight: 500;
+    display: flex; gap: 12px; align-items: center; justify-content: center;
+    font-size: 13px; color: #e5e5e5; margin-bottom: 20px; font-weight: 500;
 }
 
-.nf-match {
-    color: #46d369; /* Зелений */
-    font-weight: 800;
-}
+.nf-match { color: #46d369; font-weight: 800; } /* Зелений "Match" */
+.nf-badge { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; color: white; font-size: 11px; }
 
-.nf-badge {
-    background: rgba(255,255,255,0.2);
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: white;
-    font-size: 11px;
-}
-
-/* 5. Кнопки (Фіксуємо розмір, щоб не стрибали) */
+/* 5. КНОПКИ */
 .nf-btn-row {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 0 20px;
-    margin-bottom: 25px;
+    width: 100%; display: flex; flex-direction: column; gap: 12px;
+    padding: 0 20px; margin-bottom: 25px; box-sizing: border-box;
 }
 
 .nf-btn {
-    width: 100%;
-    height: 48px; /* Фіксована висота */
-    border-radius: 6px;
-    border: none;
-    font-size: 16px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    cursor: pointer;
-    transition: opacity 0.2s;
+    width: 100%; height: 48px; border-radius: 6px; border: none;
+    font-size: 16px; font-weight: 700; display: flex; align-items: center;
+    justify-content: center; gap: 10px; cursor: pointer; transition: opacity 0.2s;
 }
 
-.nf-btn:active {
-    opacity: 0.7; /* Просто стає прозорішим при кліку */
-    transform: none; /* Прибираємо зміну розміру */
-}
+.nf-btn:active { opacity: 0.7; transform: none; }
 
-.nf-play {
-    background: #fff;
-    color: #000;
-}
+.nf-play { background: #fff; color: #000; }
+.nf-secondary { background: rgba(255,255,255,0.15); color: #fff; }
 
-.nf-secondary {
-    background: rgba(255,255,255,0.15);
-    color: #fff;
-}
-
-/* 6. Опис (Красивий шрифт) */
+/* 6. ОПИС ТА ІНШЕ */
 .nf-description {
-    padding: 0 20px 40px 20px;
-    color: #cccccc;
-    font-size: 15px;
-    line-height: 1.5;
-    font-weight: 400;
+    padding: 0 20px 40px 20px; color: #cccccc; font-size: 15px;
+    line-height: 1.5; font-weight: 400;
 }
 
-/* Трейлер */
 .nf-trailer {
-    margin: 0 20px 40px 20px;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-    padding-bottom: 56.25%;
-    background: #111;
+    margin: 0 20px 40px 20px; border-radius: 8px; overflow: hidden;
+    position: relative; padding-bottom: 56.25%; background: #111;
 }
-.nf-trailer iframe {
-    position: absolute;
-    top:0; left:0; width:100%; height:100%;
-}
+.nf-trailer iframe { position: absolute; top:0; left:0; width:100%; height:100%; }

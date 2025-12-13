@@ -1,19 +1,13 @@
 import { KEYS, API_URLS } from './config.js';
 
-// --- ЗАПИТ ДО НОВИН ---
+// --- 1. ЗАПИТ ДО НОВИН (NewsData.io) ---
+// Використовується для показу свіжих новин, коли пошук пустий
 export async function fetchNewsData(query, category, pageToken) {
     let url = `${API_URLS.newsdata}?apikey=${KEYS.NEWSDATA}&language=uk&country=ua&size=10`;
 
     if (query) {
-        // 👇 ГОЛОВНЕ ВИПРАВЛЕННЯ:
-        // 1. .trim() прибирає пробіли на початку і в кінці.
-        // 2. encodeURIComponent перетворює "Київ погода" на "Київ%20погода".
-        // Тепер сервер бачитиме ВСІ слова, а не тільки перше.
+        // Кодуємо запит, щоб "Київ погода" передавалося коректно
         const encodedQuery = encodeURIComponent(query.trim());
-        
-        // NewsData за замовчуванням шукає статті, де є І те, І інше слово (AND logic)
-        // Але якщо ви хочете "розумний" пошук (щоб шукало фразу навіть якщо слова розкидані),
-        // то стандартного кодування зазвичай достатньо.
         url += `&q=${encodedQuery}`;
     }
 
@@ -25,12 +19,12 @@ export async function fetchNewsData(query, category, pageToken) {
     return await res.json();
 }
 
-// --- ЗАПИТ ДО TMDB ---
+// --- 2. ЗАПИТ ДО КІНО (TMDB) ---
+// Шукає фільми або показує популярні
 export async function fetchTMDB(query, page) {
     let url = `${API_URLS.tmdb}`;
     
     if (query) {
-        // 👇 Тут теж додаємо кодування, щоб можна було шукати "Людина павук"
         const encodedQuery = encodeURIComponent(query.trim());
         url += `/search/movie?api_key=${KEYS.TMDB}&language=uk-UA&query=${encodedQuery}&page=${page}`;
     } else {
@@ -42,28 +36,22 @@ export async function fetchTMDB(query, page) {
     return await res.json();
 }
 
-
-
-// --- НОВИЙ РОЗУМНИЙ ПОШУК GOOGLE ---
+// --- 3. РОЗУМНИЙ ПОШУК (Google Custom Search) ---
+// Використовується, коли користувач вводить щось у пошук (для новин)
 export async function fetchGoogleSearch(query, page = 1) {
-    // Google використовує "start" замість номера сторінки.
-    // Сторінка 1 -> start=1, Сторінка 2 -> start=11, Сторінка 3 -> start=21
+    // Google API використовує індекс 'start', а не номер сторінки.
+    // Сторінка 1 = start 1, Сторінка 2 = start 11, Сторінка 3 = start 21...
     const start = (page - 1) * 10 + 1;
     
     const encodedQuery = encodeURIComponent(query.trim());
     
-    // Формуємо URL
-    const url = `${API_URLS.googleSearch}?key=${KEYS.GOOGLE_KEY}&cx=${KEYS.GOOGLE_CX}&q=${encodedQuery}&start=${start}&num=10&searchType=image`; 
-    // searchType=image - якщо хочете шукати картинки, але краще прибрати цей параметр, 
-    // щоб шукало статті, а картинки брало з метаданих. 
-    
-    // 👇 Правильний запит для змішаного пошуку (текст + картинки в метаданих)
-    const finalUrl = `${API_URLS.googleSearch}?key=${KEYS.GOOGLE_KEY}&cx=${KEYS.GOOGLE_CX}&q=${encodedQuery}&start=${start}&num=10`;
+    // Формуємо URL запиту
+    const url = `${API_URLS.googleSearch}?key=${KEYS.GOOGLE_KEY}&cx=${KEYS.GOOGLE_CX}&q=${encodedQuery}&start=${start}&num=10`;
 
-    const res = await fetch(finalUrl);
+    const res = await fetch(url);
     
     if (!res.ok) {
-        // Якщо ліміт 100 запитів вичерпано, Google поверне 429
+        // Обробка ліміту (100 запитів на день безкоштовно)
         if (res.status === 429) {
             throw new Error("Ліміт безкоштовного пошуку Google на сьогодні вичерпано 😔");
         }

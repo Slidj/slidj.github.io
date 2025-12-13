@@ -3,7 +3,7 @@ export const KEYS = {
     NEWSDATA: "pub_22e4e8780f9349e7a64a65f886ecae3a",
     GNEWS: "988894076e3186f8fbd93db235ee6fe9",
     TMDB: "4dac8d33b5f9ef7b7c69d94b3f9cd56b", // 👈 Тут була потрібна кома
-    GOOGLE_KEY: 'AIzaSyD_ipUid4VlDjd1jzg6u8pwEMIotWLnAoE', 
+    GOOGLE_KEY: 'AIzaSyDimPr4gHrGlvniu8hau0A56w41AbyTarc', 
     GOOGLE_CX: '51f68decc681b45e6' 
 };
 

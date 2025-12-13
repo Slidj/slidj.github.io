@@ -1,9 +1,8 @@
-// js/app.js
-
 import { fetchNewsData, fetchTMDB, fetchGoogleSearch } from './api.js';
 import { renderList, renderMovies, updateRankDisplay, addPoints } from './ui.js';
 import { API_URLS } from './config.js'; 
 
+// --- ГЛОБАЛЬНІ ЗМІННІ ---
 let appMode = 'news';
 let feedNews = [];
 let feedMovies = [];
@@ -19,35 +18,60 @@ let currentCategory = '';
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
 
+// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     const user = tg.initDataUnsafe?.user;
     if (user) {
         document.getElementById('header_title').innerText = user.first_name;
-        if (user.photo_url) document.getElementById('user_avatar').src = user.photo_url;
+        if (user.photo_url) {
+            document.getElementById('user_avatar').src = user.photo_url;
+            document.getElementById('user_avatar').style.display = 'block';
+        } else {
+             document.getElementById('default_avatar').style.display = 'flex';
+        }
     }
 }
 updateRankDisplay(); 
 
+// --- ОПТИМІЗАЦІЯ КАРТИНОК ---
 function optimizeImage(url) {
     if (!url) return null;
     if (url.includes('tmdb.org')) return url;
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- ЛОГІКА: ВІДКРИТТЯ ПЛЕЄРА АБО ПОСИЛАННЯ ---
+// --- 🎬 ЛОГІКА ПЛЕЄРА (VIDSRC) ---
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
-    iframe.src = ''; 
-    modal.style.display = 'none';
+    
+    if (iframe) iframe.src = ''; 
+    if (modal) modal.style.display = 'none';
+    
+    // Повертаємо меню FAB
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
 };
 
+window.openPlayer = function(tmdbId) {
+    const modal = document.getElementById('player_modal');
+    const iframe = document.getElementById('video_frame');
+    const fab = document.getElementById('fab_wrapper');
+
+    if (!modal || !iframe) return;
+
+    // Вставляємо посилання на плеєр
+    iframe.src = `https://vidsrc.xyz/embed/movie/${tmdbId}`;
+    
+    modal.style.display = 'flex';
+    if (fab) fab.style.display = 'none';
+};
+
+// --- ВІДКРИТТЯ (Плеєр або Сайт) ---
 window.openLink = function(url, idEncoded) {
-    // Статистика балів
+    // 1. Статистика
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
         if (!viewedItems.includes(id.toString())) {
@@ -59,47 +83,45 @@ window.openLink = function(url, idEncoded) {
         addPoints(2);
     }
 
-    const targetUrl = url.toString();
+    const target = url.toString();
 
-    // 🎬 ПЕРЕВІРКА: Це фільм? (посилання на themoviedb)
-    if (targetUrl.includes('themoviedb.org/movie/')) {
-        try {
-            // Витягуємо ID: .../movie/12345 -> 12345
-            const parts = targetUrl.split('/'); 
-            // Чистимо від зайвих символів
-            const tmdbId = parseInt(parts[parts.length - 1]); 
+    // 2. ПЕРЕВІРКА: Це ID фільму?
+    // Якщо це просто цифри (наприклад "550") -> Вмикаємо плеєр
+    if (/^\d+$/.test(target)) {
+        window.openPlayer(target);
+        return;
+    }
 
-            if (tmdbId) {
-                const modal = document.getElementById('player_modal');
-                const iframe = document.getElementById('video_frame');
-                const fab = document.getElementById('fab_wrapper');
-
-                // ЗАПУСКАЄМО ФІЛЬМ (VidSrc)
-                iframe.src = `https://vidsrc.xyz/embed/movie/${tmdbId}`;
-                
-                modal.style.display = 'flex';
-                if (fab) fab.style.display = 'none';
-                return; // Виходимо, браузер відкривати не треба
-            }
-        } catch (e) {
-            console.error("Помилка плеєра", e);
+    // Якщо це старе посилання TMDB -> Пробуємо витягнути ID
+    if (target.includes('themoviedb.org') || target.includes('/movie/')) {
+        const matches = target.match(/movie\/(\d+)/);
+        if (matches && matches[1]) {
+            window.openPlayer(matches[1]);
+            return;
         }
     }
 
-    // 📰 Якщо це не фільм -> Відкриваємо новину
-    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(targetUrl);
-    else window.open(targetUrl, '_blank');
+    // 3. Якщо це новина -> Відкриваємо браузер
+    if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.openLink(target);
+    } else {
+        window.open(target, '_blank');
+    }
 };
 
 // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
 async function loadContent(isMore = false) {
     if (!isMore) {
+        const preloader = document.getElementById('preloader');
+        if (!preloader || preloader.style.display === 'none') {
+             container.innerHTML = '<p class="loading-status">Завантаження...</p>';
+        }
         loadMoreBtn.style.display = 'none';
-        container.innerHTML = '<p class="loading-status">Завантаження...</p>';
     }
 
     try {
         if (appMode === 'news') {
+            // ... НОВИНИ ...
             let items = [];
             if (currentQuery) {
                 const pageNum = isMore ? googlePage + 1 : 1;
@@ -123,20 +145,28 @@ async function loadContent(isMore = false) {
             renderList(isMore ? items : feedNews, container, savedItems, isMore);
 
         } else if (appMode === 'movies') {
+            // ... ФІЛЬМИ ...
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
             
             const items = data.results.map(item => ({
-                id: item.id, title: item.title, desc: item.overview,
+                id: item.id,
+                title: item.title,
+                desc: item.overview,
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
-                // Формуємо стандартне посилання, яке потім перехопить openLink
-                url: `https://www.themoviedb.org/movie/${item.id}`, 
+                
+                // 👇 ТУТ ГОЛОВНА ЗМІНА:
+                // Ми записуємо ТІЛЬКИ ID (число), а не посилання.
+                // Це змусить openLink запустити плеєр.
+                url: item.id, 
+                
                 type: 'movie'
             }));
 
             moviePage = page;
             feedMovies = isMore ? [...feedMovies, ...items] : items;
+
             container.className = 'movies-grid';
             renderMovies(isMore ? items : feedMovies, container, savedItems, isMore);
             loadMoreBtn.style.display = 'block'; 
@@ -147,7 +177,7 @@ async function loadContent(isMore = false) {
     }
 }
 
-// --- ІНШІ ФУНКЦІЇ ---
+// --- FAB МЕНЮ ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
     const iconMenu = document.getElementById('icon_menu');
@@ -175,10 +205,11 @@ window.switchMode = function(mode) {
 
     setTimeout(() => {
         appMode = mode;
-        container.className = 'fade-out'; 
         const filters = document.getElementById('filters_wrapper');
         const catSelect = document.getElementById('category_select');
         const searchInput = document.getElementById('search_input');
+
+        container.className = 'fade-out'; 
 
         if (mode === 'news') {
             filters.style.display = 'flex'; catSelect.classList.remove('hidden'); searchInput.placeholder = "Пошук новин...";
@@ -200,6 +231,7 @@ window.switchMode = function(mode) {
             filters.style.display = 'none'; container.classList.add('news-container', 'list-view'); 
             loadMoreBtn.style.display = 'none'; renderList(savedItems, container, savedItems);
         }
+
         window.scrollTo({ top: 0, behavior: 'auto' });
         requestAnimationFrame(() => container.classList.remove('fade-out'));
     }, 200);

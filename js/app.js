@@ -1,7 +1,4 @@
-// js/app.js - PART 1
-
-// 👇 Додали fetchAllohaPlayer до імпортів
-import { fetchNewsData, fetchTMDB, fetchGoogleSearch, fetchAllohaPlayer } from './api.js';
+import { fetchNewsData, fetchTMDB, fetchGoogleSearch } from './api.js';
 import { renderList, renderMovies, updateRankDisplay, addPoints } from './ui.js';
 import { API_URLS } from './config.js'; 
 
@@ -38,52 +35,18 @@ if (window.Telegram?.WebApp) {
 }
 updateRankDisplay(); 
 
-// --- ФУНКЦІЯ ОПТИМІЗАЦІЇ ЗОБРАЖЕНЬ ---
+// --- ФУНКЦІЯ ОПТИМІЗАЦІЇ ЗОБРАЖЕНЬ (NEW 🚀) ---
 function optimizeImage(url) {
     if (!url) return null;
+    // Якщо це вже оптимізоване посилання TMDB - не чіпаємо
     if (url.includes('tmdb.org')) return url;
+    
+    // Використовуємо wsrv.nl для стиснення "на льоту"
+    // w=200 -> ширина 200px (досить для списку)
+    // q=80 -> якість 80%
+    // output=webp -> сучасний легкий формат
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
-
-// --- 🎬 ЛОГІКА ВІДЕО ПЛЕЄРА (ALLOHA) ---
-window.openPlayer = async function(tmdbId) {
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    
-    // Показуємо вікно завантаження
-    modal.style.display = 'flex';
-    document.getElementById('fab_wrapper').style.display = 'none'; // Ховаємо меню
-    
-    try {
-        iframe.src = ''; // Очищаємо старе
-        
-        // 1. Запитуємо посилання у Alloha
-        // (Якщо виникне помилка CORS або токена - спрацює catch)
-        const videoUrl = await fetchAllohaPlayer(tmdbId);
-        
-        // 2. Вставляємо посилання в плеєр
-        iframe.src = videoUrl;
-        
-    } catch (e) {
-        console.error("Alloha Error:", e);
-        
-        // ЗАПАСНИЙ ВАРІАНТ (VidSrc), якщо Alloha не спрацювала
-        console.log("Спроба запустити запасний плеєр...");
-        iframe.src = `https://vidsrc.xyz/embed/movie/${tmdbId}`;
-    }
-};
-
-window.closePlayer = function() {
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    
-    iframe.src = ''; // Зупиняємо відео
-    modal.style.display = 'none';
-    
-    // Повертаємо меню
-    document.getElementById('fab_wrapper').style.display = 'flex';
-};
-// js/app.js - PART 2
 
 // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
 async function loadContent(isMore = false) {
@@ -99,21 +62,32 @@ async function loadContent(isMore = false) {
         if (appMode === 'news') {
             let items = [];
             
-            // --- НОВИНИ: GOOGLE vs СТАНДАРТ ---
             if (currentQuery) {
+                // --- GOOGLE SEARCH ---
                 const pageNum = isMore ? googlePage + 1 : 1;
                 const googleData = await fetchGoogleSearch(currentQuery, pageNum);
                 
                 if (googleData.items) {
                     items = googleData.items.map(item => {
+                        // 1. Спочатку пробуємо знайти мініатюру (thumbnail) - вона менша
                         let rawUrl = null;
-                        if (item.pagemap?.cse_thumbnail?.length > 0) rawUrl = item.pagemap.cse_thumbnail[0].src;
-                        else if (item.pagemap?.cse_image?.length > 0) rawUrl = item.pagemap.cse_image[0].src;
+                        if (item.pagemap?.cse_thumbnail?.length > 0) {
+                            rawUrl = item.pagemap.cse_thumbnail[0].src;
+                        } else if (item.pagemap?.cse_image?.length > 0) {
+                            rawUrl = item.pagemap.cse_image[0].src;
+                        }
+
+                        // 2. Проганяємо через оптимізатор
+                        const optimizedUrl = optimizeImage(rawUrl);
 
                         return {
-                            id: item.link, title: item.title, desc: item.snippet,
-                            img: optimizeImage(rawUrl), 
-                            date: "З інтернету", url: item.link, type: 'news'
+                            id: item.link,
+                            title: item.title,
+                            desc: item.snippet,
+                            img: optimizedUrl, // Використовуємо стиснуте фото
+                            date: "З інтернету",
+                            url: item.link,
+                            type: 'news'
                         };
                     });
                 }
@@ -121,22 +95,29 @@ async function loadContent(isMore = false) {
                 loadMoreBtn.style.display = items.length > 0 ? 'block' : 'none';
 
             } else {
+                // --- СТАНДАРТНІ НОВИНИ ---
                 const data = await fetchNewsData('', currentCategory, isMore ? newsPageToken : null);
+                
                 items = data.results.map(item => ({
-                    id: item.link, title: item.title, desc: item.description,
+                    id: item.link,
+                    title: item.title,
+                    desc: item.description,
+                    // Тут теж можна оптимізувати, якщо картинки великі
                     img: item.image_url ? optimizeImage(item.image_url) : null,
-                    date: item.pubDate, url: item.link, type: 'news'
+                    date: item.pubDate,
+                    url: item.link,
+                    type: 'news'
                 }));
                 newsPageToken = data.nextPage;
                 loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
             }
 
             feedNews = isMore ? [...feedNews, ...items] : items;
+            
             container.className = 'news-container list-view';
             renderList(isMore ? items : feedNews, container, savedItems, isMore);
 
         } else if (appMode === 'movies') {
-            // --- ФІЛЬМИ (TMDB + ALLOHA ID) ---
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
             
@@ -146,10 +127,7 @@ async function loadContent(isMore = false) {
                 desc: item.overview,
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
-                
-                // 👇 ВАЖЛИВО: Зберігаємо чистий ID для плеєра
-                url: item.id, 
-                
+                url: `https://www.themoviedb.org/movie/${item.id}`,
                 type: 'movie'
             }));
 
@@ -165,7 +143,6 @@ async function loadContent(isMore = false) {
         if (!isMore) container.innerHTML = `<div class="empty-state"><div class="empty-text">Помилка</div><div class="empty-subtext">${e.message}</div></div>`;
     }
 }
-// js/app.js - PART 3
 
 // --- КЕРУВАННЯ FAB МЕНЮ ---
 window.toggleFab = function() {
@@ -181,7 +158,7 @@ window.toggleFab = function() {
     }
 };
 
-// --- ПЕРЕМИКАННЯ ВКЛАДОК (АНІМАЦІЯ) ---
+// --- ПЕРЕМИКАННЯ ВКЛАДОК ---
 window.switchMode = function(mode) {
     if (appMode === mode) return;
 
@@ -228,22 +205,25 @@ window.switchMode = function(mode) {
         }
 
         window.scrollTo({ top: 0, behavior: 'auto' });
-        requestAnimationFrame(() => { container.classList.remove('fade-out'); });
+        requestAnimationFrame(() => {
+            container.classList.remove('fade-out');
+        });
+
     }, 200);
 };
 
-// --- ДІЇ КОРИСТУВАЧА ---
+// --- ДІЇ ---
 window.performSearch = function() {
     currentQuery = document.getElementById('search_input').value.trim();
     currentCategory = document.getElementById('category_select').value;
+    
     feedNews = []; feedMovies = []; newsPageToken = null; googlePage = 1; moviePage = 1;
     loadContent();
 };
 
 window.loadMore = function() { loadContent(true); };
 
-// 👇 ОНОВЛЕНЕ ВІДКРИТТЯ (Посилання або Плеєр)
-window.openLink = function(urlOrId, idEncoded) {
+window.openLink = function(url, idEncoded) {
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
         if (!viewedItems.includes(id.toString())) {
@@ -252,18 +232,7 @@ window.openLink = function(urlOrId, idEncoded) {
             localStorage.setItem('viewedItems', JSON.stringify(viewedItems));
         }
     } else addPoints(2);
-
-    const target = urlOrId.toString();
-
-    // Якщо це число (ID фільму) -> відкриваємо плеєр
-    // (Перевіряємо, чи НЕ починається з http)
-    if (!target.startsWith('http')) {
-        window.openPlayer(target);
-    } else {
-        // Якщо це лінк (новина) -> браузер
-        if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(target);
-        else window.open(target, '_blank');
-    }
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url); else window.open(url, '_blank');
 };
 
 window.shareItem = function(url, title) {

@@ -24,7 +24,6 @@ if (window.Telegram?.WebApp) {
     tg.ready();
     tg.enableClosingConfirmation();
     
-    // Встановлюємо чорний колір хедера
     if (tg.setHeaderColor) tg.setHeaderColor('#000000');
     if (tg.setBackgroundColor) tg.setBackgroundColor('#000000');
 
@@ -54,17 +53,11 @@ window.closeMoviePage = function() {
     const modal = document.getElementById('movie_details_modal');
     if (modal) {
         modal.style.display = 'none';
-        document.body.style.overflow = ''; // Повертаємо скрол основній сторінці
+        document.body.style.overflow = ''; 
     }
-    
-    // Показуємо FAB меню
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
-    
-    // Ховаємо кнопку "Назад" в Telegram
-    if (window.Telegram?.WebApp?.BackButton) {
-        window.Telegram.WebApp.BackButton.hide();
-    }
+    if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
 window.openMoviePage = function(movie) {
@@ -74,74 +67,54 @@ window.openMoviePage = function(movie) {
 
     if (!modal || !content) return;
 
-    // Ховаємо скрол на основній сторінці
     document.body.style.overflow = 'hidden';
 
-    // Підготовка даних
     const backdrop = movie.img || ''; 
     const rating = movie.rating || 'N/A';
     
-    // Малюємо картку
     content.innerHTML = `
         <div class="movie-backdrop" style="background-image: url('${backdrop}');"></div>
-        
         <div class="movie-info-block">
             <h1 class="movie-main-title">${movie.title}</h1>
-            
             <div class="movie-meta-row">
                 <span class="rating-badge">IMDb ${rating}</span>
                 <span>Фільм</span>
                 <span>ID: ${movie.id}</span>
             </div>
-
             <p class="movie-desc-text">
-                ${movie.desc || 'Опис відсутній. Перейдіть до перегляду, щоб дізнатися більше.'}
+                ${movie.desc || 'Опис відсутній.'}
             </p>
-
             <div class="movie-actions-row">
                 <button class="btn-primary-action" onclick="openAlloha('${movie.id}')" style="background: linear-gradient(90deg, #6a11cb, #2575fc);">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                     Дивитися (Server Alloha)
                 </button>
-
                 <button class="btn-secondary-action" onclick="searchOnline('${movie.title}')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     Знайти (Eneyida / UaKino)
                 </button>
-
                 <div style="display:flex; gap:10px;">
-                    <button class="btn-secondary-action" style="flex:1;" onclick="openTrailer('${movie.title}')">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
-                        Трейлер
-                    </button>
-
-                    <button class="btn-secondary-action" style="flex:1;" onclick="openTMDB('${movie.id}')">
-                        TMDB Info
-                    </button>
+                    <button class="btn-secondary-action" style="flex:1;" onclick="openTrailer('${movie.title}')">Трейлер</button>
+                    <button class="btn-secondary-action" style="flex:1;" onclick="openTMDB('${movie.id}')">TMDB</button>
                 </div>
             </div>
         </div>
     `;
 
-    // Відкриваємо
     modal.style.display = 'flex';
-    
-    // Ховаємо кнопку меню (FAB), щоб не заважала
     if (fab) fab.style.display = 'none';
 
-    // Вмикаємо системну кнопку "Назад" в Telegram
     if (window.Telegram?.WebApp?.BackButton) {
         window.Telegram.WebApp.BackButton.show();
         window.Telegram.WebApp.BackButton.onClick(closeMoviePage);
     }
 };
 
-// --- ФУНКЦІЇ ДЛЯ КНОПОК ---
-
-// 👇 ТУТ ТВОЯ НОВА ФУНКЦІЯ ALLOHA
+// --- ВИПРАВЛЕНА ФУНКЦІЯ ALLOHA ---
 window.openAlloha = function(tmdbId) {
-    // Використовуємо твій токен, але міняємо kp на tmdb
-    const url = `https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`;
+    // БУЛО: api.alloha.tv (це JSON)
+    // СТАЛО: alloha.tv/window (це Плеєр)
+    const url = `https://alloha.tv/window/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}&autoplay=1`;
     
     if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
     else window.open(url, '_blank');
@@ -150,7 +123,6 @@ window.openAlloha = function(tmdbId) {
 window.searchOnline = function(title) {
     const query = `дивитися онлайн українською ${title} (eneyida OR uakino OR hdrezka)`;
     const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-    
     if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
     else window.open(url, '_blank');
 };
@@ -167,7 +139,6 @@ window.openTMDB = function(id) {
     else window.open(url, '_blank');
 };
 
-
 // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
 async function loadContent(isMore = false) {
     if (!isMore) {
@@ -181,39 +152,25 @@ async function loadContent(isMore = false) {
     try {
         if (appMode === 'news') {
             let items = [];
-            
             if (currentQuery) {
-                // GOOGLE SEARCH
                 const pageNum = isMore ? googlePage + 1 : 1;
                 const googleData = await fetchGoogleSearch(currentQuery, pageNum);
-                
                 if (googleData.items) {
                     items = googleData.items.map(item => {
                         let rawUrl = null;
                         if (item.pagemap?.cse_thumbnail?.length > 0) rawUrl = item.pagemap.cse_thumbnail[0].src;
                         else if (item.pagemap?.cse_image?.length > 0) rawUrl = item.pagemap.cse_image[0].src;
-
-                        return {
-                            id: item.link, title: item.title, desc: item.snippet,
-                            img: optimizeImage(rawUrl), date: "З інтернету", url: item.link, type: 'news'
-                        };
+                        return { id: item.link, title: item.title, desc: item.snippet, img: optimizeImage(rawUrl), date: "З інтернету", url: item.link, type: 'news' };
                     });
                 }
                 googlePage = pageNum;
                 loadMoreBtn.style.display = items.length > 0 ? 'block' : 'none';
-
             } else {
-                // STANDARD NEWS
                 const data = await fetchNewsData('', currentCategory, isMore ? newsPageToken : null);
-                items = data.results.map(item => ({
-                    id: item.link, title: item.title, desc: item.description,
-                    img: item.image_url ? optimizeImage(item.image_url) : null,
-                    date: item.pubDate, url: item.link, type: 'news'
-                }));
+                items = data.results.map(item => ({ id: item.link, title: item.title, desc: item.description, img: optimizeImage(item.image_url), date: item.pubDate, url: item.link, type: 'news' }));
                 newsPageToken = data.nextPage;
                 loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
             }
-
             feedNews = isMore ? [...feedNews, ...items] : items;
             container.className = 'news-container list-view';
             renderList(isMore ? items : feedNews, container, savedItems, isMore);
@@ -221,20 +178,9 @@ async function loadContent(isMore = false) {
         } else if (appMode === 'movies') {
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
-            
-            const items = data.results.map(item => ({
-                id: item.id,
-                title: item.title,
-                desc: item.overview,
-                img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
-                rating: item.vote_average.toFixed(1),
-                url: item.id, // Зберігаємо ID
-                type: 'movie'
-            }));
-
+            const items = data.results.map(item => ({ id: item.id, title: item.title, desc: item.overview, img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null, rating: item.vote_average.toFixed(1), url: item.id, type: 'movie' }));
             moviePage = page;
             feedMovies = isMore ? [...feedMovies, ...items] : items;
-
             container.className = 'movies-grid';
             renderMovies(isMore ? items : feedMovies, container, savedItems, isMore);
             loadMoreBtn.style.display = 'block'; 
@@ -245,7 +191,7 @@ async function loadContent(isMore = false) {
     }
 }
 
-// --- КЕРУВАННЯ FAB МЕНЮ ---
+// --- FAB МЕНЮ ТА ІНШЕ ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
     const iconMenu = document.getElementById('icon_menu');
@@ -259,57 +205,30 @@ window.toggleFab = function() {
     }
 };
 
-// --- ПЕРЕМИКАННЯ ВКЛАДОК ---
 window.switchMode = function(mode) {
     if (appMode === mode) return;
-
     const fabItems = document.querySelectorAll('.fab-item');
     fabItems.forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.querySelector(`.fab-item[onclick*="${mode}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
-
+    document.querySelector(`.fab-item[onclick*="${mode}"]`)?.classList.add('active');
     const wrapper = document.getElementById('fab_wrapper');
     if (wrapper.classList.contains('open')) window.toggleFab();
-
     const container = document.getElementById('content_container');
     container.classList.add('fade-out');
-
     setTimeout(() => {
         appMode = mode;
         const filters = document.getElementById('filters_wrapper');
         const catSelect = document.getElementById('category_select');
         const searchInput = document.getElementById('search_input');
-
         container.className = 'fade-out'; 
-
         if (mode === 'news') {
             filters.style.display = 'flex'; catSelect.classList.remove('hidden'); searchInput.placeholder = "Пошук новин...";
-            if (feedNews.length === 0) loadContent();
-            else { 
-                container.classList.add('news-container', 'list-view'); 
-                renderList(feedNews, container, savedItems); 
-                loadMoreBtn.style.display = (newsPageToken || (currentQuery && feedNews.length > 0)) ? 'block' : 'none';
-            }
+            if (feedNews.length === 0) loadContent(); else { container.classList.add('news-container', 'list-view'); renderList(feedNews, container, savedItems); loadMoreBtn.style.display = (newsPageToken || (currentQuery && feedNews.length > 0)) ? 'block' : 'none'; }
         } else if (mode === 'movies') {
             filters.style.display = 'flex'; catSelect.classList.add('hidden'); searchInput.placeholder = "Пошук фільмів...";
-            if (feedMovies.length === 0) loadContent();
-            else { 
-                container.classList.add('movies-grid'); 
-                renderMovies(feedMovies, container, savedItems); 
-                loadMoreBtn.style.display = 'block'; 
-            }
-        } else { 
-            filters.style.display = 'none'; 
-            container.classList.add('news-container', 'list-view'); 
-            loadMoreBtn.style.display = 'none';
-            renderList(savedItems, container, savedItems);
-        }
-
+            if (feedMovies.length === 0) loadContent(); else { container.classList.add('movies-grid'); renderMovies(feedMovies, container, savedItems); loadMoreBtn.style.display = 'block'; }
+        } else { filters.style.display = 'none'; container.classList.add('news-container', 'list-view'); loadMoreBtn.style.display = 'none'; renderList(savedItems, container, savedItems); }
         window.scrollTo({ top: 0, behavior: 'auto' });
-        requestAnimationFrame(() => {
-            container.classList.remove('fade-out');
-        });
-
+        requestAnimationFrame(() => { container.classList.remove('fade-out'); });
     }, 200);
 };
 
@@ -322,7 +241,6 @@ window.performSearch = function() {
 
 window.loadMore = function() { loadContent(true); };
 
-// --- ОНОВЛЕНА ФУНКЦІЯ ВІДКРИТТЯ (Головна логіка) ---
 window.openLink = function(url, idEncoded) {
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
@@ -331,42 +249,27 @@ window.openLink = function(url, idEncoded) {
             if (viewedItems.length > 200) viewedItems.shift(); 
             localStorage.setItem('viewedItems', JSON.stringify(viewedItems));
         }
-    } else {
-        addPoints(2);
-    }
+    } else addPoints(2);
 
     const target = url.toString();
-
-    // 1. ПЕРЕВІРЯЄМО, ЧИ ЦЕ ФІЛЬМ (за ID або посиланням TMDB)
-    
-    // Якщо прийшло просто число (ID)
     if (/^\d+$/.test(target)) {
         let movie = feedMovies.find(m => m.id == target);
-        // Якщо не знайшли в стрічці, шукаємо в збережених
         if (!movie) movie = savedItems.find(m => m.id == target);
-        // Якщо все одно немає (рідкісний випадок), робимо об'єкт-заглушку
         if (!movie) movie = { id: target, title: "Фільм", desc: "Деталі завантажуються...", img: "" };
-        
         window.openMoviePage(movie);
         return;
     }
-    
-    // Якщо прийшло посилання на TMDB
     if (target.includes('themoviedb.org') || target.includes('/movie/')) {
         const matches = target.match(/movie\/(\d+)/);
         if (matches && matches[1]) {
             const id = matches[1];
             let movie = feedMovies.find(m => m.id == id) || savedItems.find(m => m.id == id);
             if (!movie) movie = { id: id, title: "Фільм", desc: "...", img: "" };
-            
             window.openMoviePage(movie);
             return;
         }
     }
-
-    // 2. ЯКЩО ЦЕ НОВИНА -> ВІДКРИВАЄМО В БРАУЗЕРІ
-    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(target); 
-    else window.open(target, '_blank');
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(target); else window.open(target, '_blank');
 };
 
 window.shareItem = function(url, title) {

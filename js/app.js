@@ -14,7 +14,7 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
-let currentMovieId = null; 
+let currentMovieId = null;
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
@@ -38,59 +38,90 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 СПИСОК СЕРВЕРІВ (VidLink та резерви) ---
-const MOVIE_SERVERS = [
-    // 1. VidLink (Сучасний, швидкий, агрегує багато джерел)
-    { name: "Server 1 (VidLink)", url: (id) => `https://vidlink.pro/movie/${id}` },
-    
-    // 2. VidSrc.CC (Новий агрегатор, часто працює там, де інші ні)
-    { name: "Server 2 (CC)", url: (id) => `https://vidsrc.cc/v2/embed/movie/${id}` },
-    
-    // 3. SuperEmbed (Старий добрий надійний варіант, переважно англ)
-    { name: "Server 3 (Super)", url: (id) => `https://www.2embed.cc/embed/${id}` }
-];
-
-window.changeServer = function(index) {
-    const iframe = document.getElementById('video_frame');
-    const btns = document.querySelectorAll('.server-btn');
-    const server = MOVIE_SERVERS[index];
-    
-    if (!server || !iframe) return;
-
-    // Оновлюємо кнопки
-    btns.forEach((btn, i) => {
-        if (i === index) {
-            btn.style.backgroundColor = '#50a8eb';
-            btn.style.color = 'white';
-        } else {
-            btn.style.backgroundColor = '#222';
-            btn.style.color = '#888';
-        }
+// --- 🎬 KINOBOX (АГРЕГАТОР З УКР ОЗВУЧКОЮ) ---
+function loadKinoboxScript() {
+    return new Promise((resolve, reject) => {
+        if (window.kbox) { resolve(); return; }
+        const script = document.createElement('script');
+        script.src = "https://kinobox.tv/kinobox.min.js"; // Офіційний скрипт
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
     });
+}
 
-    // Завантажуємо нове джерело
-    if (currentMovieId) {
-        iframe.src = server.url(currentMovieId);
+// Функція запуску Kinobox
+async function initKinoboxPlayer(tmdbId) {
+    const container = document.getElementById('kinobox_container');
+    if (!container) return;
+
+    try {
+        await loadKinoboxScript();
         
-        // Оновлюємо кнопку "Відкрити в браузері"
-        const extBtn = document.getElementById('external_open_btn');
-        if (extBtn) {
-            extBtn.onclick = function() {
-                const link = server.url(currentMovieId);
-                if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(link);
-                else window.open(link, '_blank');
-            };
-        }
+        // Очищаємо контейнер перед запуском
+        container.innerHTML = '';
+
+        // Запуск Kinobox з налаштуваннями для України
+        new window.Kinobox('.kinobox_player', {
+            search: { tmdb: tmdbId },
+            menu: {
+                enable: true, // Показує меню вибору озвучки/якості
+                default: 'menu_list',
+                mobile: true,
+                format: '{N} :: {T} ({Q})'
+            },
+            players: {
+                // Пріоритет джерел (саме тут шукається UA)
+                videocdn: { enable: true, position: 1 },
+                alloha: { enable: true, position: 2 },
+                ashdi: { enable: true, position: 3 },
+                collaps: { enable: true, position: 4 },
+                hdvb: { enable: true, position: 5 }
+            },
+            view: { mobile: true }
+        }).init();
+    } catch (e) {
+        console.error("Kinobox Error:", e);
+        container.innerHTML = '<div style="color:white; text-align:center; padding:20px;">Не вдалося завантажити плеєр. Спробуйте натиснути "Запасний плеєр".</div>';
+    }
+}
+
+// --- ПЕРЕМИКАЧ СЕРВЕРІВ ---
+window.changeSource = function(type) {
+    const iframe = document.getElementById('video_frame');
+    const kbox = document.getElementById('kinobox_container');
+    const btns = document.querySelectorAll('.server-btn');
+
+    if (type === 'kinobox') {
+        // Ховаємо iframe, показуємо Kinobox
+        iframe.style.display = 'none';
+        iframe.src = '';
+        kbox.style.display = 'block';
+        if (currentMovieId) initKinoboxPlayer(currentMovieId);
+        
+        btns[0].style.backgroundColor = '#50a8eb'; btns[0].style.color = 'white';
+        btns[1].style.backgroundColor = '#222'; btns[1].style.color = '#888';
+    } else {
+        // Ховаємо Kinobox, показуємо VidLink
+        kbox.style.display = 'none';
+        kbox.innerHTML = ''; // Зупиняємо скрипт
+        iframe.style.display = 'block';
+        if (currentMovieId) iframe.src = `https://vidlink.pro/movie/${currentMovieId}`;
+        
+        btns[1].style.backgroundColor = '#50a8eb'; btns[1].style.color = 'white';
+        btns[0].style.backgroundColor = '#222'; btns[0].style.color = '#888';
     }
 };
 
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
+    const kbox = document.getElementById('kinobox_container');
+
+    if (iframe) iframe.src = '';
+    if (kbox) kbox.innerHTML = ''; // Очищаємо Kinobox
     
-    if (iframe) iframe.src = ''; 
     if (modal) modal.style.display = 'none';
-    
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
 };
@@ -98,67 +129,60 @@ window.closePlayer = function() {
 window.openPlayer = function(tmdbId) {
     currentMovieId = tmdbId;
     const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    const fab = document.getElementById('fab_wrapper');
     const contentDiv = modal.querySelector('.player-content');
+    const fab = document.getElementById('fab_wrapper');
 
-    if (!modal || !iframe) return;
+    if (!modal) return;
 
-    // --- МЕНЮ ВИБОРУ СЕРВЕРА ---
-    let controls = document.getElementById('server_controls');
+    // 1. Створюємо контейнер для Kinobox, якщо немає
+    let kboxDiv = document.getElementById('kinobox_container');
+    if (!kboxDiv) {
+        kboxDiv = document.createElement('div');
+        kboxDiv.id = 'kinobox_container';
+        kboxDiv.className = 'kinobox_player';
+        kboxDiv.style.cssText = "width: 100%; height: 100%; min-height: 250px; background: #000;";
+        
+        // Вставляємо його ПЕРЕД iframe
+        const iframe = document.getElementById('video_frame');
+        contentDiv.insertBefore(kboxDiv, iframe);
+    }
+
+    // 2. Додаємо кнопки перемикання (UA / ENG)
+    let controls = document.getElementById('source_controls');
     if (!controls) {
         controls = document.createElement('div');
-        controls.id = 'server_controls';
+        controls.id = 'source_controls';
         controls.style.cssText = `
             position: absolute; top: 60px; left: 0; width: 100%; 
-            display: flex; justify-content: center; gap: 8px; 
-            z-index: 10001; flex-wrap: wrap; padding: 0 10px; box-sizing: border-box;
-            pointer-events: none;
+            display: flex; justify-content: center; gap: 10px; z-index: 10001;
         `;
         
-        MOVIE_SERVERS.forEach((server, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'server-btn';
-            btn.innerText = server.name;
-            btn.onclick = () => window.changeServer(index);
-            btn.style.cssText = `
-                pointer-events: auto; padding: 6px 12px; border: 1px solid #444; border-radius: 20px; 
-                background: #222; color: #ccc; font-size: 11px; cursor: pointer;
-                transition: all 0.2s; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            `;
-            controls.appendChild(btn);
-        });
-        contentDiv.insertBefore(controls, iframe);
+        const btnUa = document.createElement('button');
+        btnUa.className = 'server-btn';
+        btnUa.innerText = "🇺🇦 UA (Kinobox)";
+        btnUa.onclick = () => window.changeSource('kinobox');
+        btnUa.style.cssText = "padding: 8px 15px; border-radius: 20px; border:none; background: #50a8eb; color: white; font-weight: bold; font-size: 12px;";
+
+        const btnEng = document.createElement('button');
+        btnEng.className = 'server-btn';
+        btnEng.innerText = "🌎 Backup (VidLink)";
+        btnEng.onclick = () => window.changeSource('eng');
+        btnEng.style.cssText = "padding: 8px 15px; border-radius: 20px; border:none; background: #222; color: #888; font-weight: bold; font-size: 12px;";
+
+        controls.appendChild(btnUa);
+        controls.appendChild(btnEng);
+        contentDiv.appendChild(controls); // Додаємо кнопки в кінець контейнера, але CSS підніме їх вгору
+        
+        // Важливо: перемістити controls на початок, щоб не перекривалися плеєром
+        contentDiv.insertBefore(controls, contentDiv.firstChild); 
     }
 
-    // --- КНОПКА "ВІДКРИТИ В БРАУЗЕРІ" ---
-    let extBtn = document.getElementById('external_open_btn');
-    if (!extBtn) {
-        extBtn = document.createElement('button');
-        extBtn.id = 'external_open_btn';
-        extBtn.innerHTML = `
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px; vertical-align:middle;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            Відкрити в браузері
-        `;
-        extBtn.style.cssText = `
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
-            padding: 8px 16px; border-radius: 20px; border: none;
-            background: rgba(255, 59, 48, 0.9); color: white; font-weight: bold; font-size: 12px;
-            z-index: 10002; cursor: pointer; backdrop-filter: blur(4px);
-            white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        `;
-        contentDiv.appendChild(extBtn);
-    }
-
-    // Очищаємо всі обмеження, щоб плеєр точно завантажився
-    iframe.removeAttribute('sandbox'); 
-    iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
-    
-    // Запускаємо VidLink
-    window.changeServer(0);
-    
+    // 3. Відкриваємо модалку і запускаємо Kinobox за замовчуванням
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
+    
+    // Запускаємо UA версію
+    window.changeSource('kinobox');
 };
 
 // --- ВІДКРИТТЯ ПОСИЛАНЬ ---

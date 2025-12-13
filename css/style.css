@@ -351,3 +351,15 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
     font-size: 16px;
     padding: 16px;
 }
+
+
+/* Логотип фільму замість тексту */
+.movie-logo-img {
+    max-width: 80%;       /* Не ширше 80% екрану */
+    max-height: 120px;    /* Не вище 120 пікселів */
+    width: auto;
+    object-fit: contain;  /* Зберігати пропорції */
+    display: block;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,0.8)); /* Тінь, щоб читалось на світлому фоні */
+}

@@ -66,7 +66,6 @@ window.openMoviePage = function(movie) {
     const backdrop = movie.img || ''; 
     const rating = movie.rating || 'N/A';
     
-    // --- МАЛЮЄМО КАРТКУ ---
     content.innerHTML = `
         <div class="movie-backdrop" style="background-image: url('${backdrop}');"></div>
         
@@ -75,7 +74,7 @@ window.openMoviePage = function(movie) {
             
             <div class="movie-meta-row">
                 <span class="rating-badge">IMDb ${rating}</span>
-                <span>TMDB: ${movie.id}</span>
+                <span>ID: ${movie.id}</span>
             </div>
 
             <p class="movie-desc-text">
@@ -83,9 +82,9 @@ window.openMoviePage = function(movie) {
             </p>
 
             <div class="movie-actions-row">
-                <button class="btn-primary-action" onclick="openPremiumPlayer('${movie.id}')" style="background: linear-gradient(90deg, #FFD700, #FFA500); color: black; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);">
+                <button class="btn-primary-action" onclick="openPremiumPlayer('${movie.id}', this)" style="background: linear-gradient(90deg, #FFD700, #FFA500); color: black; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    <span>⭐️ PREMIUM (Ваш плеєр)</span>
+                    <span>⭐️ PREMIUM (Дивитися)</span>
                 </button>
 
                 <button class="btn-secondary-action" onclick="searchOnline('${movie.title}')">
@@ -112,43 +111,74 @@ window.openMoviePage = function(movie) {
     }
 };
 
-// --- 🔥 ФУНКЦІЯ ДЛЯ ВАШОГО ПЛЕЄРА ---
-window.openPremiumPlayer = function(tmdbId) {
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    const fab = document.getElementById('fab_wrapper');
-    const moviePage = document.getElementById('movie_details_modal');
+// --- 🔥 ФУНКЦІЯ ДЛЯ ВАШОГО ПЛЕЄРА (З КОНВЕРТАЦІЄЮ ID) ---
+window.openPremiumPlayer = async function(tmdbId, btnElement) {
+    // 1. Показуємо користувачеві, що йде завантаження
+    const originalText = btnElement ? btnElement.querySelector('span').innerText : "Premium";
+    if (btnElement) btnElement.querySelector('span').innerText = "Шукаю ID...";
 
-    // Ховаємо картку фільму, щоб показати плеєр
-    if (moviePage) moviePage.style.display = 'none';
+    let kpId = null;
 
-    // ВАШ ТОКЕН
-    const token = "eyJhbGciOiJIUzI1NiJ9.eyJ3ZWJTaXRlIjoiMzQiLCJpc3MiOiJhcGktd2VibWFzdGVyIiwic3ViIjoiNDEiLCJpYXQiOjE3NDMwNjA3ODAsImp0aSI6IjIzMTQwMmE0LTM3NTMtNGQ3OS1hNDBjLTA2YTY0MTE0MzNhOSIsInNjb3BlIjoiRExFIn0.4PmKGf512P-ov-tEjwr3gfOVxccjx8SSt28slJXypYU";
+    try {
+        // 2. Конвертуємо TMDB ID -> Kinopoisk ID через Alloha API
+        // Використовуємо твій токен, щоб дізнатися ID
+        const response = await fetch(`https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`);
+        const data = await response.json();
+
+        if (data.status === 'success' && data.data && data.data.id_kp) {
+            kpId = data.data.id_kp;
+        } else {
+            alert("Не вдалося знайти ID Кінопошуку для цього фільму. Спробуйте кнопку 'Знайти'.");
+            if (btnElement) btnElement.querySelector('span').innerText = originalText;
+            return;
+        }
+
+    } catch (e) {
+        console.error("ID Conversion Error:", e);
+        // Якщо конвертація не вдалася, пробуємо просто запустити (шанс малий, але є)
+        // kpId = null; 
+        alert("Помилка з'єднання. Спробуйте пізніше.");
+        if (btnElement) btnElement.querySelector('span').innerText = originalText;
+        return;
+    }
+
+    // 3. Якщо ID знайдено - відкриваємо плеєр
+    if (kpId) {
+        const modal = document.getElementById('player_modal');
+        const iframe = document.getElementById('video_frame');
+        const moviePage = document.getElementById('movie_details_modal');
+
+        // Ховаємо картку
+        if (moviePage) moviePage.style.display = 'none';
+
+        // ВАШ ТОКЕН ПЛЕЄРА
+        const playerToken = "eyJhbGciOiJIUzI1NiJ9.eyJ3ZWJTaXRlIjoiMzQiLCJpc3MiOiJhcGktd2VibWFzdGVyIiwic3ViIjoiNDEiLCJpYXQiOjE3NDMwNjA3ODAsImp0aSI6IjIzMTQwMmE0LTM3NTMtNGQ3OS1hNDBjLTA2YTY0MTE0MzNhOSIsInNjb3BlIjoiRExFIn0.4PmKGf512P-ov-tEjwr3gfOVxccjx8SSt28slJXypYU";
+        
+        // Вставляємо отриманий KP ID
+        const url = `https://api.rstprgapipt.com/balancer-api/iframe?kp=${kpId}&token=${playerToken}&disabled_share=1`;
+
+        iframe.src = url;
+        modal.style.display = 'flex';
+        
+        // Кнопка закриття повертає назад
+        const closeBtn = modal.querySelector('.close-player');
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+            iframe.src = '';
+            if (moviePage) moviePage.style.display = 'flex';
+        };
+    }
     
-    // Формуємо посилання. Міняємо kp на tmdb_id
-    const url = `https://api.rstprgapipt.com/balancer-api/iframe?tmdb_id=${tmdbId}&token=${token}&disabled_share=1`;
-
-    iframe.src = url;
-    modal.style.display = 'flex';
-    
-    // Кнопка закриття плеєра має повертати нас назад до картки фільму
-    const closeBtn = modal.querySelector('.close-player');
-    closeBtn.onclick = function() {
-        modal.style.display = 'none';
-        iframe.src = '';
-        if (moviePage) moviePage.style.display = 'flex'; // Повертаємось до опису
-    };
+    // Повертаємо текст кнопки
+    if (btnElement) btnElement.querySelector('span').innerText = originalText;
 };
 
 // --- ІНШІ ФУНКЦІЇ ---
 window.closePlayer = function() {
-    // Ця функція тепер використовується для закриття iframe
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     if (modal) modal.style.display = 'none';
     if (iframe) iframe.src = '';
-    
-    // Якщо ми закрили плеєр, треба повернути FAB або картку
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
 };

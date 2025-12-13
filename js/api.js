@@ -60,3 +60,25 @@ export async function fetchGoogleSearch(query, page = 1) {
     
     return await res.json();
 }
+
+
+
+// js/api.js
+
+// ... (попередні функції fetchNews, fetchTMDB, fetchGoogle залишаються) ...
+
+// --- ОТРИМАННЯ ПОСИЛАННЯ НА ВІДЕО (ALLOHA) ---
+export async function fetchAllohaPlayer(tmdbId) {
+    // Формуємо запит до бази
+    const url = `${API_URLS.allohaApi}/?token=${KEYS.ALLOHA}&tmdb=${tmdbId}`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    // Alloha зазвичай повертає структуру: { data: { iframe: "https://..." } }
+    if (data && data.data && data.data.iframe) {
+        return data.data.iframe;
+    } else {
+        throw new Error("Фільм поки що відсутній у базі Alloha");
+    }
+}

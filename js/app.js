@@ -24,6 +24,7 @@ if (window.Telegram?.WebApp) {
     tg.ready();
     tg.enableClosingConfirmation();
     
+    // Встановлюємо чорний колір хедера
     if (tg.setHeaderColor) tg.setHeaderColor('#000000');
     if (tg.setBackgroundColor) tg.setBackgroundColor('#000000');
 
@@ -55,8 +56,10 @@ window.closeMoviePage = function() {
         modal.style.display = 'none';
         document.body.style.overflow = ''; 
     }
+    
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
+    
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
@@ -74,25 +77,31 @@ window.openMoviePage = function(movie) {
     
     content.innerHTML = `
         <div class="movie-backdrop" style="background-image: url('${backdrop}');"></div>
+        
         <div class="movie-info-block">
             <h1 class="movie-main-title">${movie.title}</h1>
+            
             <div class="movie-meta-row">
                 <span class="rating-badge">IMDb ${rating}</span>
                 <span>Фільм</span>
                 <span>ID: ${movie.id}</span>
             </div>
+
             <p class="movie-desc-text">
-                ${movie.desc || 'Опис відсутній.'}
+                ${movie.desc || 'Опис відсутній. Перейдіть до перегляду, щоб дізнатися більше.'}
             </p>
+
             <div class="movie-actions-row">
-                <button class="btn-primary-action" onclick="openAlloha('${movie.id}')" style="background: linear-gradient(90deg, #6a11cb, #2575fc);">
+                <button class="btn-primary-action" onclick="openAlloha('${movie.id}', this)" style="background: linear-gradient(90deg, #6a11cb, #2575fc);">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    Дивитися (Server Alloha)
+                    <span>Дивитися (Server Alloha)</span>
                 </button>
+
                 <button class="btn-secondary-action" onclick="searchOnline('${movie.title}')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     Знайти (Eneyida / UaKino)
                 </button>
+
                 <div style="display:flex; gap:10px;">
                     <button class="btn-secondary-action" style="flex:1;" onclick="openTrailer('${movie.title}')">Трейлер</button>
                     <button class="btn-secondary-action" style="flex:1;" onclick="openTMDB('${movie.id}')">TMDB</button>
@@ -110,14 +119,37 @@ window.openMoviePage = function(movie) {
     }
 };
 
-// --- ВИПРАВЛЕНА ФУНКЦІЯ ALLOHA ---
-window.openAlloha = function(tmdbId) {
-    // БУЛО: api.alloha.tv (це JSON)
-    // СТАЛО: alloha.tv/window (це Плеєр)
-    const url = `https://alloha.tv/window/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}&autoplay=1`;
-    
-    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
-    else window.open(url, '_blank');
+// --- ВИПРАВЛЕНА ФУНКЦІЯ ALLOHA (API FETCH) ---
+window.openAlloha = async function(tmdbId, btnElement) {
+    // Змінюємо текст кнопки, щоб користувач бачив процес
+    const originalText = btnElement ? btnElement.querySelector('span').innerText : "Дивитися";
+    if (btnElement) btnElement.querySelector('span').innerText = "Завантаження посилання...";
+
+    try {
+        // 1. Робимо запит до API Alloha
+        // Ми використовуємо HTTPS, ваш токен і ID TMDB
+        const response = await fetch(`https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`);
+        const data = await response.json();
+
+        // 2. Перевіряємо, чи є фільм у базі
+        if (data.status === 'success' && data.data && data.data.iframe) {
+            const videoUrl = data.data.iframe;
+            
+            // 3. Відкриваємо отримане посилання
+            if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(videoUrl);
+            else window.open(videoUrl, '_blank');
+            
+        } else {
+            alert("На жаль, цей фільм ще не додано в базу Alloha. Спробуйте кнопку 'Знайти'.");
+        }
+    } catch (e) {
+        console.error("Alloha Error:", e);
+        // Якщо браузер блокує запит (CORS) або інша помилка
+        alert("Помилка з'єднання. Спробуйте кнопку 'Знайти (Eneyida)'.");
+    } finally {
+        // Повертаємо текст кнопки назад
+        if (btnElement) btnElement.querySelector('span').innerText = originalText;
+    }
 };
 
 window.searchOnline = function(title) {
@@ -178,7 +210,17 @@ async function loadContent(isMore = false) {
         } else if (appMode === 'movies') {
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
-            const items = data.results.map(item => ({ id: item.id, title: item.title, desc: item.overview, img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null, rating: item.vote_average.toFixed(1), url: item.id, type: 'movie' }));
+            
+            const items = data.results.map(item => ({
+                id: item.id,
+                title: item.title,
+                desc: item.overview,
+                img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
+                rating: item.vote_average.toFixed(1),
+                url: item.id, 
+                type: 'movie'
+            }));
+
             moviePage = page;
             feedMovies = isMore ? [...feedMovies, ...items] : items;
             container.className = 'movies-grid';
@@ -191,7 +233,7 @@ async function loadContent(isMore = false) {
     }
 }
 
-// --- FAB МЕНЮ ТА ІНШЕ ---
+// --- ІНТЕРФЕЙС ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
     const iconMenu = document.getElementById('icon_menu');

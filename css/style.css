@@ -1,242 +1,151 @@
-/* ==========================================================
-   🎨 STYLE.CSS: MEDIA HUB (NETFLIX STYLE)
-   ========================================================== */
+:root {
+    --bg-color: #000000;
+    --card-bg: #141414;
+    --text-color: #ffffff;
+    --accent-color: #E50914; /* Netflix Red */
+    --nav-bg: #121212;
+    --hint-color: #b3b3b3;
+}
 
-/* --- ОСНОВНІ НАЛАШТУВАННЯ --- */
 body {
-    background-color: var(--tg-theme-bg-color, #ffffff);
-    color: var(--tg-theme-text-color, #000000);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    padding: 0; margin: 0; line-height: 1.5;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    margin: 0; padding: 0;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
 }
 
-header {
-    background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-    padding: 15px 20px; position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+/* --- HEADER --- */
+.netflix-header {
+    position: fixed; top: 0; left: 0; width: 100%;
+    height: 50px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 15px; box-sizing: border-box;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+    z-index: 100; transition: background 0.3s;
+}
+.netflix-header.scrolled { background-color: #000; }
+
+.logo {
+    color: var(--accent-color); font-weight: 900; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;
+}
+.header-right img, #default_avatar {
+    width: 30px; height: 30px; border-radius: 4px; object-fit: cover;
+}
+#default_avatar { background: #333; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
+/* --- FILTERS --- */
+.netflix-filters {
+    position: fixed; top: 50px; left: 0; width: 100%;
+    display: flex; gap: 10px; padding: 10px 15px; box-sizing: border-box;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+    z-index: 90; overflow-x: auto;
+}
+.cat-btn {
+    background: transparent; border: 1px solid #fff; color: #fff;
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    white-space: nowrap; cursor: pointer; transition: 0.2s;
+}
+.cat-btn.active { background: #fff; color: #000; }
+
+/* --- HERO SECTION --- */
+.hero-banner {
+    position: relative; width: 100%; height: 70vh; /* Високий банер */
+    background-size: cover; background-position: center;
+    display: flex; align-items: flex-end; justify-content: center;
+    margin-bottom: 20px;
+}
+.hero-overlay {
+    position: absolute; top:0; left:0; width:100%; height:100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1), #000);
+}
+.hero-content {
+    position: relative; z-index: 2; text-align: center; width: 100%; padding-bottom: 20px;
+}
+.hero-meta { color: #fff; font-size: 12px; font-weight: 700; margin-bottom: 15px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+#hero_title { font-size: 32px; font-weight: 900; margin-bottom: 10px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); text-transform: uppercase;}
+
+.hero-buttons { display: flex; justify-content: center; gap: 15px; }
+.hero-btn {
+    border: none; border-radius: 4px; padding: 8px 20px;
+    font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;
+}
+.hero-btn.white { background: #fff; color: #000; }
+.hero-btn.gray { background: rgba(255,255,255,0.3); color: #fff; backdrop-filter: blur(5px); }
+
+/* --- GRID --- */
+.netflix-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); /* 3 в ряд */
+    gap: 8px; padding: 0 8px;
+}
+.movie-poster-card {
+    position: relative; aspect-ratio: 2/3; border-radius: 4px; overflow: hidden;
+    background: #222; cursor: pointer; transition: transform 0.2s;
+}
+.movie-poster-card:active { transform: scale(0.95); opacity: 0.8; }
+.movie-poster-card img { width: 100%; height: 100%; object-fit: cover; }
+.rating-mini {
+    position: absolute; top: 4px; right: 4px;
+    background: var(--accent-color); color: #fff;
+    font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 2px;
 }
 
-.profile-header { display: flex; align-items: center; gap: 12px; }
-.avatar-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 1px solid var(--tg-theme-hint-color); }
-.avatar-placeholder { width: 42px; height: 42px; border-radius: 50%; background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff; display: flex; align-items: center; justify-content: center; }
-.avatar-placeholder svg { width: 24px; height: 24px; }
-.header-text { display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margin: 0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.user-rank { font-size: 13px; color: var(--tg-theme-link-color, #007aff); font-weight: 500; margin-top: 2px; white-space: nowrap; }
-
-/* --- CONTROLS --- */
-.controls-container {
-    padding: 15px 20px; background-color: var(--tg-theme-bg-color);
-    border-bottom: 1px solid var(--tg-theme-secondary-bg-color);
-    display: flex; flex-direction: column; gap: 15px; 
+/* --- BOTTOM NAV --- */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+    background-color: var(--nav-bg); border-top: 1px solid #333;
+    display: flex; justify-content: space-around; align-items: center;
+    z-index: 900;
 }
-#filters_wrapper { display: flex; flex-direction: column; gap: 15px; padding-bottom: 5px; }
-.search-container { display: flex; gap: 10px; width: 100%; align-items: stretch; }
-#category_select, #search_input, #search_button { height: 48px !important; box-sizing: border-box; border-radius: 12px; font-size: 16px; outline: none; margin: 0; }
-#category_select, #search_input { border: 1px solid var(--tg-theme-hint-color, #cccccc); background-color: var(--tg-theme-secondary-bg-color, #ffffff); color: var(--tg-theme-text-color); padding: 0 12px; }
-#category_select { width: 100%; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; cursor: pointer; }
-#search_input { flex-grow: 1; min-width: 0; }
-#search_button { width: 50px; background-color: var(--tg-theme-button-color, #50a8eb); color: var(--tg-theme-button-text-color, #ffffff); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.hidden { display: none !important; }
+.nav-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #777; font-size: 10px; gap: 4px; cursor: pointer; width: 60px;
+}
+.nav-item svg { width: 24px; height: 24px; }
+.nav-item.active { color: #fff; }
 
-/* --- АНІМАЦІЯ КОНТЕНТУ --- */
-#content_container { transition: opacity 0.2s ease-out, transform 0.2s ease-out; opacity: 1; transform: translateY(0); }
-#content_container.fade-out { opacity: 0; transform: translateY(10px); }
+/* --- SEARCH --- */
+#search_bar_container { padding: 70px 15px 10px; }
+#search_input {
+    width: 100%; height: 40px; background: #333; border: none;
+    border-radius: 4px; color: #fff; padding: 0 15px; font-size: 14px;
+    box-sizing: border-box; outline: none;
+}
 
-/* --- КАРТКИ НОВИН --- */
-.news-container { padding: 5px 0; min-height: 300px; display: flex; flex-direction: column; }
-.news-card { display: flex; flex-direction: column; background-color: var(--tg-theme-secondary-bg-color, #f5f5f5); margin: 12px 15px; padding: 15px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); transition: transform 0.1s ease-in-out, opacity 0.1s; cursor: pointer; }
-.news-card:active { transform: scale(0.96); opacity: 0.9; }
-.card-content { display: flex; gap: 12px; }
-.news-image-container { width: 85px; height: 85px; flex-shrink: 0; border-radius: 10px; overflow: hidden; pointer-events: none; }
-.news-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.news-text-content { flex: 1; min-width: 0; }
-.news-text-content h3 { font-size: 15px; margin: 0 0 4px 0; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.news-text-content p { font-size: 13px; margin: 0; color: var(--tg-theme-hint-color); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); pointer-events: auto; }
-.card-actions { display: flex; gap: 15px; }
-.action-btn { background: none; border: none; cursor: pointer; padding: 0; color: var(--tg-theme-hint-color); transition: transform 0.2s; display: flex; align-items: center; }
-.action-btn:active { transform: scale(0.8); }
-.bookmark-btn.saved { color: var(--tg-theme-button-color, #007aff); fill: var(--tg-theme-button-color, #007aff); }
-.news-date { font-size: 11px; color: var(--tg-theme-hint-color); }
-
-/* --- КІНО (СІТКА) --- */
-.movies-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px; }
-.movie-card { background-color: var(--tg-theme-secondary-bg-color); border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: transform 0.1s ease-in-out; cursor: pointer; }
-.movie-card:active { transform: scale(0.96); }
-.movie-poster { width: 100%; aspect-ratio: 2/3; object-fit: cover; pointer-events: none; }
-.movie-info { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; }
-.movie-title { font-size: 14px; font-weight: 700; margin-bottom: 5px; color: var(--tg-theme-text-color); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.movie-rating { position: absolute; top: 8px; right: 8px; background-color: rgba(0,0,0,0.7); color: #ffc107; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 8px; backdrop-filter: blur(4px); pointer-events: none; }
-.movie-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); pointer-events: auto; }
-
-/* --- ІНШЕ --- */
-.empty-state { text-align: center; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; flex-grow: 1; }
-.empty-text { font-size: 16px; font-weight: 500; color: var(--tg-theme-text-color); margin-bottom: 8px; }
-.loading-status { text-align: center; padding: 30px; color: var(--tg-theme-hint-color); font-style: italic; }
-#load_more_container { text-align: center; padding: 20px 0 120px 0; width: 100%; }
-#load_more_button { display: block; width: fit-content; margin: 0 auto; min-width: 180px; padding: 12px 25px; background-color: transparent; color: var(--tg-theme-button-color, #50a8eb); border: 1.5px solid var(--tg-theme-button-color, #50a8eb); border-radius: 25px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s ease; }
-#load_more_button:active { background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff; transform: scale(0.96); }
-#ptr_spinner { position: fixed; top: -50px; left: 0; width: 100%; height: 50px; display: flex; justify-content: center; align-items: center; z-index: 999; transition: top 0.3s ease; }
-.spinner-icon { width: 24px; height: 24px; border: 3px solid var(--tg-theme-link-color); border-top: 3px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* --- VIDEO PRELOADER --- */
-#preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease-out, visibility 0.5s ease-out; }
-#preloader.fade-out { opacity: 0; visibility: hidden; }
-#preload_video { width: 100%; height: 100%; object-fit: contain; }
-
-/* --- FAB MENU --- */
-#fab_wrapper { position: fixed; bottom: 25px; left: 20px !important; right: auto; z-index: 900; display: flex; flex-direction: row; align-items: center; gap: 0; width: auto; max-width: 100%; pointer-events: none; }
-#fab_main, .fab-menu { pointer-events: auto; }
-#fab_main { width: 56px; height: 56px; border-radius: 18px; background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; z-index: 10; transition: transform 0.2s; flex-shrink: 0; }
-#fab_main:active { transform: scale(0.9); }
-#fab_main::before { content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px; border-radius: 22px; z-index: -1; background: conic-gradient(#4285f4, #ea4335, #fbbc05, #34a853, #4285f4); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; padding: 3px; opacity: 0; animation: google-pulse 8s linear infinite; transition: opacity 0.3s; }
-#fab_wrapper.open #fab_main::before { animation: none; opacity: 0; }
-@keyframes google-pulse { 0% { transform: rotate(0deg); opacity: 0; } 5% { opacity: 1; } 25% { transform: rotate(360deg); opacity: 1; } 30% { opacity: 0; } 100% { transform: rotate(360deg); opacity: 0; } }
-.fab-menu { display: flex; flex-direction: row; align-items: center; gap: 12px; margin-left: 15px; pointer-events: none; z-index: 5; }
-.fab-item { width: 48px; height: 48px; border-radius: 14px; background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-hint-color, #888); border: 1px solid transparent; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transform: translateX(-30px) scale(0.8); transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.fab-item.active { background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff; box-shadow: 0 4px 12px rgba(80, 168, 235, 0.4); }
-#fab_wrapper.open .fab-menu { pointer-events: auto; }
-#fab_wrapper.open .fab-item { opacity: 1; transform: translateX(0) scale(1); }
-#fab_wrapper.open .fab-item:nth-child(1) { transition-delay: 0.05s; }
-#fab_wrapper.open .fab-item:nth-child(2) { transition-delay: 0.1s; }
-#fab_wrapper.open .fab-item:nth-child(3) { transition-delay: 0.15s; }
-#fab_wrapper.open #fab_main { background-color: var(--tg-theme-button-color, #50a8eb); color: #ffffff; transform: rotate(90deg); }
-
-/* --- ВІКНО ПЛЕЄРА --- */
-.player-modal {
+/* --- MODALS --- */
+.modal-fullscreen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: #000000;
-    z-index: 9999; /* Поверх всього */
-    display: flex; align-items: center; justify-content: center;
+    background: #000; z-index: 5000; display: flex; flex-direction: column;
 }
-.player-content { width: 100%; height: 100%; position: relative; display: flex; }
-#video_frame { width: 100%; height: 100%; border: none; }
-.close-player {
-    position: absolute; top: 20px; right: 20px;
-    color: #ffffff; font-size: 40px; font-weight: bold;
-    cursor: pointer; z-index: 10000;
-    background: rgba(0, 0, 0, 0.5);
-    width: 50px; height: 50px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
+#video_frame { width: 100%; height: 100%; border: none; background: #000; }
+.close-modal-btn {
+    position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; z-index: 5001;
+}
+.close-round-btn {
+    position: fixed; top: 20px; right: 20px; width: 36px; height: 36px;
+    border-radius: 50%; background: rgba(30,30,30,0.7); color: #fff;
+    border: none; font-size: 24px; display: flex; align-items: center; justify-content: center;
+    z-index: 5001;
 }
 
-/* --- ВІКНО КАРТКИ ФІЛЬМУ --- */
-.movie-details-modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: #000; /* Чорний фон для всього вікна */
-    z-index: 20000; /* Найвищий пріоритет */
-    display: flex; flex-direction: column;
-    overflow-y: auto; /* Дозволяє скрол */
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-.movie-details-content { width: 100%; min-height: 100%; position: relative; padding-bottom: 50px; }
-
-.close-movie-btn {
-    position: fixed; top: 20px; right: 20px; width: 40px; height: 40px;
-    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%;
-    color: white; font-size: 24px; cursor: pointer; z-index: 20001;
-    display: flex; align-items: center; justify-content: center;
-    transition: transform 0.2s;
-}
-.close-movie-btn:active { transform: scale(0.9); }
-
-/* --- 🌟 NETFLIX STYLE DESIGN 🌟 --- */
-
-.nf-container {
-    background-color: #000;
-    color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    min-height: 100vh;
-}
-
-/* 1. HERO BLOCK (Картинка) */
-.nf-hero {
-    position: relative;
-    width: 100%;
-    height: 60vh; /* 60% екрану */
-    overflow: hidden;
-}
-
-.nf-backdrop {
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center top;
-}
-
-/* 2. ГРАДІЄНТ (Плавний перехід у чорний) */
-.nf-gradient {
-    position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(to bottom, 
-        rgba(0,0,0,0) 0%, 
-        rgba(0,0,0,0.1) 40%, 
-        rgba(0,0,0,0.6) 75%, 
-        #000 100%);
-    z-index: 2;
-}
-
-/* 3. КОНТЕНТ НА КАРТИНЦІ */
-.nf-hero-content {
-    position: absolute; bottom: 0; left: 0; width: 100%;
-    padding: 0 20px 10px 20px; z-index: 3;
-    display: flex; flex-direction: column; align-items: center;
-}
-
-/* Логотип */
-.nf-logo {
-    width: 80%; max-width: 280px; height: auto;
-    object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));
-    margin-bottom: 15px;
-}
-
-/* Текстовий заголовок (якщо немає лого) */
-.nf-title-text {
-    font-size: 32px; font-weight: 900; text-transform: uppercase;
-    text-align: center; line-height: 1.1; margin-bottom: 15px;
-    text-shadow: 0 4px 15px rgba(0,0,0,1);
-}
-
-/* 4. МЕТА ДАНІ (Рядок під назвою) */
-.nf-meta {
-    display: flex; gap: 12px; align-items: center; justify-content: center;
-    font-size: 13px; color: #e5e5e5; margin-bottom: 20px; font-weight: 500;
-}
-
-.nf-match { color: #46d369; font-weight: 800; } /* Зелений "Match" */
-.nf-badge { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; color: white; font-size: 11px; }
-
-/* 5. КНОПКИ */
-.nf-btn-row {
-    width: 100%; display: flex; flex-direction: column; gap: 12px;
-    padding: 0 20px; margin-bottom: 25px; box-sizing: border-box;
-}
-
-.nf-btn {
-    width: 100%; height: 48px; border-radius: 6px; border: none;
-    font-size: 16px; font-weight: 700; display: flex; align-items: center;
-    justify-content: center; gap: 10px; cursor: pointer; transition: opacity 0.2s;
-}
-
-.nf-btn:active { opacity: 0.7; transform: none; }
-
+/* --- NETFLIX MOVIE DETAILS STYLES (from prev step) --- */
+.nf-container { background: #000; padding-bottom: 50px; }
+.nf-hero { position: relative; height: 50vh; width: 100%; }
+.nf-backdrop { width: 100%; height: 100%; background-size: cover; background-position: top center; }
+.nf-gradient { position: absolute; bottom: 0; width: 100%; height: 100%; background: linear-gradient(transparent, #000); }
+.nf-hero-content { position: absolute; bottom: 0; width: 100%; padding: 20px; box-sizing: border-box; text-align: center; }
+.nf-title-text { font-size: 32px; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; }
+.nf-logo { width: 70%; max-width: 250px; margin-bottom: 10px; }
+.nf-meta { display: flex; gap: 10px; justify-content: center; font-size: 13px; color: #ccc; margin-bottom: 20px; }
+.nf-match { color: #46d369; font-weight: bold; }
+.nf-btn-row { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+.nf-btn { width: 100%; height: 45px; border-radius: 4px; font-weight: bold; font-size: 16px; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
 .nf-play { background: #fff; color: #000; }
-.nf-secondary { background: rgba(255,255,255,0.15); color: #fff; }
+.nf-secondary { background: #333; color: #fff; }
+.nf-description { padding: 20px; color: #fff; font-size: 14px; line-height: 1.5; }
+.nf-trailer iframe { width: 100%; aspect-ratio: 16/9; }
 
-/* 6. ОПИС ТА ІНШЕ */
-.nf-description {
-    padding: 0 20px 40px 20px; color: #cccccc; font-size: 15px;
-    line-height: 1.5; font-weight: 400;
-}
-
-.nf-trailer {
-    margin: 0 20px 40px 20px; border-radius: 8px; overflow: hidden;
-    position: relative; padding-bottom: 56.25%; background: #111;
-}
-.nf-trailer iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
+/* Loader */
+.netflix-loader { width: 50px; height: 50px; border: 4px solid #E50914; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+#preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

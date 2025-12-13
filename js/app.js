@@ -22,7 +22,7 @@ const loadMoreBtn = document.getElementById('load_more_container');
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
-    tg.expand(); // Розгортаємо на весь екран
+    tg.expand(); 
     const user = tg.initDataUnsafe?.user;
     if (user) {
         document.getElementById('header_title').innerText = user.first_name;
@@ -42,9 +42,9 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- ВІДКРИТТЯ ПОСИЛАНЬ (ФІЛЬМИ -> ВІДКРИВАЄМО ПЛЕЄР У БРАУЗЕРІ) ---
-window.openLink = function(url, idEncoded) {
-    // 1. Зберігаємо бали
+// --- ВІДКРИТТЯ ПОСИЛАНЬ (SMART SEARCH) ---
+window.openLink = function(dataUrl, idEncoded) {
+    // 1. Статистика
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
         if (!viewedItems.includes(id.toString())) {
@@ -56,36 +56,27 @@ window.openLink = function(url, idEncoded) {
         addPoints(2);
     }
 
-    const target = url.toString();
-    let movieUrl = null;
+    const target = dataUrl.toString();
 
-    // 2. ПЕРЕВІРКА: Це фільм?
-    
-    // Якщо прийшов чистий ID (цифри)
-    if (/^\d+$/.test(target)) {
-        // Формуємо посилання на Voidboost (там є укр. мова)
-        movieUrl = `https://voidboost.net/embed/movie/${target}`;
-    }
-    // Якщо прийшло посилання TMDB
-    else if (target.includes('themoviedb.org') || target.includes('/movie/')) {
-        const matches = target.match(/movie\/(\d+)/);
-        if (matches && matches[1]) {
-            movieUrl = `https://voidboost.net/embed/movie/${matches[1]}`;
-        }
-    }
-
-    // 3. ЯКЩО ЦЕ ФІЛЬМ -> ВІДКРИВАЄМО ПЛЕЄР
-    if (movieUrl) {
+    // 2. ЛОГІКА ДЛЯ ФІЛЬМІВ
+    // Ми перевіряємо, чи починається посилання зі спеціальної мітки "search:"
+    if (target.startsWith('search:')) {
+        // Витягуємо назву фільму
+        const movieTitle = target.replace('search:', '');
+        
+        // Формуємо посилання на Google пошук фільму українською
+        const googleSearchUrl = `https://www.google.com/search?q=дивитися+онлайн+українською+фільм+${encodeURIComponent(movieTitle)}`;
+        
+        // Відкриваємо в браузері
         if (window.Telegram?.WebApp) {
-            // openLink відкриє системний браузер, де нічого не блокується
-            window.Telegram.WebApp.openLink(movieUrl);
+            window.Telegram.WebApp.openLink(googleSearchUrl);
         } else {
-            window.open(movieUrl, '_blank');
+            window.open(googleSearchUrl, '_blank');
         }
         return;
     }
 
-    // 4. ЯКЩО ЦЕ НОВИНА -> ВІДКРИВАЄМО САЙТ
+    // 3. ЯКЩО ЦЕ НОВИНА (АБО ЩОСЬ ІНШЕ)
     if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.openLink(target);
     } else {
@@ -93,14 +84,14 @@ window.openLink = function(url, idEncoded) {
     }
 };
 
-// --- ФУНКЦІЇ ПЛЕЄРА (Вже не використовуються, але залишимо щоб не було помилок) ---
+// --- ФУНКЦІЇ ПЛЕЄРА (Щоб не було помилок, якщо html ще старий) ---
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     if (modal) modal.style.display = 'none';
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
 };
-window.openPlayer = function(id) { window.openLink(id); }; // Перенаправлення
+window.openPlayer = function() {}; 
 
 // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
 async function loadContent(isMore = false) {
@@ -146,7 +137,11 @@ async function loadContent(isMore = false) {
                 desc: item.overview,
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
-                url: item.id, // Передаємо ID
+                
+                // 👇 ТУТ ГОЛОВНА ХИТРІСТЬ:
+                // Ми записуємо в URL не посилання, а команду для пошуку + назву фільму
+                url: `search:${item.title}`, 
+                
                 type: 'movie'
             }));
 

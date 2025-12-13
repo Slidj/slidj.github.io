@@ -1,6 +1,3 @@
-// js/app.js - PART 1
-
-// 👇 Додали fetchGoogleSearch в імпорт
 import { fetchNewsData, fetchTMDB, fetchGoogleSearch } from './api.js';
 import { renderList, renderMovies, updateRankDisplay, addPoints } from './ui.js';
 import { API_URLS } from './config.js'; 
@@ -12,10 +9,9 @@ let feedMovies = [];
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
 let viewedItems = JSON.parse(localStorage.getItem('viewedItems')) || [];
 
-let newsPageToken = null; // Для звичайних новин
-let googlePage = 1;       // Для Google пошуку
+let newsPageToken = null;
+let googlePage = 1;
 let moviePage = 1;
-
 let currentQuery = '';
 let currentCategory = '';
 
@@ -27,7 +23,6 @@ if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     const user = tg.initDataUnsafe?.user;
-    
     if (user) {
         document.getElementById('header_title').innerText = user.first_name;
         if (user.photo_url) {
@@ -40,7 +35,20 @@ if (window.Telegram?.WebApp) {
 }
 updateRankDisplay(); 
 
-// --- ОСНОВНА ФУНКЦІЯ ЗАВАНТАЖЕННЯ ---
+// --- ФУНКЦІЯ ОПТИМІЗАЦІЇ ЗОБРАЖЕНЬ (NEW 🚀) ---
+function optimizeImage(url) {
+    if (!url) return null;
+    // Якщо це вже оптимізоване посилання TMDB - не чіпаємо
+    if (url.includes('tmdb.org')) return url;
+    
+    // Використовуємо wsrv.nl для стиснення "на льоту"
+    // w=200 -> ширина 200px (досить для списку)
+    // q=80 -> якість 80%
+    // output=webp -> сучасний легкий формат
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
+}
+
+// --- ЗАВАНТАЖЕННЯ ДАНИХ ---
 async function loadContent(isMore = false) {
     if (!isMore) {
         const preloader = document.getElementById('preloader');
@@ -54,25 +62,29 @@ async function loadContent(isMore = false) {
         if (appMode === 'news') {
             let items = [];
             
-            // 👇 ЛОГІКА: GOOGLE vs ЗВИЧАЙНІ НОВИНИ
             if (currentQuery) {
-                // --- ВАРІАНТ А: ПОШУК ЧЕРЕЗ GOOGLE ---
+                // --- GOOGLE SEARCH ---
                 const pageNum = isMore ? googlePage + 1 : 1;
                 const googleData = await fetchGoogleSearch(currentQuery, pageNum);
                 
                 if (googleData.items) {
                     items = googleData.items.map(item => {
-                        // Дістаємо картинку з метаданих Google
-                        let imageUrl = null;
-                        if (item.pagemap?.cse_image?.length > 0) {
-                            imageUrl = item.pagemap.cse_image[0].src;
+                        // 1. Спочатку пробуємо знайти мініатюру (thumbnail) - вона менша
+                        let rawUrl = null;
+                        if (item.pagemap?.cse_thumbnail?.length > 0) {
+                            rawUrl = item.pagemap.cse_thumbnail[0].src;
+                        } else if (item.pagemap?.cse_image?.length > 0) {
+                            rawUrl = item.pagemap.cse_image[0].src;
                         }
+
+                        // 2. Проганяємо через оптимізатор
+                        const optimizedUrl = optimizeImage(rawUrl);
 
                         return {
                             id: item.link,
                             title: item.title,
                             desc: item.snippet,
-                            img: imageUrl, 
+                            img: optimizedUrl, // Використовуємо стиснуте фото
                             date: "З інтернету",
                             url: item.link,
                             type: 'news'
@@ -80,18 +92,18 @@ async function loadContent(isMore = false) {
                     });
                 }
                 googlePage = pageNum;
-                // Кнопку показуємо, якщо Google повернув результати (припускаємо, що є ще)
                 loadMoreBtn.style.display = items.length > 0 ? 'block' : 'none';
 
             } else {
-                // --- ВАРІАНТ Б: ЗВИЧАЙНІ НОВИНИ (БЕЗ ПОШУКУ) ---
+                // --- СТАНДАРТНІ НОВИНИ ---
                 const data = await fetchNewsData('', currentCategory, isMore ? newsPageToken : null);
                 
                 items = data.results.map(item => ({
                     id: item.link,
                     title: item.title,
                     desc: item.description,
-                    img: item.image_url,
+                    // Тут теж можна оптимізувати, якщо картинки великі
+                    img: item.image_url ? optimizeImage(item.image_url) : null,
                     date: item.pubDate,
                     url: item.link,
                     type: 'news'
@@ -106,7 +118,6 @@ async function loadContent(isMore = false) {
             renderList(isMore ? items : feedNews, container, savedItems, isMore);
 
         } else if (appMode === 'movies') {
-            // Фільми залишаємо через TMDB (він кращий для постерів)
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
             
@@ -132,53 +143,38 @@ async function loadContent(isMore = false) {
         if (!isMore) container.innerHTML = `<div class="empty-state"><div class="empty-text">Помилка</div><div class="empty-subtext">${e.message}</div></div>`;
     }
 }
-// js/app.js - PART 2
 
 // --- КЕРУВАННЯ FAB МЕНЮ ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
     const iconMenu = document.getElementById('icon_menu');
     const iconClose = document.getElementById('icon_close');
-    
     wrapper.classList.toggle('open');
-    
     if (wrapper.classList.contains('open')) {
-        iconMenu.style.display = 'none';
-        iconClose.style.display = 'block';
-        if (window.Telegram?.WebApp?.HapticFeedback) {
-            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-        }
+        iconMenu.style.display = 'none'; iconClose.style.display = 'block';
+        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
     } else {
-        iconMenu.style.display = 'block';
-        iconClose.style.display = 'none';
+        iconMenu.style.display = 'block'; iconClose.style.display = 'none';
     }
 };
 
-// --- ПЕРЕМИКАННЯ ВКЛАДОК (З АНІМАЦІЄЮ) ---
+// --- ПЕРЕМИКАННЯ ВКЛАДОК ---
 window.switchMode = function(mode) {
     if (appMode === mode) return;
 
-    // 1. Оновлюємо активну іконку
     const fabItems = document.querySelectorAll('.fab-item');
     fabItems.forEach(btn => btn.classList.remove('active'));
-    
     const activeBtn = document.querySelector(`.fab-item[onclick*="${mode}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    // Закриваємо меню
     const wrapper = document.getElementById('fab_wrapper');
-    if (wrapper.classList.contains('open')) {
-        window.toggleFab();
-    }
+    if (wrapper.classList.contains('open')) window.toggleFab();
 
-    // 2. Анімація зникнення
     const container = document.getElementById('content_container');
     container.classList.add('fade-out');
 
-    // 3. Чекаємо 200мс
     setTimeout(() => {
         appMode = mode;
-        
         const filters = document.getElementById('filters_wrapper');
         const catSelect = document.getElementById('category_select');
         const searchInput = document.getElementById('search_input');
@@ -186,120 +182,80 @@ window.switchMode = function(mode) {
         container.className = 'fade-out'; 
 
         if (mode === 'news') {
-            filters.style.display = 'flex';
-            catSelect.classList.remove('hidden');
-            searchInput.placeholder = "Пошук новин...";
-            
+            filters.style.display = 'flex'; catSelect.classList.remove('hidden'); searchInput.placeholder = "Пошук новин...";
             if (feedNews.length === 0) loadContent();
-            else {
-                 container.classList.add('news-container', 'list-view');
-                 renderList(feedNews, container, savedItems);
-                 loadMoreBtn.style.display = (newsPageToken || (currentQuery && feedNews.length > 0)) ? 'block' : 'none';
+            else { 
+                container.classList.add('news-container', 'list-view'); 
+                renderList(feedNews, container, savedItems); 
+                loadMoreBtn.style.display = (newsPageToken || (currentQuery && feedNews.length > 0)) ? 'block' : 'none';
             }
         } else if (mode === 'movies') {
-            filters.style.display = 'flex';
-            catSelect.classList.add('hidden');
-            searchInput.placeholder = "Пошук фільмів...";
-
+            filters.style.display = 'flex'; catSelect.classList.add('hidden'); searchInput.placeholder = "Пошук фільмів...";
             if (feedMovies.length === 0) loadContent();
-            else {
-                container.classList.add('movies-grid');
-                renderMovies(feedMovies, container, savedItems);
-                loadMoreBtn.style.display = 'block';
+            else { 
+                container.classList.add('movies-grid'); 
+                renderMovies(feedMovies, container, savedItems); 
+                loadMoreBtn.style.display = 'block'; 
             }
-        } else { // saved
-            filters.style.display = 'none';
-            container.classList.add('news-container', 'list-view');
+        } else { 
+            filters.style.display = 'none'; 
+            container.classList.add('news-container', 'list-view'); 
             loadMoreBtn.style.display = 'none';
             renderList(savedItems, container, savedItems);
         }
 
         window.scrollTo({ top: 0, behavior: 'auto' });
-
-        // 4. Анімація появи
         requestAnimationFrame(() => {
             container.classList.remove('fade-out');
         });
 
     }, 200);
 };
-// js/app.js - PART 3
 
-// --- ПОШУК ---
+// --- ДІЇ ---
 window.performSearch = function() {
     currentQuery = document.getElementById('search_input').value.trim();
     currentCategory = document.getElementById('category_select').value;
     
-    // Скидаємо всі списки при новому пошуку
-    feedNews = [];
-    feedMovies = [];
-    newsPageToken = null;
-    googlePage = 1; // Скидаємо сторінку Google
-    moviePage = 1;
-    
+    feedNews = []; feedMovies = []; newsPageToken = null; googlePage = 1; moviePage = 1;
     loadContent();
 };
 
-window.loadMore = function() {
-    loadContent(true);
-};
+window.loadMore = function() { loadContent(true); };
 
-// --- ВІДКРИТТЯ ПОСИЛАНЬ ---
 window.openLink = function(url, idEncoded) {
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
         if (!viewedItems.includes(id.toString())) {
-            addPoints(2); 
-            viewedItems.push(id.toString());
+            addPoints(2); viewedItems.push(id.toString());
             if (viewedItems.length > 200) viewedItems.shift(); 
             localStorage.setItem('viewedItems', JSON.stringify(viewedItems));
         }
-    } else {
-        addPoints(2);
-    }
-
-    if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.openLink(url);
-    } else {
-        window.open(url, '_blank');
-    }
+    } else addPoints(2);
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url); else window.open(url, '_blank');
 };
 
 window.shareItem = function(url, title) {
     addPoints(10);
-    if (navigator.share) {
-        navigator.share({ title: title, url: url }).catch(console.error);
-    } else {
-        window.Telegram?.WebApp?.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
-    }
+    if (navigator.share) navigator.share({ title: title, url: url }).catch(console.error);
+    else window.Telegram?.WebApp?.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`);
 };
 
 window.toggleSave = function(idEnc, type, btn) {
     const id = decodeURIComponent(idEnc);
     let item;
-    
     if (type === 'news') item = feedNews.find(i => i.id == id);
     else if (type === 'movie') item = feedMovies.find(i => i.id == id);
     if (!item) item = savedItems.find(i => i.id == id);
-
     if (!item) return;
 
     const idx = savedItems.findIndex(s => s.id == item.id);
-    
     if (idx === -1) {
-        savedItems.push(item);
-        btn.classList.add('saved');
-        btn.querySelector('svg').setAttribute('fill', 'currentColor');
-        addPoints(5);
-        if (window.Telegram?.WebApp?.HapticFeedback) 
-            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        savedItems.push(item); btn.classList.add('saved'); btn.querySelector('svg').setAttribute('fill', 'currentColor'); addPoints(5);
+        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
     } else {
-        savedItems.splice(idx, 1);
-        btn.classList.remove('saved');
-        btn.querySelector('svg').setAttribute('fill', 'none');
-        addPoints(-5);
-        if (window.Telegram?.WebApp?.HapticFeedback) 
-            window.Telegram.WebApp.HapticFeedback.selectionChanged();
+        savedItems.splice(idx, 1); btn.classList.remove('saved'); btn.querySelector('svg').setAttribute('fill', 'none'); addPoints(-5);
+        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.selectionChanged();
         if (appMode === 'saved') renderList(savedItems, container, savedItems);
     }
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
@@ -307,15 +263,10 @@ window.toggleSave = function(idEnc, type, btn) {
 
 async function initApp() {
     const preloader = document.getElementById('preloader');
-    const minTimePromise = new Promise(resolve => setTimeout(resolve, 4000));
+    const minTimePromise = new Promise(resolve => setTimeout(resolve, 2000));
     const contentPromise = loadContent();
-
     await Promise.all([contentPromise, minTimePromise]);
-
-    if (preloader) {
-        preloader.classList.add('fade-out');
-        setTimeout(() => { preloader.style.display = 'none'; }, 500);
-    }
+    if (preloader) { preloader.classList.add('fade-out'); setTimeout(() => { preloader.style.display = 'none'; }, 500); }
 }
 
 initApp();

@@ -38,22 +38,21 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 СПИСОК ПЛЕЄРІВ (LAMPA STYLE) ---
-// Ми використовуємо прямі iframe, які приймають TMDB ID.
+// --- 🎬 НОВИЙ СПИСОК СЕРВЕРІВ ---
 const PLAYERS = [
-    // 1. VideoCDN (Найкращий для укр озвучки фільмів)
-    // Використовуємо дзеркало 11.svetacdn.in - воно зараз живе
-    { name: "VideoCDN (UA)", url: (id) => `https://11.svetacdn.in/embed/movie?tmdb_id=${id}` },
+    // 1. Embed.su - Найпотужніший агрегатор на сьогодні
+    // Має перемикач мов всередині плеєра (шестерня або іконка планети)
+    { name: "Server 1 (Best)", url: (id) => `https://embed.su/embed/movie/${id}` },
     
-    // 2. Kodik (Найкращий для серіалів та аніме, але є і фільми)
-    // Використовуємо find-player API
-    { name: "Kodik (UA)", url: (id) => `https://kodik.info/find-player?tmdbID=${id}&types=film,serial&prioritize_translations=ua,uk` },
+    // 2. VidSrc.net - Часто працює, коли .xyz лежить
+    { name: "Server 2 (Net)", url: (id) => `https://vidsrc.net/embed/movie/${id}` },
     
-    // 3. Ashdi / Voidboost (Запасний варіант)
-    { name: "Ashdi (UA)", url: (id) => `https://voidboost.net/embed/movie/${id}` },
-    
-    // 4. English Backup (Надійний західний плеєр)
-    { name: "VidLink (Eng)", url: (id) => `https://vidlink.pro/movie/${id}` }
+    // 3. SuperEmbed - Стабільний резерв
+    { name: "Server 3 (Super)", url: (id) => `https://www.2embed.cc/embed/${id}` },
+
+    // 4. VideoCDN (Прямий IP) - Іноді це допомагає обійти блок домену
+    // Якщо не спрацює, просто покаже помилку
+    { name: "Server 4 (UA)", url: (id) => `https://44.svetacdn.in/embed/movie?tmdb_id=${id}` }
 ];
 
 window.changePlayer = function(index) {
@@ -63,21 +62,18 @@ window.changePlayer = function(index) {
     
     if (!player || !iframe || !currentMovieId) return;
 
-    // Підсвічуємо активну кнопку
+    // Підсвітка кнопок
     btns.forEach((btn, i) => {
         if (i === index) {
             btn.style.backgroundColor = '#50a8eb';
             btn.style.color = 'white';
-            btn.style.borderColor = '#50a8eb';
         } else {
             btn.style.backgroundColor = '#222';
             btn.style.color = '#888';
-            btn.style.borderColor = '#444';
         }
     });
 
-    // Завантажуємо
-    iframe.style.display = 'block';
+    // Завантаження
     iframe.src = player.url(currentMovieId);
 };
 
@@ -101,17 +97,16 @@ window.openPlayer = function(tmdbId) {
 
     if (!modal || !iframe) return;
 
-    // --- МАЛЮЄМО МЕНЮ ВИБОРУ ДЖЕРЕЛА ---
+    // --- МЕНЮ ПЛЕЄРІВ ---
     let controls = document.getElementById('player_controls');
     if (!controls) {
         controls = document.createElement('div');
         controls.id = 'player_controls';
-        // Стилі як в Lampa - кнопки в рядок
         controls.style.cssText = `
             position: absolute; top: 60px; left: 0; width: 100%; 
             display: flex; justify-content: center; gap: 8px; 
             z-index: 10001; flex-wrap: wrap; padding: 5px; box-sizing: border-box;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
         `;
         
         PLAYERS.forEach((player, index) => {
@@ -120,21 +115,21 @@ window.openPlayer = function(tmdbId) {
             btn.innerText = player.name;
             btn.onclick = () => window.changePlayer(index);
             btn.style.cssText = `
-                padding: 6px 12px; border: 1px solid #444; border-radius: 6px; 
+                padding: 6px 12px; border: 1px solid #444; border-radius: 8px; 
                 background: #222; color: #ccc; font-size: 11px; cursor: pointer;
                 transition: all 0.2s; font-weight: 600;
             `;
             controls.appendChild(btn);
         });
         
-        // Вставляємо меню перед iframe
         contentDiv.insertBefore(controls, iframe);
     }
 
-    // Дозволи для iframe
+    // --- ОЧИЩЕННЯ ОБМЕЖЕНЬ ---
+    iframe.removeAttribute('sandbox'); 
     iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
     
-    // Запускаємо перше джерело (VideoCDN UA)
+    // СТАРТУЄМО З Embed.su (Server 1)
     window.changePlayer(0);
     
     modal.style.display = 'flex';
@@ -156,7 +151,7 @@ window.openLink = function(url, idEncoded) {
 
     const target = url.toString();
 
-    // Якщо це цифри або TMDB -> Плеєр
+    // Перевірка на фільм
     if (/^\d+$/.test(target)) {
         window.openPlayer(target);
         return;

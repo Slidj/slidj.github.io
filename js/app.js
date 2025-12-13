@@ -41,7 +41,7 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 ЛОГІКА КАРТКИ ФІЛЬМУ (HUB) ---
+// --- 🎬 ЛОГІКА КАРТКИ ФІЛЬМУ (NETFLIX STYLE) ---
 
 window.closeMoviePage = function() {
     const modal = document.getElementById('movie_details_modal');
@@ -66,30 +66,24 @@ window.openMoviePage = async function(movie) {
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
     document.body.style.overflow = 'hidden';
-    content.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:white;">Завантаження...</div>';
+    
+    // Прелоадер (простий)
+    content.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:white;background:#000;">Завантаження...</div>';
 
     // Отримуємо деталі
     let details = {};
     let logoUrl = null;
-    let actors = [];
 
     try {
-        const res = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=uk-UA&append_to_response=videos,release_dates,images,credits&include_image_language=uk,en,null`);
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=uk-UA&append_to_response=videos,release_dates,images&include_image_language=uk,en,null`);
         details = await res.json();
 
         // Логотип
-        if (details.images && details.images.logos && details.images.logos.length > 0) {
+        if (details.images?.logos?.length > 0) {
             const logo = details.images.logos.find(l => l.iso_639_1 === 'uk') || details.images.logos.find(l => l.iso_639_1 === 'en') || details.images.logos[0];
             if (logo) logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
-        
-        // Актори (перші 3)
-        if (details.credits && details.credits.cast) {
-            actors = details.credits.cast.slice(0, 3).map(a => a.name).join(', ');
-        }
-
     } catch (e) {
-        console.error(e);
         details = movie; 
     }
 
@@ -97,11 +91,13 @@ window.openMoviePage = async function(movie) {
     const title = details.title || movie.title;
     const desc = details.overview || movie.desc || 'Опис відсутній.';
     const year = details.release_date ? details.release_date.split('-')[0] : '2025';
+    
+    // Час
     const runtime = details.runtime ? `${Math.floor(details.runtime/60)} год ${details.runtime%60} хв` : '';
     
-    // Розрахунок "Збігу" (Match) як у Netflix
+    // Рейтинг
     const voteAvg = details.vote_average || 0;
-    const matchPercent = Math.round(voteAvg * 10); // 8.0 -> 80%
+    const matchPercent = Math.round(voteAvg * 10); 
 
     // Вік
     let ageRating = '16+';
@@ -117,60 +113,56 @@ window.openMoviePage = async function(movie) {
         if (trailer) trailerKey = trailer.key;
     }
 
-    // --- NETFLIX LAYOUT HTML ---
+    // --- HTML СТРУКТУРА ---
     
-    // Якщо є лого - показуємо його, якщо ні - текст
+    // Заголовок (Картинка або Текст)
     const headerElement = logoUrl 
         ? `<img src="${logoUrl}" class="nf-logo" alt="${title}">` 
-        : `<div class="nf-title">${title}</div>`;
+        : `<div class="nf-title-text">${title}</div>`;
 
     content.innerHTML = `
         <div class="nf-container">
-            <div class="nf-backdrop-container">
+            
+            <div class="nf-hero">
                 <div class="nf-backdrop" style="background-image: url('${backdrop}');"></div>
-                <div class="nf-gradient-overlay">
+                <div class="nf-gradient"></div>
+                
+                <div class="nf-hero-content">
                     ${headerElement}
+                    
+                    <div class="nf-meta">
+                        <span class="nf-match">${matchPercent}% збіг</span>
+                        <span>${year}</span>
+                        <span class="nf-badge">${ageRating}</span>
+                        <span>${runtime}</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="nf-meta-row">
-                <span class="nf-match">${matchPercent}% збігу</span>
-                <span>${year}</span>
-                <span class="nf-age">${ageRating}</span>
-                <span>${runtime}</span>
-                <span style="border:1px solid #777; padding:0 4px; border-radius:2px; font-size:10px;">HD</span>
-            </div>
-
-            <div class="nf-actions">
-                <button class="nf-btn nf-btn-play" onclick="openPremiumPlayer('${movie.id}', this)" style="background-color: #FFD700;">
+            <div class="nf-btn-row">
+                <button class="nf-btn nf-play" onclick="openPremiumPlayer('${movie.id}', this)">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    ДИВИТИСЬ
+                    <span>ДИВИТИСЬ</span>
                 </button>
 
-                <button class="nf-btn nf-btn-secondary" onclick="searchOnline('${title}')">
+                <button class="nf-btn nf-secondary" onclick="searchOnline('${title}')">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    Знайти (Eneyida / UaKino)
+                    <span>Знайти на Eneyida</span>
                 </button>
             </div>
 
-            <div class="nf-desc">
+            <div class="nf-description">
                 ${desc}
             </div>
-            
-            ${actors ? `<div class="nf-cast">У ролях: <span>${actors}</span></div>` : ''}
 
             ${trailerKey ? `
-                <div style="padding: 0 16px;">
-                    <h3 style="font-size:14px; margin-bottom:10px; font-weight:bold;">Трейлер</h3>
-                    <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
-                        <iframe style="position:absolute; top:0; left:0; width:100%; height:100%;" 
-                            src="https://www.youtube.com/embed/${trailerKey}" frameborder="0" allowfullscreen>
-                        </iframe>
-                    </div>
+                <div class="nf-trailer">
+                    <iframe src="https://www.youtube.com/embed/${trailerKey}?modestbranding=1&rel=0&controls=1" frameborder="0" allowfullscreen></iframe>
                 </div>
             ` : ''}
 
-            <div style="height: 60px;"></div> </div>
+            <div style="height: 50px;"></div>
+        </div>
     `;
 
     if (window.Telegram?.WebApp?.BackButton) {
@@ -182,9 +174,11 @@ window.openMoviePage = async function(movie) {
 // --- ІНШІ ФУНКЦІЇ ---
 
 window.openPremiumPlayer = async function(tmdbId, btnElement) {
-    const originalText = btnElement ? btnElement.innerHTML : "ДИВИТИСЬ";
-    // Робимо спіннер або текст
-    if (btnElement) btnElement.innerHTML = "Завантаження...";
+    // Ефект завантаження: робимо кнопку трохи прозорою
+    if (btnElement) {
+        btnElement.style.opacity = '0.6';
+        btnElement.style.pointerEvents = 'none'; // Блокуємо кліки
+    }
 
     let kpId = null;
     try {
@@ -194,12 +188,12 @@ window.openPremiumPlayer = async function(tmdbId, btnElement) {
             kpId = data.data.id_kp;
         } else {
             alert("Файл не знайдено. Спробуйте кнопку 'Знайти'.");
-            if (btnElement) btnElement.innerHTML = originalText;
+            resetBtn(btnElement);
             return;
         }
     } catch (e) {
         alert("Помилка з'єднання.");
-        if (btnElement) btnElement.innerHTML = originalText;
+        resetBtn(btnElement);
         return;
     }
 
@@ -224,8 +218,15 @@ window.openPremiumPlayer = async function(tmdbId, btnElement) {
         };
     }
     
-    if (btnElement) btnElement.innerHTML = originalText;
+    resetBtn(btnElement);
 };
+
+function resetBtn(btnElement) {
+    if (btnElement) {
+        btnElement.style.opacity = '1';
+        btnElement.style.pointerEvents = 'auto';
+    }
+}
 
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');

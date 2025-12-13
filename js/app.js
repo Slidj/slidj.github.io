@@ -18,11 +18,12 @@ let currentCategory = '';
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
 
-// --- ІНІЦІАЛІЗАЦІЯ ---
+// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.enableClosingConfirmation();
+    
     if (tg.setHeaderColor) tg.setHeaderColor('#000000');
     if (tg.setBackgroundColor) tg.setBackgroundColor('#000000');
 
@@ -40,7 +41,7 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 КАРТКА ФІЛЬМУ (HUB) ---
+// --- 🎬 ЛОГІКА КАРТКИ ФІЛЬМУ (HUB) ---
 
 window.closeMoviePage = function() {
     const modal = document.getElementById('movie_details_modal');
@@ -65,7 +66,7 @@ window.openMoviePage = function(movie) {
     const backdrop = movie.img || ''; 
     const rating = movie.rating || 'N/A';
     
-    // Генеруємо HTML з кнопками для різних баз
+    // --- МАЛЮЄМО КАРТКУ ---
     content.innerHTML = `
         <div class="movie-backdrop" style="background-image: url('${backdrop}');"></div>
         
@@ -74,7 +75,7 @@ window.openMoviePage = function(movie) {
             
             <div class="movie-meta-row">
                 <span class="rating-badge">IMDb ${rating}</span>
-                <span>ID: ${movie.id}</span>
+                <span>TMDB: ${movie.id}</span>
             </div>
 
             <p class="movie-desc-text">
@@ -82,27 +83,20 @@ window.openMoviePage = function(movie) {
             </p>
 
             <div class="movie-actions-row">
-                <div style="font-size:12px; color:#888; margin-bottom:5px; text-transform:uppercase;">Виберіть джерело:</div>
-                
-                <button class="btn-primary-action" onclick="openAlloha('${movie.id}', this)" style="background: linear-gradient(90deg, #6a11cb, #2575fc);">
+                <button class="btn-primary-action" onclick="openPremiumPlayer('${movie.id}')" style="background: linear-gradient(90deg, #FFD700, #FFA500); color: black; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    <span>Server 1: Alloha</span>
+                    <span>⭐️ PREMIUM (Ваш плеєр)</span>
                 </button>
 
-                <button class="btn-primary-action" onclick="openVideoCDN('${movie.id}')" style="background: #e67e22;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14v-4z"></path><rect x="3" y="6" width="12" height="12" rx="2"></rect></svg>
-                    Server 2: VideoCDN
-                </button>
-
-                <button class="btn-primary-action" onclick="openKodik('${movie.id}')" style="background: #27ae60;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-                    Server 3: Kodik
-                </button>
-
-                <button class="btn-secondary-action" onclick="searchOnline('${movie.title}')" style="margin-top:10px;">
+                <button class="btn-secondary-action" onclick="searchOnline('${movie.title}')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     Знайти (Eneyida / UaKino)
                 </button>
+
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn-secondary-action" style="flex:1;" onclick="openTrailer('${movie.title}')">Трейлер</button>
+                    <button class="btn-secondary-action" style="flex:1;" onclick="openTMDB('${movie.id}')">Інфо</button>
+                </div>
             </div>
             
             <div style="height: 50px;"></div>
@@ -118,49 +112,62 @@ window.openMoviePage = function(movie) {
     }
 };
 
-// --- ФУНКЦІЇ ДІЙ ---
+// --- 🔥 ФУНКЦІЯ ДЛЯ ВАШОГО ПЛЕЄРА ---
+window.openPremiumPlayer = function(tmdbId) {
+    const modal = document.getElementById('player_modal');
+    const iframe = document.getElementById('video_frame');
+    const fab = document.getElementById('fab_wrapper');
+    const moviePage = document.getElementById('movie_details_modal');
 
-// 1. ALLOHA (API)
-window.openAlloha = async function(tmdbId, btnElement) {
-    const originalText = btnElement ? btnElement.querySelector('span').innerText : "Alloha";
-    if (btnElement) btnElement.querySelector('span').innerText = "Завантаження...";
+    // Ховаємо картку фільму, щоб показати плеєр
+    if (moviePage) moviePage.style.display = 'none';
 
-    try {
-        const response = await fetch(`https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`);
-        const data = await response.json();
+    // ВАШ ТОКЕН
+    const token = "eyJhbGciOiJIUzI1NiJ9.eyJ3ZWJTaXRlIjoiMzQiLCJpc3MiOiJhcGktd2VibWFzdGVyIiwic3ViIjoiNDEiLCJpYXQiOjE3NDMwNjA3ODAsImp0aSI6IjIzMTQwMmE0LTM3NTMtNGQ3OS1hNDBjLTA2YTY0MTE0MzNhOSIsInNjb3BlIjoiRExFIn0.4PmKGf512P-ov-tEjwr3gfOVxccjx8SSt28slJXypYU";
+    
+    // Формуємо посилання. Міняємо kp на tmdb_id
+    const url = `https://api.rstprgapipt.com/balancer-api/iframe?tmdb_id=${tmdbId}&token=${token}&disabled_share=1`;
 
-        if (data.status === 'success' && data.data && data.data.iframe) {
-            const videoUrl = data.data.iframe;
-            if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(videoUrl);
-            else window.open(videoUrl, '_blank');
-        } else {
-            alert("Файл не знайдено на Alloha. Спробуйте VideoCDN.");
-        }
-    } catch (e) {
-        console.error(e);
-        alert("Помилка з'єднання з Alloha.");
-    } finally {
-        if (btnElement) btnElement.querySelector('span').innerText = originalText;
-    }
+    iframe.src = url;
+    modal.style.display = 'flex';
+    
+    // Кнопка закриття плеєра має повертати нас назад до картки фільму
+    const closeBtn = modal.querySelector('.close-player');
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+        iframe.src = '';
+        if (moviePage) moviePage.style.display = 'flex'; // Повертаємось до опису
+    };
 };
 
-// 2. VIDEOCDN (Direct)
-window.openVideoCDN = function(tmdbId) {
-    const url = `https://11.svetacdn.in/embed/movie?tmdb_id=${tmdbId}`;
-    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
-    else window.open(url, '_blank');
-};
-
-// 3. KODIK (Direct)
-window.openKodik = function(tmdbId) {
-    const url = `https://kodik.info/find-player?tmdbID=${tmdbId}&prioritize_translations=ua,uk`;
-    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
-    else window.open(url, '_blank');
+// --- ІНШІ ФУНКЦІЇ ---
+window.closePlayer = function() {
+    // Ця функція тепер використовується для закриття iframe
+    const modal = document.getElementById('player_modal');
+    const iframe = document.getElementById('video_frame');
+    if (modal) modal.style.display = 'none';
+    if (iframe) iframe.src = '';
+    
+    // Якщо ми закрили плеєр, треба повернути FAB або картку
+    const fab = document.getElementById('fab_wrapper');
+    if (fab) fab.style.display = 'flex';
 };
 
 window.searchOnline = function(title) {
     const query = `дивитися онлайн українською ${title} (eneyida OR uakino OR hdrezka)`;
     const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
+    else window.open(url, '_blank');
+};
+
+window.openTrailer = function(title) {
+    const url = `https://www.youtube.com/results?search_query=трейлер+українською+${encodeURIComponent(title)}`;
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
+    else window.open(url, '_blank');
+};
+
+window.openTMDB = function(id) {
+    const url = `https://www.themoviedb.org/movie/${id}`;
     if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
     else window.open(url, '_blank');
 };
@@ -186,7 +193,7 @@ async function loadContent(isMore = false) {
                         let rawUrl = null;
                         if (item.pagemap?.cse_thumbnail?.length > 0) rawUrl = item.pagemap.cse_thumbnail[0].src;
                         else if (item.pagemap?.cse_image?.length > 0) rawUrl = item.pagemap.cse_image[0].src;
-                        return { id: item.link, title: item.title, desc: item.snippet, img: optimizeImage(rawUrl), date: "Web", url: item.link, type: 'news' };
+                        return { id: item.link, title: item.title, desc: item.snippet, img: optimizeImage(rawUrl), date: "З інтернету", url: item.link, type: 'news' };
                     });
                 }
                 googlePage = pageNum;

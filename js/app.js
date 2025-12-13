@@ -14,160 +14,39 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
-let currentMovieId = null;
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
 
-// --- ІНІЦІАЛІЗАЦІЯ ---
+// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
-    tg.expand();
     const user = tg.initDataUnsafe?.user;
     if (user) {
         document.getElementById('header_title').innerText = user.first_name;
-        if (user.photo_url) document.getElementById('user_avatar').src = user.photo_url;
+        if (user.photo_url) {
+            document.getElementById('user_avatar').src = user.photo_url;
+            document.getElementById('user_avatar').style.display = 'block';
+        } else {
+             document.getElementById('default_avatar').style.display = 'flex';
+        }
     }
 }
 updateRankDisplay(); 
 
+// --- ФУНКЦІЯ ОПТИМІЗАЦІЇ ЗОБРАЖЕНЬ (NEW 🚀) ---
 function optimizeImage(url) {
     if (!url) return null;
+    // Якщо це вже оптимізоване посилання TMDB - не чіпаємо
     if (url.includes('tmdb.org')) return url;
+    
+    // Використовуємо wsrv.nl для стиснення "на льоту"
+    // w=200 -> ширина 200px (досить для списку)
+    // q=80 -> якість 80%
+    // output=webp -> сучасний легкий формат
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
-
-// --- 🎬 НОВИЙ СПИСОК СЕРВЕРІВ ---
-const PLAYERS = [
-    // 1. Embed.su - Найпотужніший агрегатор на сьогодні
-    // Має перемикач мов всередині плеєра (шестерня або іконка планети)
-    { name: "Server 1 (Best)", url: (id) => `https://embed.su/embed/movie/${id}` },
-    
-    // 2. VidSrc.net - Часто працює, коли .xyz лежить
-    { name: "Server 2 (Net)", url: (id) => `https://vidsrc.net/embed/movie/${id}` },
-    
-    // 3. SuperEmbed - Стабільний резерв
-    { name: "Server 3 (Super)", url: (id) => `https://www.2embed.cc/embed/${id}` },
-
-    // 4. VideoCDN (Прямий IP) - Іноді це допомагає обійти блок домену
-    // Якщо не спрацює, просто покаже помилку
-    { name: "Server 4 (UA)", url: (id) => `https://44.svetacdn.in/embed/movie?tmdb_id=${id}` }
-];
-
-window.changePlayer = function(index) {
-    const iframe = document.getElementById('video_frame');
-    const btns = document.querySelectorAll('.player-btn');
-    const player = PLAYERS[index];
-    
-    if (!player || !iframe || !currentMovieId) return;
-
-    // Підсвітка кнопок
-    btns.forEach((btn, i) => {
-        if (i === index) {
-            btn.style.backgroundColor = '#50a8eb';
-            btn.style.color = 'white';
-        } else {
-            btn.style.backgroundColor = '#222';
-            btn.style.color = '#888';
-        }
-    });
-
-    // Завантаження
-    iframe.src = player.url(currentMovieId);
-};
-
-window.closePlayer = function() {
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    
-    if (iframe) iframe.src = ''; 
-    if (modal) modal.style.display = 'none';
-    
-    const fab = document.getElementById('fab_wrapper');
-    if (fab) fab.style.display = 'flex';
-};
-
-window.openPlayer = function(tmdbId) {
-    currentMovieId = tmdbId;
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    const fab = document.getElementById('fab_wrapper');
-    const contentDiv = modal.querySelector('.player-content');
-
-    if (!modal || !iframe) return;
-
-    // --- МЕНЮ ПЛЕЄРІВ ---
-    let controls = document.getElementById('player_controls');
-    if (!controls) {
-        controls = document.createElement('div');
-        controls.id = 'player_controls';
-        controls.style.cssText = `
-            position: absolute; top: 60px; left: 0; width: 100%; 
-            display: flex; justify-content: center; gap: 8px; 
-            z-index: 10001; flex-wrap: wrap; padding: 5px; box-sizing: border-box;
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
-        `;
-        
-        PLAYERS.forEach((player, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'player-btn';
-            btn.innerText = player.name;
-            btn.onclick = () => window.changePlayer(index);
-            btn.style.cssText = `
-                padding: 6px 12px; border: 1px solid #444; border-radius: 8px; 
-                background: #222; color: #ccc; font-size: 11px; cursor: pointer;
-                transition: all 0.2s; font-weight: 600;
-            `;
-            controls.appendChild(btn);
-        });
-        
-        contentDiv.insertBefore(controls, iframe);
-    }
-
-    // --- ОЧИЩЕННЯ ОБМЕЖЕНЬ ---
-    iframe.removeAttribute('sandbox'); 
-    iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
-    
-    // СТАРТУЄМО З Embed.su (Server 1)
-    window.changePlayer(0);
-    
-    modal.style.display = 'flex';
-    if (fab) fab.style.display = 'none';
-};
-
-// --- ВІДКРИТТЯ ПОСИЛАНЬ ---
-window.openLink = function(url, idEncoded) {
-    if (idEncoded) {
-        const id = decodeURIComponent(idEncoded);
-        if (!viewedItems.includes(id.toString())) {
-            addPoints(2); viewedItems.push(id.toString());
-            if (viewedItems.length > 200) viewedItems.shift(); 
-            localStorage.setItem('viewedItems', JSON.stringify(viewedItems));
-        }
-    } else {
-        addPoints(2);
-    }
-
-    const target = url.toString();
-
-    // Перевірка на фільм
-    if (/^\d+$/.test(target)) {
-        window.openPlayer(target);
-        return;
-    }
-    if (target.includes('themoviedb.org') || target.includes('/movie/')) {
-        const matches = target.match(/movie\/(\d+)/);
-        if (matches && matches[1]) {
-            window.openPlayer(matches[1]);
-            return;
-        }
-    }
-
-    // Новини -> Браузер
-    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(target);
-    else window.open(target, '_blank');
-};
 
 // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
 async function loadContent(isMore = false) {
@@ -182,24 +61,59 @@ async function loadContent(isMore = false) {
     try {
         if (appMode === 'news') {
             let items = [];
+            
             if (currentQuery) {
+                // --- GOOGLE SEARCH ---
                 const pageNum = isMore ? googlePage + 1 : 1;
                 const googleData = await fetchGoogleSearch(currentQuery, pageNum);
+                
                 if (googleData.items) {
                     items = googleData.items.map(item => {
-                        let rawUrl = item.pagemap?.cse_thumbnail?.[0]?.src || item.pagemap?.cse_image?.[0]?.src;
-                        return { id: item.link, title: item.title, desc: item.snippet, img: optimizeImage(rawUrl), date: "Web", url: item.link, type: 'news' };
+                        // 1. Спочатку пробуємо знайти мініатюру (thumbnail) - вона менша
+                        let rawUrl = null;
+                        if (item.pagemap?.cse_thumbnail?.length > 0) {
+                            rawUrl = item.pagemap.cse_thumbnail[0].src;
+                        } else if (item.pagemap?.cse_image?.length > 0) {
+                            rawUrl = item.pagemap.cse_image[0].src;
+                        }
+
+                        // 2. Проганяємо через оптимізатор
+                        const optimizedUrl = optimizeImage(rawUrl);
+
+                        return {
+                            id: item.link,
+                            title: item.title,
+                            desc: item.snippet,
+                            img: optimizedUrl, // Використовуємо стиснуте фото
+                            date: "З інтернету",
+                            url: item.link,
+                            type: 'news'
+                        };
                     });
                 }
                 googlePage = pageNum;
                 loadMoreBtn.style.display = items.length > 0 ? 'block' : 'none';
+
             } else {
+                // --- СТАНДАРТНІ НОВИНИ ---
                 const data = await fetchNewsData('', currentCategory, isMore ? newsPageToken : null);
-                items = data.results.map(item => ({ id: item.link, title: item.title, desc: item.description, img: optimizeImage(item.image_url), date: item.pubDate, url: item.link, type: 'news' }));
+                
+                items = data.results.map(item => ({
+                    id: item.link,
+                    title: item.title,
+                    desc: item.description,
+                    // Тут теж можна оптимізувати, якщо картинки великі
+                    img: item.image_url ? optimizeImage(item.image_url) : null,
+                    date: item.pubDate,
+                    url: item.link,
+                    type: 'news'
+                }));
                 newsPageToken = data.nextPage;
                 loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
             }
+
             feedNews = isMore ? [...feedNews, ...items] : items;
+            
             container.className = 'news-container list-view';
             renderList(isMore ? items : feedNews, container, savedItems, isMore);
 
@@ -213,12 +127,13 @@ async function loadContent(isMore = false) {
                 desc: item.overview,
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
-                url: item.id, 
+                url: `https://www.themoviedb.org/movie/${item.id}`,
                 type: 'movie'
             }));
 
             moviePage = page;
             feedMovies = isMore ? [...feedMovies, ...items] : items;
+
             container.className = 'movies-grid';
             renderMovies(isMore ? items : feedMovies, container, savedItems, isMore);
             loadMoreBtn.style.display = 'block'; 
@@ -229,7 +144,7 @@ async function loadContent(isMore = false) {
     }
 }
 
-// --- ІНТЕРФЕЙС ---
+// --- КЕРУВАННЯ FAB МЕНЮ ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
     const iconMenu = document.getElementById('icon_menu');
@@ -243,22 +158,28 @@ window.toggleFab = function() {
     }
 };
 
+// --- ПЕРЕМИКАННЯ ВКЛАДОК ---
 window.switchMode = function(mode) {
     if (appMode === mode) return;
+
     const fabItems = document.querySelectorAll('.fab-item');
     fabItems.forEach(btn => btn.classList.remove('active'));
-    document.querySelector(`.fab-item[onclick*="${mode}"]`)?.classList.add('active');
+    const activeBtn = document.querySelector(`.fab-item[onclick*="${mode}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+
     const wrapper = document.getElementById('fab_wrapper');
     if (wrapper.classList.contains('open')) window.toggleFab();
+
     const container = document.getElementById('content_container');
     container.classList.add('fade-out');
 
     setTimeout(() => {
         appMode = mode;
-        container.className = 'fade-out'; 
         const filters = document.getElementById('filters_wrapper');
         const catSelect = document.getElementById('category_select');
         const searchInput = document.getElementById('search_input');
+
+        container.className = 'fade-out'; 
 
         if (mode === 'news') {
             filters.style.display = 'flex'; catSelect.classList.remove('hidden'); searchInput.placeholder = "Пошук новин...";
@@ -277,22 +198,42 @@ window.switchMode = function(mode) {
                 loadMoreBtn.style.display = 'block'; 
             }
         } else { 
-            filters.style.display = 'none'; container.classList.add('news-container', 'list-view'); 
-            loadMoreBtn.style.display = 'none'; renderList(savedItems, container, savedItems);
+            filters.style.display = 'none'; 
+            container.classList.add('news-container', 'list-view'); 
+            loadMoreBtn.style.display = 'none';
+            renderList(savedItems, container, savedItems);
         }
+
         window.scrollTo({ top: 0, behavior: 'auto' });
-        requestAnimationFrame(() => container.classList.remove('fade-out'));
+        requestAnimationFrame(() => {
+            container.classList.remove('fade-out');
+        });
+
     }, 200);
 };
 
+// --- ДІЇ ---
 window.performSearch = function() {
     currentQuery = document.getElementById('search_input').value.trim();
     currentCategory = document.getElementById('category_select').value;
+    
     feedNews = []; feedMovies = []; newsPageToken = null; googlePage = 1; moviePage = 1;
     loadContent();
 };
 
 window.loadMore = function() { loadContent(true); };
+
+window.openLink = function(url, idEncoded) {
+    if (idEncoded) {
+        const id = decodeURIComponent(idEncoded);
+        if (!viewedItems.includes(id.toString())) {
+            addPoints(2); viewedItems.push(id.toString());
+            if (viewedItems.length > 200) viewedItems.shift(); 
+            localStorage.setItem('viewedItems', JSON.stringify(viewedItems));
+        }
+    } else addPoints(2);
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url); else window.open(url, '_blank');
+};
 
 window.shareItem = function(url, title) {
     addPoints(10);

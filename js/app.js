@@ -14,6 +14,7 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
+let currentMovieId = null; // Запам'ятовуємо ID для перемикання дзеркал
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
@@ -37,7 +38,23 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 ПРОСТИЙ ПЛЕЄР ---
+// --- 🎬 ПЛЕЄР (ANNACDN / MEDIAFILM) ---
+
+window.switchMirror = function(mirrorName) {
+    const iframe = document.getElementById('video_frame');
+    if (!currentMovieId || !iframe) return;
+
+    let url = '';
+    // Формуємо посилання залежно від обраного дзеркала
+    if (mirrorName === 'anna') {
+        url = `https://annacdn.cc/embed/movie?tmdb_id=${currentMovieId}`;
+    } else if (mirrorName === 'media') {
+        url = `https://mediafilm.in/embed/movie?tmdb_id=${currentMovieId}`;
+    }
+
+    iframe.src = url;
+};
+
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
@@ -50,17 +67,45 @@ window.closePlayer = function() {
 };
 
 window.openPlayer = function(tmdbId) {
+    currentMovieId = tmdbId;
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     const fab = document.getElementById('fab_wrapper');
+    const contentDiv = modal.querySelector('.player-content');
     
     if (!modal || !iframe) return;
 
-    // 👇 ОДНЕ СТАБІЛЬНЕ ПОСИЛАННЯ (VideoCDN через дзеркало)
-    // Це дзеркало зазвичай працює в Україні і має укр. озвучку в налаштуваннях
-    iframe.src = `https://44.svetacdn.in/embed/movie?tmdb_id=${tmdbId}`;
+    // --- ДОДАЄМО КНОПКИ ПЕРЕМИКАННЯ ДЗЕРКАЛ ---
+    let controls = document.getElementById('mirror_controls');
+    if (!controls) {
+        controls = document.createElement('div');
+        controls.id = 'mirror_controls';
+        controls.style.cssText = `
+            position: absolute; top: 60px; right: 10px;
+            display: flex; gap: 8px; z-index: 10001;
+        `;
+        
+        // Кнопка Anna (Основна)
+        const btnAnna = document.createElement('button');
+        btnAnna.innerText = "AnnaCDN";
+        btnAnna.onclick = () => window.switchMirror('anna');
+        btnAnna.style.cssText = "padding: 5px 10px; background: #50a8eb; color: white; border: none; border-radius: 5px; font-size: 11px; cursor: pointer;";
+        
+        // Кнопка Media (Запасна)
+        const btnMedia = document.createElement('button');
+        btnMedia.innerText = "MediaFilm";
+        btnMedia.onclick = () => window.switchMirror('media');
+        btnMedia.style.cssText = "padding: 5px 10px; background: #333; color: white; border: 1px solid #555; border-radius: 5px; font-size: 11px; cursor: pointer;";
+
+        controls.appendChild(btnAnna);
+        controls.appendChild(btnMedia);
+        contentDiv.appendChild(controls);
+    }
+
+    // Встановлюємо основне джерело (AnnaCDN)
+    iframe.src = `https://annacdn.cc/embed/movie?tmdb_id=${tmdbId}`;
     
-    // Дозволяємо все, щоб працювало як на сайті
+    // Дозволи
     iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
     
     modal.style.display = 'flex';
@@ -82,11 +127,12 @@ window.openLink = function(url, idEncoded) {
 
     const target = url.toString();
 
-    // Якщо це цифри або лінк TMDB -> Плеєр
+    // Якщо це цифри (ID) -> Плеєр
     if (/^\d+$/.test(target)) {
         window.openPlayer(target);
         return;
     }
+    // Якщо TMDB посилання -> Плеєр
     if (target.includes('themoviedb.org') || target.includes('/movie/')) {
         const matches = target.match(/movie\/(\d+)/);
         if (matches && matches[1]) {

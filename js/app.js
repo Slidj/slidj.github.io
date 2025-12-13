@@ -14,7 +14,6 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
-let currentMovie = null; // Зберігаємо дані про вибраний фільм
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
@@ -24,6 +23,7 @@ if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+    tg.enableClosingConfirmation(); // Запитувати перед закриттям
     const user = tg.initDataUnsafe?.user;
     if (user) {
         document.getElementById('header_title').innerText = user.first_name;
@@ -38,102 +38,137 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- ФУНКЦІОНАЛ МЕНЮ ВИБОРУ (HUB) ---
+// --- 🎬 СТОРІНКА ФІЛЬМУ (ВЛАСНИЙ ДИЗАЙН) ---
 
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
-    // Очищаємо вміст, щоб не висіли старі кнопки
-    const content = document.getElementById('hub_content');
-    if (content) content.remove();
+    // Очищаємо вміст
+    const page = document.getElementById('movie_page_content');
+    if (page) page.remove();
     
     if (modal) modal.style.display = 'none';
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
 };
 
-window.openHub = function(movie) {
+window.openMoviePage = function(movie) {
     const modal = document.getElementById('player_modal');
     const fab = document.getElementById('fab_wrapper');
     const contentDiv = modal.querySelector('.player-content');
 
-    // Ховаємо iframe, якщо він там залишився від старих експериментів
-    const oldIframe = document.getElementById('video_frame');
-    if (oldIframe) oldIframe.style.display = 'none';
+    // Прибираємо старий iframe якщо він там є
+    const iframe = document.getElementById('video_frame');
+    if (iframe) iframe.style.display = 'none';
 
-    // Очищаємо попереднє меню
-    const oldHub = document.getElementById('hub_content');
-    if (oldHub) oldHub.remove();
+    // Очищаємо попередній контент
+    const oldPage = document.getElementById('movie_page_content');
+    if (oldPage) oldPage.remove();
 
-    // Створюємо гарне меню
-    const hub = document.createElement('div');
-    hub.id = 'hub_content';
-    hub.style.cssText = `
-        display: flex; flex-direction: column; gap: 15px; 
-        width: 100%; max-width: 300px; margin: 0 auto; padding: 20px 0;
+    // --- ГЕНЕРУЄМО ДИЗАЙН ---
+    const page = document.createElement('div');
+    page.id = 'movie_page_content';
+    
+    // Стилі для контейнера (щоб був скрол, якщо опис довгий)
+    page.style.cssText = `
+        width: 100%; height: 100%; overflow-y: auto;
+        display: flex; flex-direction: column; 
+        background: #111; color: white; border-radius: 12px;
+        position: relative;
     `;
 
-    // Заголовок
-    const title = document.createElement('h3');
-    title.innerText = movie.title;
-    title.style.cssText = "color: white; text-align: center; margin: 0 0 10px 0;";
-    hub.appendChild(title);
+    // Фон (Backdrop) - беремо картинку фільму і розмиваємо
+    const backdropUrl = movie.img || ''; 
+    
+    page.innerHTML = `
+        <div style="
+            position: absolute; top: 0; left: 0; width: 100%; height: 250px;
+            background-image: url('${backdropUrl}'); background-size: cover; background-position: center;
+            opacity: 0.4; mask-image: linear-gradient(to bottom, black, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+            z-index: 0;
+        "></div>
 
-    // Функція для створення кнопок
-    const createBtn = (text, color, icon, url) => {
-        const btn = document.createElement('button');
-        btn.innerHTML = `${icon} ${text}`;
-        btn.style.cssText = `
-            padding: 12px; border: none; border-radius: 12px;
-            background: ${color}; color: white; font-weight: bold; font-size: 14px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.1s;
-        `;
-        btn.onclick = () => {
-            if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
-            else window.open(url, '_blank');
-        };
-        // Ефект натискання
-        btn.onmousedown = () => btn.style.transform = "scale(0.98)";
-        btn.onmouseup = () => btn.style.transform = "scale(1)";
-        return btn;
-    };
+        <button onclick="closePlayer()" style="
+            position: absolute; top: 15px; right: 15px; z-index: 10;
+            background: rgba(0,0,0,0.5); border: none; color: white;
+            width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+            font-size: 20px; display: flex; align-items: center; justify-content: center;
+        ">&times;</button>
 
-    // 1. Кнопка Eneyida
-    hub.appendChild(createBtn(
-        "Дивитись на Eneyida", 
-        "#ff9500", // Помаранчевий
-        `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
-        `https://eneyida.tv/index.php?do=search&subaction=search&story=${encodeURIComponent(movie.title)}`
-    ));
+        <div style="z-index: 1; padding: 20px; margin-top: 100px;">
+            
+            <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px;">
+                <img src="${movie.img}" style="
+                    width: 100px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+                    border: 2px solid rgba(255,255,255,0.1);
+                ">
+                <div>
+                    <h1 style="margin: 0; font-size: 22px; line-height: 1.2;">${movie.title}</h1>
+                    <div style="color: #ffd700; margin-top: 5px; font-weight: bold;">★ ${movie.rating || '0.0'}</div>
+                </div>
+            </div>
 
-    // 2. Кнопка UaKino
-    hub.appendChild(createBtn(
-        "Дивитись на UaKino", 
-        "#34c759", // Зелений
-        `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
-        `https://uakino.club/index.php?do=search&subaction=search&story=${encodeURIComponent(movie.title)}`
-    ));
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #888; font-size: 12px; text-transform: uppercase;">Про фільм</h4>
+                <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #ddd;">
+                    ${movie.desc || 'Опис відсутній.'}
+                </p>
+            </div>
 
-    // 3. Кнопка YouTube (Трейлер)
-    hub.appendChild(createBtn(
-        "Трейлер (YouTube)", 
-        "#ff3b30", // Червоний
-        `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>`,
-        `https://www.youtube.com/results?search_query=трейлер+українською+${encodeURIComponent(movie.title)}`
-    ));
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="searchOnline('${movie.title}')" style="
+                    padding: 14px; border-radius: 12px; border: none; font-weight: bold;
+                    background: linear-gradient(90deg, #34c759, #30b350); color: white;
+                    display: flex; align-items: center; justify-content: center; gap: 10px;
+                    box-shadow: 0 4px 10px rgba(52, 199, 89, 0.3);
+                ">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Знайти (UaKino / Eneyida)
+                </button>
 
-    // 4. Кнопка TMDB (Інфо)
-    hub.appendChild(createBtn(
-        "Про фільм (TMDB)", 
-        "#0a84ff", // Синій
-        `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
-        `https://www.themoviedb.org/movie/${movie.id}`
-    ));
+                <button onclick="openTrailer('${movie.title}')" style="
+                    padding: 14px; border-radius: 12px; border: none; font-weight: bold;
+                    background: rgba(255,255,255,0.1); color: white;
+                    display: flex; align-items: center; justify-content: center; gap: 10px;
+                ">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
+                    Трейлер YouTube
+                </button>
 
-    contentDiv.appendChild(hub);
+                <button onclick="openTMDB('${movie.id}')" style="
+                    padding: 14px; border-radius: 12px; border: none; font-weight: bold;
+                    background: transparent; color: #50a8eb; border: 1px solid #50a8eb;
+                ">
+                    Деталі на TMDB
+                </button>
+            </div>
+            
+            <div style="height: 50px;"></div> </div>
+    `;
 
+    contentDiv.appendChild(page);
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
+};
+
+// --- ФУНКЦІЇ ДЛЯ КНОПОК ---
+window.searchOnline = function(title) {
+    // Шукаємо в Google по українських сайтах (найкращий варіант)
+    const url = `https://www.google.com/search?q=дивитися+онлайн+українською+${encodeURIComponent(title)}+eneyida+uakino`;
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
+    else window.open(url, '_blank');
+};
+
+window.openTrailer = function(title) {
+    const url = `https://www.youtube.com/results?search_query=трейлер+українською+${encodeURIComponent(title)}`;
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
+    else window.open(url, '_blank');
+};
+
+window.openTMDB = function(id) {
+    const url = `https://www.themoviedb.org/movie/${id}`;
+    if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(url);
+    else window.open(url, '_blank');
 };
 
 
@@ -152,35 +187,40 @@ window.openLink = function(url, idEncoded) {
 
     const target = url.toString();
 
-    // ПЕРЕВІРКА: Це фільм?
+    // 1. ПЕРЕВІРКА: Це ID фільму? -> ВІДКРИВАЄМО НАШУ СТОРІНКУ
     if (/^\d+$/.test(target)) {
-        // Знаходимо фільм у масиві, щоб взяти назву
         let movie = feedMovies.find(m => m.id == target);
-        // Якщо раптом не знайшли (рідкісний кейс), створюємо заглушку
-        if (!movie) movie = { id: target, title: "Фільм" };
-        
-        window.openHub(movie);
-        return;
-    }
-    
-    // Якщо прийшло старе посилання TMDB
-    if (target.includes('themoviedb.org') || target.includes('/movie/')) {
-        const matches = target.match(/movie\/(\d+)/);
-        if (matches && matches[1]) {
-            let movie = feedMovies.find(m => m.id == matches[1]);
-            if (!movie) movie = { id: matches[1], title: "Фільм" };
-            window.openHub(movie);
+        // Якщо фільм не знайдено (наприклад з збережених), робимо об'єкт з мінімумом
+        if (!movie) {
+            // Шукаємо в збережених
+            movie = savedItems.find(m => m.id == target);
+        }
+        if (movie) {
+            window.openMoviePage(movie);
             return;
         }
     }
+    
+    // Стара перевірка посилань
+    if (target.includes('themoviedb.org') || target.includes('/movie/')) {
+        const matches = target.match(/movie\/(\d+)/);
+        if (matches && matches[1]) {
+            const id = matches[1];
+            let movie = feedMovies.find(m => m.id == id) || savedItems.find(m => m.id == id);
+            if (movie) {
+                window.openMoviePage(movie);
+                return;
+            }
+        }
+    }
 
-    // Новини -> Просто відкриваємо
+    // Якщо це просто посилання (новина)
     if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(target);
     else window.open(target, '_blank');
 };
 
 
-// --- ЗАВАНТАЖЕННЯ ДАНИХ (Стандартне) ---
+// --- ЗАВАНТАЖЕННЯ ДАНИХ ---
 async function loadContent(isMore = false) {
     if (!isMore) {
         const preloader = document.getElementById('preloader');
@@ -225,7 +265,7 @@ async function loadContent(isMore = false) {
                 img: item.poster_path ? API_URLS.tmdbImg + item.poster_path : null,
                 rating: item.vote_average.toFixed(1),
                 
-                // Зберігаємо ID. Відкриватиметься наше нове меню Hub
+                // Передаємо ID
                 url: item.id, 
                 
                 type: 'movie'
@@ -244,7 +284,7 @@ async function loadContent(isMore = false) {
     }
 }
 
-// --- ІНТЕРФЕЙС (Стандартний) ---
+// --- ІНТЕРФЕЙС ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
     const iconMenu = document.getElementById('icon_menu');

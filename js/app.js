@@ -14,12 +14,12 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
-let currentMovieId = null; // Запам'ятовуємо ID для перемикання дзеркал
+let currentMovieId = null; 
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
 
-// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
+// --- ІНІЦІАЛІЗАЦІЯ ---
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
@@ -38,21 +38,50 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 ПЛЕЄР (ANNACDN / MEDIAFILM) ---
+// --- 🎬 СПИСОК СЕРВЕРІВ (VidLink та резерви) ---
+const MOVIE_SERVERS = [
+    // 1. VidLink (Сучасний, швидкий, агрегує багато джерел)
+    { name: "Server 1 (VidLink)", url: (id) => `https://vidlink.pro/movie/${id}` },
+    
+    // 2. VidSrc.CC (Новий агрегатор, часто працює там, де інші ні)
+    { name: "Server 2 (CC)", url: (id) => `https://vidsrc.cc/v2/embed/movie/${id}` },
+    
+    // 3. SuperEmbed (Старий добрий надійний варіант, переважно англ)
+    { name: "Server 3 (Super)", url: (id) => `https://www.2embed.cc/embed/${id}` }
+];
 
-window.switchMirror = function(mirrorName) {
+window.changeServer = function(index) {
     const iframe = document.getElementById('video_frame');
-    if (!currentMovieId || !iframe) return;
+    const btns = document.querySelectorAll('.server-btn');
+    const server = MOVIE_SERVERS[index];
+    
+    if (!server || !iframe) return;
 
-    let url = '';
-    // Формуємо посилання залежно від обраного дзеркала
-    if (mirrorName === 'anna') {
-        url = `https://annacdn.cc/embed/movie?tmdb_id=${currentMovieId}`;
-    } else if (mirrorName === 'media') {
-        url = `https://mediafilm.in/embed/movie?tmdb_id=${currentMovieId}`;
+    // Оновлюємо кнопки
+    btns.forEach((btn, i) => {
+        if (i === index) {
+            btn.style.backgroundColor = '#50a8eb';
+            btn.style.color = 'white';
+        } else {
+            btn.style.backgroundColor = '#222';
+            btn.style.color = '#888';
+        }
+    });
+
+    // Завантажуємо нове джерело
+    if (currentMovieId) {
+        iframe.src = server.url(currentMovieId);
+        
+        // Оновлюємо кнопку "Відкрити в браузері"
+        const extBtn = document.getElementById('external_open_btn');
+        if (extBtn) {
+            extBtn.onclick = function() {
+                const link = server.url(currentMovieId);
+                if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(link);
+                else window.open(link, '_blank');
+            };
+        }
     }
-
-    iframe.src = url;
 };
 
 window.closePlayer = function() {
@@ -72,41 +101,61 @@ window.openPlayer = function(tmdbId) {
     const iframe = document.getElementById('video_frame');
     const fab = document.getElementById('fab_wrapper');
     const contentDiv = modal.querySelector('.player-content');
-    
+
     if (!modal || !iframe) return;
 
-    // --- ДОДАЄМО КНОПКИ ПЕРЕМИКАННЯ ДЗЕРКАЛ ---
-    let controls = document.getElementById('mirror_controls');
+    // --- МЕНЮ ВИБОРУ СЕРВЕРА ---
+    let controls = document.getElementById('server_controls');
     if (!controls) {
         controls = document.createElement('div');
-        controls.id = 'mirror_controls';
+        controls.id = 'server_controls';
         controls.style.cssText = `
-            position: absolute; top: 60px; right: 10px;
-            display: flex; gap: 8px; z-index: 10001;
+            position: absolute; top: 60px; left: 0; width: 100%; 
+            display: flex; justify-content: center; gap: 8px; 
+            z-index: 10001; flex-wrap: wrap; padding: 0 10px; box-sizing: border-box;
+            pointer-events: none;
         `;
         
-        // Кнопка Anna (Основна)
-        const btnAnna = document.createElement('button');
-        btnAnna.innerText = "AnnaCDN";
-        btnAnna.onclick = () => window.switchMirror('anna');
-        btnAnna.style.cssText = "padding: 5px 10px; background: #50a8eb; color: white; border: none; border-radius: 5px; font-size: 11px; cursor: pointer;";
-        
-        // Кнопка Media (Запасна)
-        const btnMedia = document.createElement('button');
-        btnMedia.innerText = "MediaFilm";
-        btnMedia.onclick = () => window.switchMirror('media');
-        btnMedia.style.cssText = "padding: 5px 10px; background: #333; color: white; border: 1px solid #555; border-radius: 5px; font-size: 11px; cursor: pointer;";
-
-        controls.appendChild(btnAnna);
-        controls.appendChild(btnMedia);
-        contentDiv.appendChild(controls);
+        MOVIE_SERVERS.forEach((server, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'server-btn';
+            btn.innerText = server.name;
+            btn.onclick = () => window.changeServer(index);
+            btn.style.cssText = `
+                pointer-events: auto; padding: 6px 12px; border: 1px solid #444; border-radius: 20px; 
+                background: #222; color: #ccc; font-size: 11px; cursor: pointer;
+                transition: all 0.2s; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            `;
+            controls.appendChild(btn);
+        });
+        contentDiv.insertBefore(controls, iframe);
     }
 
-    // Встановлюємо основне джерело (AnnaCDN)
-    iframe.src = `https://annacdn.cc/embed/movie?tmdb_id=${tmdbId}`;
-    
-    // Дозволи
+    // --- КНОПКА "ВІДКРИТИ В БРАУЗЕРІ" ---
+    let extBtn = document.getElementById('external_open_btn');
+    if (!extBtn) {
+        extBtn = document.createElement('button');
+        extBtn.id = 'external_open_btn';
+        extBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px; vertical-align:middle;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            Відкрити в браузері
+        `;
+        extBtn.style.cssText = `
+            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
+            padding: 8px 16px; border-radius: 20px; border: none;
+            background: rgba(255, 59, 48, 0.9); color: white; font-weight: bold; font-size: 12px;
+            z-index: 10002; cursor: pointer; backdrop-filter: blur(4px);
+            white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        `;
+        contentDiv.appendChild(extBtn);
+    }
+
+    // Очищаємо всі обмеження, щоб плеєр точно завантажився
+    iframe.removeAttribute('sandbox'); 
     iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+    
+    // Запускаємо VidLink
+    window.changeServer(0);
     
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
@@ -127,12 +176,11 @@ window.openLink = function(url, idEncoded) {
 
     const target = url.toString();
 
-    // Якщо це цифри (ID) -> Плеєр
+    // Якщо це цифри або TMDB -> Плеєр
     if (/^\d+$/.test(target)) {
         window.openPlayer(target);
         return;
     }
-    // Якщо TMDB посилання -> Плеєр
     if (target.includes('themoviedb.org') || target.includes('/movie/')) {
         const matches = target.match(/movie\/(\d+)/);
         if (matches && matches[1]) {

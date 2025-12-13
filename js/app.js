@@ -14,11 +14,12 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
+let currentMovie = null;
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
 
-// --- ІНІЦІАЛІЗАЦІЯ TELEGRAM ---
+// --- ІНІЦІАЛІЗАЦІЯ ---
 if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
@@ -26,12 +27,7 @@ if (window.Telegram?.WebApp) {
     const user = tg.initDataUnsafe?.user;
     if (user) {
         document.getElementById('header_title').innerText = user.first_name;
-        if (user.photo_url) {
-            document.getElementById('user_avatar').src = user.photo_url;
-            document.getElementById('user_avatar').style.display = 'block';
-        } else {
-             document.getElementById('default_avatar').style.display = 'flex';
-        }
+        if (user.photo_url) document.getElementById('user_avatar').src = user.photo_url;
     }
 }
 updateRankDisplay(); 
@@ -42,87 +38,111 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 KINOBOX PLAYER (РОЗУМНИЙ ВІДЖЕТ) ---
-// Ми динамічно підвантажуємо їх скрипт, щоб він сам розібрався з блокуваннями
-function loadKinoboxScript() {
-    return new Promise((resolve, reject) => {
-        if (window.kbox) { resolve(); return; } // Вже завантажено
-        const script = document.createElement('script');
-        script.src = "https://kinobox.tv/kinobox.min.js";
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
+// --- 🎬 СЕРВЕРИ (З ЧИСТИМИ ПЛЕЄРАМИ) ---
+const MOVIE_SERVERS = [
+    // 1. VidSrc SU (Найбільш стабільний, є вибір озвучки в налаштуваннях)
+    { name: "Server 1 (Best)", url: (id) => `https://vidsrc.su/embed/movie/${id}` },
+    
+    // 2. SuperEmbed (Дуже швидкий, англ + субтитри)
+    { name: "Server 2 (Fast)", url: (id) => `https://www.2embed.cc/embed/${id}` },
+    
+    // 3. Voidboost (Для спроби знайти укр. озвучку)
+    { name: "Server 3 (UA?)", url: (id) => `https://voidboost.net/embed/movie/${id}` },
+    
+    // 4. Pro (Резерв)
+    { name: "Server 4 (Pro)", url: (id) => `https://vidsrc.pro/embed/movie/${id}` }
+];
+
+window.changeServer = function(index) {
+    const iframe = document.getElementById('video_frame');
+    const btns = document.querySelectorAll('.server-btn');
+    const server = MOVIE_SERVERS[index];
+    
+    if (!server) return;
+
+    // Підсвічування кнопок
+    btns.forEach((btn, i) => {
+        if (i === index) {
+            btn.style.backgroundColor = '#50a8eb';
+            btn.style.color = 'white';
+        } else {
+            btn.style.backgroundColor = '#222';
+            btn.style.color = '#888';
+        }
     });
-}
+
+    if (currentMovie && currentMovie.id) {
+        iframe.src = server.url(currentMovie.id);
+    }
+};
 
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
-    // Очищаємо контейнер плеєра
-    const container = document.getElementById('kinobox_container');
-    if (container) container.innerHTML = '';
+    const iframe = document.getElementById('video_frame');
     
+    if (iframe) {
+        iframe.src = ''; 
+        // Знімаємо блокування, щоб не заважало іншим елементам (про всяк випадок)
+        iframe.removeAttribute('sandbox');
+    }
     if (modal) modal.style.display = 'none';
+    
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
 };
 
-window.openPlayer = async function(tmdbId) {
-    const modal = document.getElementById('player_modal');
-    const fab = document.getElementById('fab_wrapper');
+window.openPlayer = function(tmdbId) {
+    currentMovie = feedMovies.find(m => m.id == tmdbId) || { id: tmdbId };
     
-    // Знаходимо (або створюємо) контейнер для Kinobox всередині модального вікна
-    // Нам не потрібен iframe, Kinobox сам створить все що треба
-    let kBoxContainer = document.getElementById('kinobox_container');
-    if (!kBoxContainer) {
-        // Якщо контейнера немає, створимо його замість iframe
-        const contentDiv = modal.querySelector('.player-content');
-        // Видаляємо старий iframe якщо є
-        const oldIframe = document.getElementById('video_frame');
-        if (oldIframe) oldIframe.style.display = 'none';
+    const modal = document.getElementById('player_modal');
+    const iframe = document.getElementById('video_frame');
+    const fab = document.getElementById('fab_wrapper');
+    const contentDiv = modal.querySelector('.player-content');
+
+    if (!modal || !iframe) return;
+
+    // --- КНОПКИ ПЕРЕМИКАННЯ ---
+    let controls = document.getElementById('server_controls');
+    if (!controls) {
+        controls = document.createElement('div');
+        controls.id = 'server_controls';
+        controls.style.cssText = `
+            position: absolute; top: 60px; left: 0; width: 100%; 
+            display: flex; justify-content: center; gap: 8px; 
+            z-index: 10001; flex-wrap: wrap; padding: 0 10px; box-sizing: border-box;
+            pointer-events: none;
+        `;
         
-        kBoxContainer = document.createElement('div');
-        kBoxContainer.id = 'kinobox_container';
-        kBoxContainer.style.cssText = "width: 100%; height: 100%;";
-        contentDiv.appendChild(kBoxContainer);
+        MOVIE_SERVERS.forEach((server, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'server-btn';
+            btn.innerText = server.name;
+            btn.onclick = () => window.changeServer(index);
+            btn.style.cssText = `
+                pointer-events: auto; padding: 6px 12px; border: 1px solid #444; border-radius: 20px; 
+                background: #222; color: #ccc; font-size: 11px; cursor: pointer;
+                transition: all 0.2s; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            `;
+            controls.appendChild(btn);
+        });
+        contentDiv.insertBefore(controls, iframe);
     }
+
+    // --- 🛡️ БЛОКУВАННЯ ПЕРЕАДРЕСАЦІЇ (SANDBOX) ---
+    // Це найважливіший рядок. Він забороняє плеєру відкривати нові вікна.
+    // allow-scripts: дозволяє працювати плеєру
+    // allow-same-origin: дозволяє вантажити відео
+    // allow-presentation: дозволяє повний екран
+    // ВІДСУТНІЙ allow-top-navigation: ЗАБОРОНЯЄ перекидати вас на інші сайти!
+    iframe.setAttribute('sandbox', 'allow-forms allow-scripts allow-same-origin allow-presentation');
+    
+    iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+    
+    // Запускаємо Server 1
+    window.changeServer(0);
     
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
-
-    try {
-        await loadKinoboxScript();
-        
-        // Ініціалізація Kinobox
-        // Він сам знайде фільм за ID і покаже доступні плеєри (Ashdi, VideoCDN, etc.)
-        new window.Kinobox('.player-content', {
-            search: {
-                tmdb: tmdbId
-            },
-            menu: {
-                enable: true, // Показувати меню вибору джерел
-                default: 'menu_list',
-                mobile: true,
-                format: '{N} :: {T} ({Q})'
-            },
-            players: {
-               // Тут ми вказуємо, які бази шукати.
-               // Він сам перевірить, що працює, а що ні.
-               alloha: {enable: true, position: 1},
-               videocdn: {enable: true, position: 2},
-               ashdi: {enable: true, position: 3},
-               collaps: {enable: true, position: 4}
-            },
-            view: {
-                // Налаштування вигляду
-                mobile: true
-            }
-        }).init();
-        
-    } catch (e) {
-        console.error("Помилка завантаження Kinobox", e);
-        alert("Не вдалося завантажити плеєр. Спробуйте пізніше.");
-        window.closePlayer();
-    }
 };
 
 // --- ВІДКРИТТЯ ПОСИЛАНЬ ---
@@ -140,7 +160,7 @@ window.openLink = function(url, idEncoded) {
 
     const target = url.toString();
 
-    // Якщо це цифри або TMDB -> Kinobox
+    // Якщо це цифри або TMDB -> Плеєр
     if (/^\d+$/.test(target)) {
         window.openPlayer(target);
         return;

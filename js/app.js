@@ -42,7 +42,7 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 ЛОГІКА ПЛЕЄРА (VOIDBOOST - З УКРАЇНСЬКОЮ) ---
+// --- 🎬 ЛОГІКА ПЛЕЄРА (AUTOEMBED) ---
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
@@ -63,12 +63,11 @@ window.openPlayer = function(tmdbId) {
 
     if (!modal || !iframe) return;
 
-    // 1. ВАЖЛИВО: Дозволи для плеєра (щоб працював повний екран і не було помилок)
+    // ВАЖЛИВО: Максимальні дозволи для плеєра
     iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
     
-    // 2. Джерело відео (Voidboost)
-    // Воно підтримує вибір озвучки. Якщо не працює - спробуйте увімкнути VPN.
-    iframe.src = `https://voidboost.net/embed/movie/${tmdbId}`;
+    // AutoEmbed автоматично підбирає робочий сервер
+    iframe.src = `https://autoembed.co/movie/tmdb/${tmdbId}`;
     
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';

@@ -14,7 +14,6 @@ let googlePage = 1;
 let moviePage = 1;
 let currentQuery = '';
 let currentCategory = '';
-let currentMovie = null; // Зберігаємо інфо про фільм
 
 const container = document.getElementById('content_container');
 const loadMoreBtn = document.getElementById('load_more_container');
@@ -43,120 +42,87 @@ function optimizeImage(url) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&h=200&fit=cover&output=webp`;
 }
 
-// --- 🎬 СПИСОК СЕРВЕРІВ ---
-const MOVIE_SERVERS = [
-    // 1. VOIDBOOST (Найкраща надія на УКР озвучку через ID)
-    // Шукайте в плеєрі прапорець або шестерню -> Audio
-    { name: "Server UA (Void)", url: (id) => `https://voidboost.net/embed/movie/${id}` },
-    
-    // 2. ДЗЕРКАЛА (Якщо Voidboost заблокований)
-    { name: "Mirror 1", url: (id) => `https://player.svetacdn.in/embed/movie/${id}` },
-    { name: "Mirror 2", url: (id) => `https://filmino.net/embed/movie/${id}` },
-    
-    // 3. МІЖНАРОДНИЙ (Завжди працює, англ)
-    { name: "Global (Eng)", url: (id) => `https://vidsrc.pro/embed/movie/${id}` },
-
-    // 4. ПОШУК НА САЙТАХ З ASHDI (Це ті самі "танці", але в один клік)
-    // Ми не можемо вбудувати Ashdi, тому відкриваємо його у вікні
-    { name: "🇺🇦 Eneyida", type: 'search', url: (title) => `https://eneyida.tv/index.php?do=search&subaction=search&story=${encodeURIComponent(title)}` },
-    { name: "🇺🇦 UaKino", type: 'search', url: (title) => `https://uakino.club/index.php?do=search&subaction=search&story=${encodeURIComponent(title)}` }
-];
-
-window.changeServer = function(index) {
-    const server = MOVIE_SERVERS[index];
-    if (!server) return;
-
-    // Кнопки пошуку (Ashdi/Eneyida)
-    if (server.type === 'search') {
-        if (!currentMovie || !currentMovie.title) return;
-        const link = server.url(currentMovie.title);
-        
-        // Відкриваємо в браузері, бо ці сайти забороняють iframe
-        if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(link);
-        else window.open(link, '_blank');
-        return;
-    }
-
-    // Перемикання вбудованого плеєра
-    const iframe = document.getElementById('video_frame');
-    const btns = document.querySelectorAll('.server-btn');
-    
-    btns.forEach((btn, i) => {
-        if (i === index) {
-            btn.style.backgroundColor = '#50a8eb';
-            btn.style.color = 'white';
-        } else {
-            btn.style.backgroundColor = '#222';
-            btn.style.color = '#888';
-        }
+// --- 🎬 KINOBOX PLAYER (РОЗУМНИЙ ВІДЖЕТ) ---
+// Ми динамічно підвантажуємо їх скрипт, щоб він сам розібрався з блокуваннями
+function loadKinoboxScript() {
+    return new Promise((resolve, reject) => {
+        if (window.kbox) { resolve(); return; } // Вже завантажено
+        const script = document.createElement('script');
+        script.src = "https://kinobox.tv/kinobox.min.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
     });
-
-    if (currentMovie && currentMovie.id) {
-        iframe.src = server.url(currentMovie.id);
-    }
-};
+}
 
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
+    // Очищаємо контейнер плеєра
+    const container = document.getElementById('kinobox_container');
+    if (container) container.innerHTML = '';
     
-    if (iframe) iframe.src = ''; 
     if (modal) modal.style.display = 'none';
-    
     const fab = document.getElementById('fab_wrapper');
     if (fab) fab.style.display = 'flex';
 };
 
-window.openPlayer = function(tmdbId) {
-    // Знаходимо фільм, щоб знати його назву для кнопок пошуку
-    currentMovie = feedMovies.find(m => m.id == tmdbId) || { id: tmdbId, title: '' };
-    
+window.openPlayer = async function(tmdbId) {
     const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
     const fab = document.getElementById('fab_wrapper');
-    const contentDiv = modal.querySelector('.player-content');
-
-    if (!modal || !iframe) return;
-
-    // --- СТВОРЮЄМО МЕНЮ ---
-    let controls = document.getElementById('server_controls');
-    if (!controls) {
-        controls = document.createElement('div');
-        controls.id = 'server_controls';
-        controls.style.cssText = `
-            position: absolute; top: 60px; left: 0; width: 100%; 
-            display: flex; justify-content: center; gap: 8px; 
-            z-index: 10001; flex-wrap: wrap; padding: 0 10px; box-sizing: border-box;
-            pointer-events: none; /* Щоб кліки проходили крізь пусте місце */
-        `;
-        
-        MOVIE_SERVERS.forEach((server, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'server-btn';
-            btn.innerText = server.name;
-            btn.onclick = () => window.changeServer(index);
-            
-            const isSearch = server.type === 'search';
-            btn.style.cssText = `
-                pointer-events: auto; /* Кнопки клікабельні */
-                padding: 8px 12px; border: 1px solid #444; border-radius: 8px; 
-                background: ${isSearch ? '#e67e22' : '#222'}; 
-                color: #ccc; font-size: 11px; cursor: pointer;
-                transition: all 0.2s; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            `;
-            controls.appendChild(btn);
-        });
-
-        contentDiv.insertBefore(controls, iframe);
-    }
-
-    iframe.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
     
-    // Старт з першого сервера (Voidboost)
-    window.changeServer(0);
+    // Знаходимо (або створюємо) контейнер для Kinobox всередині модального вікна
+    // Нам не потрібен iframe, Kinobox сам створить все що треба
+    let kBoxContainer = document.getElementById('kinobox_container');
+    if (!kBoxContainer) {
+        // Якщо контейнера немає, створимо його замість iframe
+        const contentDiv = modal.querySelector('.player-content');
+        // Видаляємо старий iframe якщо є
+        const oldIframe = document.getElementById('video_frame');
+        if (oldIframe) oldIframe.style.display = 'none';
+        
+        kBoxContainer = document.createElement('div');
+        kBoxContainer.id = 'kinobox_container';
+        kBoxContainer.style.cssText = "width: 100%; height: 100%;";
+        contentDiv.appendChild(kBoxContainer);
+    }
     
     modal.style.display = 'flex';
     if (fab) fab.style.display = 'none';
+
+    try {
+        await loadKinoboxScript();
+        
+        // Ініціалізація Kinobox
+        // Він сам знайде фільм за ID і покаже доступні плеєри (Ashdi, VideoCDN, etc.)
+        new window.Kinobox('.player-content', {
+            search: {
+                tmdb: tmdbId
+            },
+            menu: {
+                enable: true, // Показувати меню вибору джерел
+                default: 'menu_list',
+                mobile: true,
+                format: '{N} :: {T} ({Q})'
+            },
+            players: {
+               // Тут ми вказуємо, які бази шукати.
+               // Він сам перевірить, що працює, а що ні.
+               alloha: {enable: true, position: 1},
+               videocdn: {enable: true, position: 2},
+               ashdi: {enable: true, position: 3},
+               collaps: {enable: true, position: 4}
+            },
+            view: {
+                // Налаштування вигляду
+                mobile: true
+            }
+        }).init();
+        
+    } catch (e) {
+        console.error("Помилка завантаження Kinobox", e);
+        alert("Не вдалося завантажити плеєр. Спробуйте пізніше.");
+        window.closePlayer();
+    }
 };
 
 // --- ВІДКРИТТЯ ПОСИЛАНЬ ---
@@ -174,7 +140,7 @@ window.openLink = function(url, idEncoded) {
 
     const target = url.toString();
 
-    // Якщо це цифри або лінк TMDB -> Плеєр
+    // Якщо це цифри або TMDB -> Kinobox
     if (/^\d+$/.test(target)) {
         window.openPlayer(target);
         return;
@@ -187,7 +153,7 @@ window.openLink = function(url, idEncoded) {
         }
     }
 
-    // Якщо новина -> Браузер
+    // Новини -> Браузер
     if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(target);
     else window.open(target, '_blank');
 };

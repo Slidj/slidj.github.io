@@ -363,3 +363,153 @@ h1 { color: var(--tg-theme-text-color); font-size: 17px; font-weight: 700; margi
     margin-bottom: 15px;
     filter: drop-shadow(0 2px 10px rgba(0,0,0,0.8)); /* Тінь, щоб читалось на світлому фоні */
 }
+
+
+/* --- NETFLIX STYLE DESIGN --- */
+
+.nf-container {
+    background-color: #000;
+    color: #fff;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding-bottom: 40px;
+}
+
+/* Верхня картинка */
+.nf-backdrop-container {
+    position: relative;
+    width: 100%;
+    height: 55vh; /* Висока картинка */
+}
+
+.nf-backdrop {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center top;
+}
+
+/* Градієнт, щоб текст читався */
+.nf-gradient-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, 
+        rgba(0,0,0,0) 0%, 
+        rgba(0,0,0,0.2) 50%, 
+        rgba(0,0,0,0.8) 80%, 
+        #000 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 20px;
+}
+
+/* Логотип поверх картинки */
+.nf-logo {
+    width: 70%;
+    max-width: 300px;
+    max-height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    margin-bottom: 10px;
+}
+
+/* Якщо лого немає - гарний заголовок */
+.nf-title {
+    font-size: 32px;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    line-height: 1.1;
+    margin-bottom: 10px;
+    padding: 0 15px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+/* Інфо-блок (Рік, Вік, Час) */
+.nf-meta-row {
+    padding: 0 16px;
+    margin-top: -10px; /* Трохи наїжджаємо на градієнт */
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center; /* По центру, як в Netflix */
+    gap: 12px;
+    font-size: 14px;
+    color: #bcbcbc;
+}
+
+.nf-match {
+    color: #46d369; /* Фірмовий зелений колір Netflix "Match" */
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.nf-age {
+    background: rgba(255,255,255,0.2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #fff;
+}
+
+/* Кнопки */
+.nf-actions {
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.nf-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.nf-btn:active {
+    transform: scale(0.98);
+}
+
+/* Основна кнопка (Біла або Золота на твій вибір) */
+.nf-btn-play {
+    background: #fff; 
+    color: #000;
+}
+
+/* Кнопка "Знайти/Скачати" (Сіра) */
+.nf-btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+/* Опис */
+.nf-desc {
+    padding: 20px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #fff;
+}
+
+.nf-cast {
+    padding: 0 16px;
+    font-size: 12px;
+    color: #777;
+    margin-bottom: 20px;
+}
+
+.nf-cast span {
+    color: #ddd;
+}

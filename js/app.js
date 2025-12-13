@@ -1,4 +1,7 @@
-import { fetchNewsData, fetchTMDB } from './api.js';
+// js/app.js - PART 1
+
+// 👇 Додали fetchGoogleSearch в імпорт
+import { fetchNewsData, fetchTMDB, fetchGoogleSearch } from './api.js';
 import { renderList, renderMovies, updateRankDisplay, addPoints } from './ui.js';
 import { API_URLS } from './config.js'; 
 
@@ -9,8 +12,10 @@ let feedMovies = [];
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
 let viewedItems = JSON.parse(localStorage.getItem('viewedItems')) || [];
 
-let newsPageToken = null;
+let newsPageToken = null; // Для звичайних новин
+let googlePage = 1;       // Для Google пошуку
 let moviePage = 1;
+
 let currentQuery = '';
 let currentCategory = '';
 
@@ -47,26 +52,61 @@ async function loadContent(isMore = false) {
 
     try {
         if (appMode === 'news') {
-            const data = await fetchNewsData(currentQuery, currentCategory, isMore ? newsPageToken : null);
+            let items = [];
             
-            const items = data.results.map(item => ({
-                id: item.link, 
-                title: item.title,
-                desc: item.description,
-                img: item.image_url,
-                date: item.pubDate,
-                url: item.link,
-                type: 'news'
-            }));
+            // 👇 ЛОГІКА: GOOGLE vs ЗВИЧАЙНІ НОВИНИ
+            if (currentQuery) {
+                // --- ВАРІАНТ А: ПОШУК ЧЕРЕЗ GOOGLE ---
+                const pageNum = isMore ? googlePage + 1 : 1;
+                const googleData = await fetchGoogleSearch(currentQuery, pageNum);
+                
+                if (googleData.items) {
+                    items = googleData.items.map(item => {
+                        // Дістаємо картинку з метаданих Google
+                        let imageUrl = null;
+                        if (item.pagemap?.cse_image?.length > 0) {
+                            imageUrl = item.pagemap.cse_image[0].src;
+                        }
 
-            newsPageToken = data.nextPage;
+                        return {
+                            id: item.link,
+                            title: item.title,
+                            desc: item.snippet,
+                            img: imageUrl, 
+                            date: "З інтернету",
+                            url: item.link,
+                            type: 'news'
+                        };
+                    });
+                }
+                googlePage = pageNum;
+                // Кнопку показуємо, якщо Google повернув результати (припускаємо, що є ще)
+                loadMoreBtn.style.display = items.length > 0 ? 'block' : 'none';
+
+            } else {
+                // --- ВАРІАНТ Б: ЗВИЧАЙНІ НОВИНИ (БЕЗ ПОШУКУ) ---
+                const data = await fetchNewsData('', currentCategory, isMore ? newsPageToken : null);
+                
+                items = data.results.map(item => ({
+                    id: item.link,
+                    title: item.title,
+                    desc: item.description,
+                    img: item.image_url,
+                    date: item.pubDate,
+                    url: item.link,
+                    type: 'news'
+                }));
+                newsPageToken = data.nextPage;
+                loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
+            }
+
             feedNews = isMore ? [...feedNews, ...items] : items;
             
             container.className = 'news-container list-view';
             renderList(isMore ? items : feedNews, container, savedItems, isMore);
-            loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
 
         } else if (appMode === 'movies') {
+            // Фільми залишаємо через TMDB (він кращий для постерів)
             const page = isMore ? moviePage + 1 : 1;
             const data = await fetchTMDB(currentQuery, page);
             
@@ -92,6 +132,8 @@ async function loadContent(isMore = false) {
         if (!isMore) container.innerHTML = `<div class="empty-state"><div class="empty-text">Помилка</div><div class="empty-subtext">${e.message}</div></div>`;
     }
 }
+// js/app.js - PART 2
+
 // --- КЕРУВАННЯ FAB МЕНЮ ---
 window.toggleFab = function() {
     const wrapper = document.getElementById('fab_wrapper');
@@ -112,11 +154,11 @@ window.toggleFab = function() {
     }
 };
 
-// --- ПЕРЕМИКАННЯ ВКЛАДОК (З АНІМАЦІЄЮ FADE) ---
+// --- ПЕРЕМИКАННЯ ВКЛАДОК (З АНІМАЦІЄЮ) ---
 window.switchMode = function(mode) {
     if (appMode === mode) return;
 
-    // 1. Оновлюємо активну іконку в меню
+    // 1. Оновлюємо активну іконку
     const fabItems = document.querySelectorAll('.fab-item');
     fabItems.forEach(btn => btn.classList.remove('active'));
     
@@ -129,11 +171,11 @@ window.switchMode = function(mode) {
         window.toggleFab();
     }
 
-    // 2. ЗАПУСКАЄМО АНІМАЦІЮ ЗНИКНЕННЯ
+    // 2. Анімація зникнення
     const container = document.getElementById('content_container');
     container.classList.add('fade-out');
 
-    // 3. Чекаємо 200мс, поки контент зникне
+    // 3. Чекаємо 200мс
     setTimeout(() => {
         appMode = mode;
         
@@ -141,10 +183,8 @@ window.switchMode = function(mode) {
         const catSelect = document.getElementById('category_select');
         const searchInput = document.getElementById('search_input');
 
-        // Скидаємо класи відображення, але залишаємо fade-out
         container.className = 'fade-out'; 
 
-        // Логіка перемикання блоків
         if (mode === 'news') {
             filters.style.display = 'flex';
             catSelect.classList.remove('hidden');
@@ -154,7 +194,7 @@ window.switchMode = function(mode) {
             else {
                  container.classList.add('news-container', 'list-view');
                  renderList(feedNews, container, savedItems);
-                 loadMoreBtn.style.display = newsPageToken ? 'block' : 'none';
+                 loadMoreBtn.style.display = (newsPageToken || (currentQuery && feedNews.length > 0)) ? 'block' : 'none';
             }
         } else if (mode === 'movies') {
             filters.style.display = 'flex';
@@ -174,24 +214,27 @@ window.switchMode = function(mode) {
             renderList(savedItems, container, savedItems);
         }
 
-        // Прокрутка вгору
         window.scrollTo({ top: 0, behavior: 'auto' });
 
-        // 4. ЗАПУСКАЄМО АНІМАЦІЮ ПОЯВИ
+        // 4. Анімація появи
         requestAnimationFrame(() => {
             container.classList.remove('fade-out');
         });
 
-    }, 200); // Таймер має співпадати з CSS transition
+    }, 200);
 };
-// --- ПОШУК І ЗАВАНТАЖЕННЯ ---
+// js/app.js - PART 3
+
+// --- ПОШУК ---
 window.performSearch = function() {
     currentQuery = document.getElementById('search_input').value.trim();
     currentCategory = document.getElementById('category_select').value;
     
+    // Скидаємо всі списки при новому пошуку
     feedNews = [];
     feedMovies = [];
     newsPageToken = null;
+    googlePage = 1; // Скидаємо сторінку Google
     moviePage = 1;
     
     loadContent();
@@ -201,20 +244,14 @@ window.loadMore = function() {
     loadContent(true);
 };
 
-// --- ВІДКРИТТЯ ПОСИЛАНЬ (З ІСТОРІЄЮ ПЕРЕГЛЯДІВ) ---
+// --- ВІДКРИТТЯ ПОСИЛАНЬ ---
 window.openLink = function(url, idEncoded) {
     if (idEncoded) {
         const id = decodeURIComponent(idEncoded);
-        
-        // Перевіряємо, чи бачили ми це раніше
         if (!viewedItems.includes(id.toString())) {
             addPoints(2); 
             viewedItems.push(id.toString());
-            
-            // Тримаємо тільки останні 200 записів
-            if (viewedItems.length > 200) {
-                viewedItems.shift(); 
-            }
+            if (viewedItems.length > 200) viewedItems.shift(); 
             localStorage.setItem('viewedItems', JSON.stringify(viewedItems));
         }
     } else {
@@ -228,7 +265,6 @@ window.openLink = function(url, idEncoded) {
     }
 };
 
-// --- ПОДІЛИТИСЯ ---
 window.shareItem = function(url, title) {
     addPoints(10);
     if (navigator.share) {
@@ -238,7 +274,6 @@ window.shareItem = function(url, title) {
     }
 };
 
-// --- ЗБЕРЕЖЕННЯ (ЗАКЛАДКИ) ---
 window.toggleSave = function(idEnc, type, btn) {
     const id = decodeURIComponent(idEnc);
     let item;
@@ -265,17 +300,13 @@ window.toggleSave = function(idEnc, type, btn) {
         addPoints(-5);
         if (window.Telegram?.WebApp?.HapticFeedback) 
             window.Telegram.WebApp.HapticFeedback.selectionChanged();
-            
         if (appMode === 'saved') renderList(savedItems, container, savedItems);
     }
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
 };
 
-// --- СТАРТ ДОДАТКУ ---
 async function initApp() {
     const preloader = document.getElementById('preloader');
-    
-    // Чекаємо мінімум 2 секунди + завантаження контенту
     const minTimePromise = new Promise(resolve => setTimeout(resolve, 4000));
     const contentPromise = loadContent();
 

@@ -41,3 +41,34 @@ export async function fetchTMDB(query, page) {
     if (!res.ok) throw new Error(`TMDB Error ${res.status}`);
     return await res.json();
 }
+
+
+
+// --- НОВИЙ РОЗУМНИЙ ПОШУК GOOGLE ---
+export async function fetchGoogleSearch(query, page = 1) {
+    // Google використовує "start" замість номера сторінки.
+    // Сторінка 1 -> start=1, Сторінка 2 -> start=11, Сторінка 3 -> start=21
+    const start = (page - 1) * 10 + 1;
+    
+    const encodedQuery = encodeURIComponent(query.trim());
+    
+    // Формуємо URL
+    const url = `${API_URLS.googleSearch}?key=${KEYS.GOOGLE_KEY}&cx=${KEYS.GOOGLE_CX}&q=${encodedQuery}&start=${start}&num=10&searchType=image`; 
+    // searchType=image - якщо хочете шукати картинки, але краще прибрати цей параметр, 
+    // щоб шукало статті, а картинки брало з метаданих. 
+    
+    // 👇 Правильний запит для змішаного пошуку (текст + картинки в метаданих)
+    const finalUrl = `${API_URLS.googleSearch}?key=${KEYS.GOOGLE_KEY}&cx=${KEYS.GOOGLE_CX}&q=${encodedQuery}&start=${start}&num=10`;
+
+    const res = await fetch(finalUrl);
+    
+    if (!res.ok) {
+        // Якщо ліміт 100 запитів вичерпано, Google поверне 429
+        if (res.status === 429) {
+            throw new Error("Ліміт безкоштовного пошуку Google на сьогодні вичерпано 😔");
+        }
+        throw new Error(`Google Search Error ${res.status}`);
+    }
+    
+    return await res.json();
+}

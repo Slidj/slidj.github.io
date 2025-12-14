@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: APP CORE (FULLSCREEN MODE ENABLED)
+// 🎬 MEDIA HUB: APP CORE (NETFLIX ORIGINAL LOOK)
 // ============================================================
 
 // --- АВАРІЙНИЙ ВИХІД ---
@@ -35,35 +35,18 @@ async function initApp() {
     if (tg) {
         try {
             tg.ready(); 
-            
-            // 🔥 МАКСИМАЛЬНИЙ ПОВНИЙ ЕКРАН 🔥
-            // 1. Розширюємо вікно
             tg.expand();
-            
-            // 2. Вмикаємо новий режим (прибирає смужку, якщо версія дозволяє)
-            if (tg.requestFullscreen) {
-                tg.requestFullscreen();
-            }
-
-            // 3. Блокуємо випадкове закриття свайпом вниз
-            if (tg.disableVerticalSwipes) {
-                tg.disableVerticalSwipes();
-            }
-
-            // 4. Фарбуємо шапку в чорний (щоб зливалася, якщо вона все ж лишиться)
+            if (tg.requestFullscreen) tg.requestFullscreen();
+            if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
             if(tg.setHeaderColor) tg.setHeaderColor('#000000');
             if(tg.setBackgroundColor) tg.setBackgroundColor('#000000');
-
-            // Аватарка
             if(tg.initDataUnsafe?.user?.photo_url) {
                 const ava = document.getElementById('user_avatar');
                 const def = document.getElementById('default_avatar');
                 if(ava) { ava.src = tg.initDataUnsafe.user.photo_url; ava.style.display = 'block'; }
                 if(def) def.style.display = 'none';
             }
-        } catch(e) {
-            console.log("TG Init Error: ", e);
-        }
+        } catch(e) {}
     }
 
     setupInfiniteScroll(); 
@@ -269,7 +252,7 @@ window.performSearchDelayed = function() {
 };
 
 // ============================================================
-// 🔥 ПОШУК (KP ID)
+// 🔥 KP ID SEARCH
 // ============================================================
 
 async function fetchKpByTmdb(tmdbId) {
@@ -306,7 +289,7 @@ function getMovieObject(id) {
     return m;
 }
 
-// --- 6. ВІДКРИТТЯ ВІКНА ---
+// --- 6. ВІДКРИТТЯ ВІКНА (NETFLIX STYLE) ---
 window.openMoviePage = async function(movie) {
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
@@ -345,6 +328,10 @@ window.openMoviePage = async function(movie) {
 
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const bgImage = details.backdrop || details.img;
+    
+    // Генерируем случайный "Match" (95-99%)
+    const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
+    const ageRating = details.type === 'tv' ? '16+' : '13+';
 
     content.innerHTML = `
         <div class="nf-container">
@@ -354,10 +341,11 @@ window.openMoviePage = async function(movie) {
                 <div class="nf-hero-content">
                     ${titleHtml}
                     <div class="nf-meta">
-                        <span class="nf-match">98% Match</span>
+                        <span class="nf-match">${matchScore}% Match</span>
                         <span>${details.year}</span>
-                        <span class="nf-badge">HD</span>
+                        <span class="nf-age">${ageRating}</span>
                         <span>${details.runtime || ''}</span>
+                        <span class="nf-badge">HD</span>
                     </div>
                 </div>
             </div>
@@ -399,7 +387,7 @@ window.closeMoviePage = function() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
-// --- 7. ВІДКРИТТЯ ПЛЕЄРА ---
+// --- 7. ПЛЕЄР ---
 window.openPremiumPlayer = async function(tmdbId, btn) {
     const span = btn ? btn.querySelector('span') : null;
     const originalText = span ? span.innerText : "ДИВИТИСЬ";

@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: APP CORE (FIXED ERROR + TV BADGES)
+// 🎬 MEDIA HUB: APP CORE (FULLSCREEN MODE ENABLED)
 // ============================================================
 
 // --- АВАРІЙНИЙ ВИХІД ---
@@ -34,16 +34,36 @@ async function initApp() {
     const tg = window.Telegram?.WebApp;
     if (tg) {
         try {
-            tg.ready(); tg.expand();
+            tg.ready(); 
+            
+            // 🔥 МАКСИМАЛЬНИЙ ПОВНИЙ ЕКРАН 🔥
+            // 1. Розширюємо вікно
+            tg.expand();
+            
+            // 2. Вмикаємо новий режим (прибирає смужку, якщо версія дозволяє)
+            if (tg.requestFullscreen) {
+                tg.requestFullscreen();
+            }
+
+            // 3. Блокуємо випадкове закриття свайпом вниз
+            if (tg.disableVerticalSwipes) {
+                tg.disableVerticalSwipes();
+            }
+
+            // 4. Фарбуємо шапку в чорний (щоб зливалася, якщо вона все ж лишиться)
             if(tg.setHeaderColor) tg.setHeaderColor('#000000');
             if(tg.setBackgroundColor) tg.setBackgroundColor('#000000');
+
+            // Аватарка
             if(tg.initDataUnsafe?.user?.photo_url) {
                 const ava = document.getElementById('user_avatar');
                 const def = document.getElementById('default_avatar');
                 if(ava) { ava.src = tg.initDataUnsafe.user.photo_url; ava.style.display = 'block'; }
                 if(def) def.style.display = 'none';
             }
-        } catch(e) {}
+        } catch(e) {
+            console.log("TG Init Error: ", e);
+        }
     }
 
     setupInfiniteScroll(); 
@@ -198,7 +218,6 @@ function renderGrid(items, isAppend) {
         div.className = 'movie-poster-card';
         div.onclick = () => window.openMoviePage(item);
         
-        // 🔥 ДОДАЄМО БЕЙДЖ, ЯКЩО ЦЕ СЕРІАЛ
         const badgeHtml = item.type === 'tv' ? '<div class="type-badge">СЕРІАЛ</div>' : '';
         
         div.innerHTML = `
@@ -250,7 +269,7 @@ window.performSearchDelayed = function() {
 };
 
 // ============================================================
-// 🔥 ЛОГІКА ПОШУКУ ПОСИЛАНЬ
+// 🔥 ПОШУК (KP ID)
 // ============================================================
 
 async function fetchKpByTmdb(tmdbId) {
@@ -418,7 +437,6 @@ window.openPremiumPlayer = async function(tmdbId, btn) {
 };
 
 function launchPlayer(kpId) {
-    // 🔥 ГОЛОВНЕ ВИПРАВЛЕННЯ: НЕ ВІДКРИВАЄМО, ЯКЩО НЕМАЄ ID
     if (!kpId) return;
 
     const playerToken = "eyJhbGciOiJIUzI1NiJ9.eyJ3ZWJTaXRlIjoiMzQiLCJpc3MiOiJhcGktd2VibWFzdGVyIiwic3ViIjoiNDEiLCJpYXQiOjE3NDMwNjA3ODAsImp0aSI6IjIzMTQwMmE0LTM3NTMtNGQ3OS1hNDBjLTA2YTY0MTE0MzNhOSIsInNjb3BlIjoiRExFIn0.4PmKGf512P-ov-tEjwr3gfOVxccjx8SSt28slJXypYU";

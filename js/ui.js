@@ -13,7 +13,12 @@ export function renderGrid(items, isAppend = false) {
         const div = document.createElement('div');
         div.className = 'movie-poster-card card-anim'; 
         div.style.animationDelay = `${index * 0.05}s`;
-        div.onclick = () => openMoviePage(item);
+        
+        // 🔥 ВІБРАЦІЯ: При кліку на постер
+        div.onclick = () => {
+            window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+            openMoviePage(item);
+        };
         
         const badgeHtml = item.type === 'tv' ? '<div class="type-badge">СЕРІАЛ</div>' : '';
         div.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
@@ -33,7 +38,7 @@ export function setupHero(movie) {
         hero.style.backgroundImage = `url('${bg}')`;
         if(title) title.innerText = movie.title;
         if(meta) meta.innerText = `🔥 Trending • ${movie.year}`;
-        fetchKpId(movie); // Preload KP ID
+        fetchKpId(movie); 
     }
 }
 
@@ -43,17 +48,20 @@ export async function openMoviePage(movie) {
     const content = document.getElementById('movie_details_content');
     if (!modal) return;
 
-    fetchKpId(movie); // Preload ID
+    fetchKpId(movie); 
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
     content.innerHTML = '<div style="height:100vh; display:flex; justify-content:center; align-items:center; color:#555;">Завантаження...</div>';
 
     if (window.Telegram?.WebApp?.BackButton) {
         window.Telegram.WebApp.BackButton.show();
-        window.Telegram.WebApp.BackButton.onClick(closeMoviePage);
+        window.Telegram.WebApp.BackButton.onClick(() => {
+            // 🔥 ВІБРАЦІЯ: На системну кнопку "Назад"
+            window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+            closeMoviePage();
+        });
     }
 
-    // Деталі
     let details = { ...movie };
     let logoUrl = null, trailerKey = null;
 
@@ -107,6 +115,9 @@ export async function openMoviePage(movie) {
 }
 
 export function closeMoviePage() {
+    // 🔥 ВІБРАЦІЯ: При закритті
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+
     const modal = document.getElementById('movie_details_modal');
     if (modal) modal.style.display = 'none';
     document.getElementById('movie_details_content').innerHTML = '';
@@ -116,6 +127,9 @@ export function closeMoviePage() {
 
 // --- PLAYER ---
 export async function openPremiumPlayer(tmdbId, btn) {
+    // 🔥 ВІБРАЦІЯ: Важка (HEAVY) при старті перегляду
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
+
     const span = btn?.querySelector('span');
     const originalText = span ? span.innerText : "ДИВИТИСЬ";
 
@@ -145,6 +159,9 @@ function launchPlayer(kpId) {
 }
 
 export function closePlayer() {
+    // 🔥 ВІБРАЦІЯ: При закритті плеєра
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     modal.style.display = 'none';

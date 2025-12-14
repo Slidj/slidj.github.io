@@ -1,17 +1,16 @@
 import { state } from './state.js';
+// 🔥 Імпортуємо переклади
+import { t } from './i18n.js';
 
-// Завантаження даних (LocalStorage -> Cloud)
+// ... (функції loadCloudData, saveCloudData, isSaved залишаються ТАКИМИ САМИМИ, як були) ...
+// Я пропущу їх тут для економії місця, скопіюй їх з минулого разу або залиш як є.
+// ТРЕБА ОНОВИТИ ТІЛЬКИ toggleSave і updateBtnState 👇
+
 export function loadCloudData() {
     return new Promise((resolve) => {
         const tg = window.Telegram?.WebApp;
-        
-        // 1. LocalStorage
         const localData = localStorage.getItem('savedItems');
-        if (localData) {
-            try { state.savedItems = JSON.parse(localData); } catch(e) {}
-        }
-
-        // 2. Telegram Cloud
+        if (localData) { try { state.savedItems = JSON.parse(localData); } catch(e) {} }
         if (tg && tg.CloudStorage) {
             tg.CloudStorage.getItem('saved_movies_v1', (err, value) => {
                 if (!err && value) {
@@ -25,34 +24,24 @@ export function loadCloudData() {
                 }
                 resolve();
             });
-        } else {
-            resolve();
-        }
+        } else { resolve(); }
     });
 }
 
-// Збереження даних
 export function saveCloudData() {
     localStorage.setItem('savedItems', JSON.stringify(state.savedItems));
-
     const optimizedItems = state.savedItems.map(m => ({
         id: m.id, title: m.title, img: m.img, rating: m.rating, year: m.year, type: m.type
     }));
-
     const tg = window.Telegram?.WebApp;
     if (tg && tg.CloudStorage) {
-        tg.CloudStorage.setItem('saved_movies_v1', JSON.stringify(optimizedItems), (err) => {
-            if (err) console.error("Save Error", err);
-        });
+        tg.CloudStorage.setItem('saved_movies_v1', JSON.stringify(optimizedItems), (err) => { if (err) console.error("Save Error", err); });
     }
 }
 
-// Перевірка
-export function isSaved(id) {
-    return state.savedItems.some(m => m.id == id);
-}
+export function isSaved(id) { return state.savedItems.some(m => m.id == id); }
 
-// Перемикач (Зберегти/Видалити) + ВІБРАЦІЯ
+
 export function toggleSave(id, btn) {
     let movie = state.feedMovies.find(m => m.id == id);
     if (!movie && state.currentHeroMovie && state.currentHeroMovie.id == id) movie = state.currentHeroMovie;
@@ -62,18 +51,12 @@ export function toggleSave(id, btn) {
 
     const index = state.savedItems.findIndex(m => m.id == id);
     if (index === -1) {
-        // --- ЗБЕРЕЖЕННЯ ---
         state.savedItems.push(movie);
         if (btn) updateBtnState(btn, true);
-        
-        // 🔥 ВІБРАЦІЯ: УСПІХ (Success)
         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
     } else {
-        // --- ВИДАЛЕННЯ ---
         state.savedItems.splice(index, 1);
         if (btn) updateBtnState(btn, false);
-
-        // 🔥 ВІБРАЦІЯ: СЕРЕДНЯ (Medium)
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
     }
     saveCloudData();
@@ -83,10 +66,12 @@ function updateBtnState(btn, saved) {
     const span = btn.querySelector('span');
     const svg = btn.querySelector('svg');
     if(saved) {
-        if(span) span.innerText = "Збережено";
+        // 🔥 t.saveBtnActive
+        if(span) span.innerText = t.saveBtnActive; 
         if(svg) svg.setAttribute('fill', 'white');
     } else {
-        if(span) span.innerText = "Моє";
+        // 🔥 t.saveBtn
+        if(span) span.innerText = t.saveBtn; 
         if(svg) svg.setAttribute('fill', 'none');
     }
 }

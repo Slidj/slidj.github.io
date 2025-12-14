@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (TAB SWITCH FIX)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (VIBRATION + SYNC)
 // ============================================================
 
 import { state } from './state.js';
@@ -18,7 +18,6 @@ window.performSearchDelayed = performSearchDelayed;
 window.openPremiumPlayer = openPremiumPlayer;
 window.ui_toggleSave = (id, btn) => {
     toggleSave(id, btn);
-    // Якщо ми в вкладці "Saved", треба перемалювати список одразу
     if (state.currentTab === 'saved') switchMode('saved');
 };
 
@@ -49,8 +48,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 500);
 });
 
-// --- NAVIGATION (FIXED) ---
+// --- NAVIGATION ---
 async function switchMode(tab) {
+    // 🔥 ВІБРАЦІЯ: Легка при кліку по меню
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+
     state.currentTab = tab;
     
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -65,7 +67,6 @@ async function switchMode(tab) {
     const content = document.getElementById('content_container');
     const trigger = document.getElementById('infinite_trigger');
 
-    // Анімація переходу (Fade In)
     const scrollArea = document.getElementById('main_scroll_area');
     scrollArea.classList.remove('fade-in-anim');
     void scrollArea.offsetWidth; 
@@ -77,15 +78,10 @@ async function switchMode(tab) {
         content.style.display = 'grid'; trigger.style.display = 'flex';
         content.style.paddingTop = '0px';
 
-        // 🔥 FIX: Якщо у нас є фільми в пам'яті (feedMovies), ми їх ВІДНОВЛЮЄМО.
-        // Це перезапише те, що залишилось від вкладки "Моє" або "Пошук".
         if (state.feedMovies.length > 0) {
             renderGrid(state.feedMovies, false);
         } else {
-            // Тільки якщо пам'ять пуста (перший запуск), вантажимо з інтернету
-            content.innerHTML = ''; 
-            state.currentPage = 1; 
-            loadContent(1);
+            content.innerHTML = ''; state.currentPage = 1; loadContent(1);
         }
     } 
     else if (tab === 'search') {
@@ -99,7 +95,6 @@ async function switchMode(tab) {
         content.style.display = 'grid'; trigger.style.display = 'none';
         content.style.paddingTop = 'calc(80px + var(--safe-top))';
         
-        // Синхронізація
         content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Синхронізація...</div>';
         await loadCloudData();
 
@@ -112,6 +107,9 @@ async function switchMode(tab) {
 }
 
 function setCategory(catId) {
+    // 🔥 ВІБРАЦІЯ: Легка при виборі жанру
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     const btns = document.querySelectorAll('.cat-btn');
     for(let btn of btns) {
@@ -119,7 +117,6 @@ function setCategory(catId) {
     }
     state.currentGenre = catId;
     state.currentPage = 1;
-    // Очищаємо пам'ять стрічки, бо жанр змінився
     state.feedMovies = []; 
     document.getElementById('content_container').innerHTML = ''; 
     loadContent(1); 
@@ -133,8 +130,6 @@ async function loadContent(page, isAppend = false) {
 
     try {
         const items = await fetchHomeContent(page);
-        
-        // Додаємо нові фільми до загального списку
         state.feedMovies = [...state.feedMovies, ...items];
 
         if (page === 1 && !isAppend && items.length > 0) {
@@ -166,7 +161,6 @@ function performSearchDelayed() {
 
     state.searchTimeout = setTimeout(async () => {
         const results = await searchMovies(query);
-        // Результати пошуку НЕ додаємо в feedMovies, щоб не псувати головну стрічку
         renderGrid(results, false);
     }, 600);
 }

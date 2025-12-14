@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MEDIA HUB (YELLOW BADGES + PLAYER FIX)
+   🎨 STYLE.CSS: MEDIA HUB (SAFE AREA FIX)
    ========================================================== */
 
 /* 1. ПІДКЛЮЧЕННЯ ШРИФТІВ */
@@ -15,6 +15,9 @@
     /* Шрифти */
     --font-main: 'Roboto', sans-serif;
     --font-title: 'Bebas Neue', sans-serif;
+
+    /* 🔥 БЕЗПЕЧНА ЗОНА (для відступів від "чубчика") */
+    --safe-top: env(safe-area-inset-top, 20px);
 }
 
 body {
@@ -28,26 +31,18 @@ body {
 }
 
 /* --- АНІМАЦІЇ --- */
-@keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes slideUpFade { from { opacity: 0; transform: translateY(30%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-@keyframes slideUpFade {
-    from { opacity: 0; transform: translateY(30%); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes spin { 
-    0% { transform: rotate(0deg); } 
-    100% { transform: rotate(360deg); } 
-}
-
-/* --- HEADER --- */
+/* --- HEADER (Виправлено накладання) --- */
 .netflix-header {
     position: fixed; top: 0; left: 0; width: 100%;
-    height: 60px; display: flex; align-items: center; justify-content: space-between;
-    padding: 0 20px; box-sizing: border-box;
+    /* Висота тепер враховує системний бар */
+    height: calc(60px + var(--safe-top)); 
+    padding-top: var(--safe-top); /* Відступ контенту вниз */
+    display: flex; align-items: center; justify-content: space-between;
+    padding-left: 20px; padding-right: 20px; box-sizing: border-box;
     background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
     z-index: 100;
     pointer-events: none;
@@ -68,9 +63,12 @@ body {
 }
 #default_avatar { background: #333; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 
-/* --- ФІЛЬТРИ --- */
+/* --- ФІЛЬТРИ (Зсунуті нижче) --- */
 .netflix-filters {
-    position: absolute; top: 65px; left: 0; width: 100%;
+    position: absolute; 
+    /* Відступаємо від нового хедера */
+    top: calc(65px + var(--safe-top)); 
+    left: 0; width: 100%;
     display: flex; gap: 12px; padding: 0 20px; box-sizing: border-box;
     background: transparent; z-index: 90;
     overflow-x: auto; scrollbar-width: none;
@@ -143,7 +141,7 @@ body {
 .movie-poster-card:active { transform: scale(0.96); opacity: 0.8; }
 .movie-poster-card img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Рейтинг (справа зверху) */
+/* Рейтинг */
 .rating-mini {
     position: absolute; top: 4px; right: 4px;
     background: var(--accent-color); color: #fff;
@@ -153,17 +151,14 @@ body {
     z-index: 2;
 }
 
-/* 🔥 ПОЗНАЧКА ТИПУ (СЕРІАЛ) - ЯСКРАВО ЖОВТА 🔥 */
+/* Бейдж серіалу */
 .type-badge {
     position: absolute; top: 4px; left: 4px;
-    background: rgba(0, 0, 0, 0.85); /* Темніший фон для контрасту */
-    color: #FFD700; /* Яскраво-жовтий колір (Золото) */
-    font-family: var(--font-main); font-size: 10px; font-weight: 800; /* Жирніший шрифт */
+    background: rgba(0, 0, 0, 0.85);
+    color: #FFD700; font-family: var(--font-main); font-size: 10px; font-weight: 800;
     padding: 2px 6px; border-radius: 3px;
-    border: 1px solid #FFD700; /* Жовта рамка */
-    text-transform: uppercase;
-    z-index: 2;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Тінь для об'єму */
+    border: 1px solid #FFD700; text-transform: uppercase;
+    z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 /* --- BOTTOM NAV --- */
@@ -173,6 +168,9 @@ body {
     border-top: 1px solid #333; backdrop-filter: blur(10px);
     display: flex; justify-content: space-around; align-items: center;
     z-index: 900;
+    /* Відступ для iPhone Home Bar знизу */
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(60px + env(safe-area-inset-bottom));
 }
 .nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -183,8 +181,11 @@ body {
 .nav-item svg { width: 24px; height: 24px; }
 .nav-item.active { color: #fff; }
 
-/* --- SEARCH --- */
-#search_bar_container { padding: 80px 15px 10px; }
+/* --- SEARCH (Зсунутий нижче) --- */
+#search_bar_container { 
+    /* Враховуємо безпечну зону зверху */
+    padding: calc(80px + var(--safe-top)) 15px 10px; 
+}
 #search_input {
     width: 100%; height: 45px; background: #333; border: none;
     border-radius: 4px; color: #fff; padding: 0 15px; font-size: 16px; outline: none;
@@ -205,7 +206,11 @@ body {
 }
 
 .close-round-btn {
-    position: fixed; top: 20px; right: 20px; width: 36px; height: 36px;
+    position: fixed; 
+    /* Відступ від чубчика для хрестика */
+    top: calc(20px + var(--safe-top)); 
+    right: 20px; 
+    width: 36px; height: 36px;
     border-radius: 50%; background: rgba(30,30,30,0.7); color: #fff;
     border: none; font-size: 24px; display: flex; align-items: center; justify-content: center;
     z-index: 5002; cursor: pointer; transition: transform 0.1s;
@@ -251,14 +256,8 @@ body {
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
-/* КНОПКА НЕАКТИВНА (ПОМИЛКА) */
 .nf-btn.error {
-    background: #333 !important; 
-    color: #777 !important;      
-    animation: none !important;  
-    box-shadow: none !important; 
-    cursor: not-allowed;
-    border: 1px solid #444;
+    background: #333 !important; color: #777 !important; animation: none !important; box-shadow: none !important; cursor: not-allowed; border: 1px solid #444;
 }
 
 .nf-secondary { background: #333; color: #fff; }
@@ -268,46 +267,24 @@ body {
 .nf-trailer { margin: 0 20px 20px; border-radius: 8px; overflow: hidden; position: relative; padding-bottom: 56.25%; background: #111; }
 .nf-trailer iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
 
-/* --- ПЛЕЄР (ОНОВЛЕНО ДЛЯ FULLSCREEN) --- */
+/* --- ПЛЕЄР --- */
 #player_modal {
     position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100vw; 
-    height: 100dvh; /* 🔥 Динамічна висота */
-    background-color: #000; 
-    z-index: 99999;
-    display: none; 
-    align-items: center; 
-    justify-content: center;
+    top: 0; left: 0; 
+    width: 100vw; height: 100dvh; 
+    background-color: #000; z-index: 99999;
+    display: none; align-items: center; justify-content: center;
     animation: slideUpFade 0.3s ease-out forwards;
 }
-
-#video_frame { 
-    width: 100%; 
-    height: 100%; 
-    border: none; 
-    background: #000;
-    object-fit: cover; /* Запобігає чорним смугам */
-}
-
+#video_frame { width: 100%; height: 100%; border: none; background: #000; object-fit: cover; }
 .close-player-btn {
     position: absolute; 
-    top: 20px; 
+    /* Відступ від чубчика для плеєра */
+    top: calc(20px + var(--safe-top)); 
     right: 20px; 
-    color: #fff; 
-    font-size: 40px; 
-    cursor: pointer; 
-    z-index: 100000;
-    background: rgba(0,0,0,0.5); 
-    width: 50px; 
-    height: 50px; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
+    color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
+    background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     transition: transform 0.1s;
-    margin-top: env(safe-area-inset-top); /* Відступ для iPhone Notch */
 }
 .close-player-btn:active { transform: scale(0.9); }
 

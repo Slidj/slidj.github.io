@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: APP CORE (SMART SEARCH + FALLBACK)
+// 🎬 MEDIA HUB: APP CORE (FIXED ERROR + TV BADGES)
 // ============================================================
 
 // --- АВАРІЙНИЙ ВИХІД ---
@@ -14,7 +14,7 @@ setTimeout(() => {
 const API_KEY = '4f06fae67ddcf28e2e5b3f91193cb555';
 const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280'; 
-const ALLOHA_TOKEN = 'd317441359e505c343c2063edc97e7'; // Виніс окремо для зручності
+const ALLOHA_TOKEN = 'd317441359e505c343c2063edc97e7';
 
 let currentTab = 'home';
 let feedMovies = [];
@@ -197,7 +197,15 @@ function renderGrid(items, isAppend) {
         const div = document.createElement('div');
         div.className = 'movie-poster-card';
         div.onclick = () => window.openMoviePage(item);
-        div.innerHTML = `<img src="${item.img}" loading="lazy"><div class="rating-mini">${item.rating}</div>`;
+        
+        // 🔥 ДОДАЄМО БЕЙДЖ, ЯКЩО ЦЕ СЕРІАЛ
+        const badgeHtml = item.type === 'tv' ? '<div class="type-badge">СЕРІАЛ</div>' : '';
+        
+        div.innerHTML = `
+            <img src="${item.img}" loading="lazy">
+            ${badgeHtml}
+            <div class="rating-mini">${item.rating}</div>
+        `;
         container.appendChild(div);
     });
 }
@@ -242,10 +250,9 @@ window.performSearchDelayed = function() {
 };
 
 // ============================================================
-// 🔥 ЛОГІКА ПОШУКУ ПОСИЛАНЬ (З ПЛАН Б)
+// 🔥 ЛОГІКА ПОШУКУ ПОСИЛАНЬ
 // ============================================================
 
-// 1. Пошук ID за допомогою TMDB ID
 async function fetchKpByTmdb(tmdbId) {
     try {
         const res = await fetch(`https://api.alloha.tv/?token=${ALLOHA_TOKEN}&tmdb=${tmdbId}`);
@@ -255,12 +262,10 @@ async function fetchKpByTmdb(tmdbId) {
     return null;
 }
 
-// 2. Пошук ID за Назвою (План Б)
 async function fetchKpByName(name) {
     try {
         const res = await fetch(`https://api.alloha.tv/?token=${ALLOHA_TOKEN}&name=${encodeURIComponent(name)}`);
         const data = await res.json();
-        // Якщо повернувся масив, беремо перший результат
         if (data.data && Array.isArray(data.data) && data.data.length > 0) {
             return data.data[0].id_kp;
         }
@@ -268,23 +273,13 @@ async function fetchKpByName(name) {
     return null;
 }
 
-// Функція Preload (тепер розумніша)
 async function preloadKpId(movie) {
     cachedKpId = null; 
-    
-    // Спроба 1: По ID
     let id = await fetchKpByTmdb(movie.id);
-    
-    // Спроба 2: По Назві (якщо ID не спрацював)
-    if (!id) {
-        console.log("Preload: fallback to search by name...");
-        id = await fetchKpByName(movie.title);
-    }
-
+    if (!id) id = await fetchKpByName(movie.title);
     if (id) cachedKpId = id;
 }
 
-// Допоміжна: знайти об'єкт фільму в пам'яті
 function getMovieObject(id) {
     if (currentHeroMovie && currentHeroMovie.id == id) return currentHeroMovie;
     let m = feedMovies.find(m => m.id == id);
@@ -299,7 +294,6 @@ window.openMoviePage = async function(movie) {
     
     if (!modal || !content) return;
 
-    // Запускаємо пошук ID
     preloadKpId(movie);
 
     modal.style.display = 'block';
@@ -386,12 +380,11 @@ window.closeMoviePage = function() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
-// --- 7. ВІДКРИТТЯ ПЛЕЄРА (РОЗУМНИЙ СТАРТ) ---
+// --- 7. ВІДКРИТТЯ ПЛЕЄРА ---
 window.openPremiumPlayer = async function(tmdbId, btn) {
     const span = btn ? btn.querySelector('span') : null;
     const originalText = span ? span.innerText : "ДИВИТИСЬ";
     
-    // Якщо ID вже в кеші - старт
     if (cachedKpId) {
         launchPlayer(cachedKpId);
         return;
@@ -403,15 +396,10 @@ window.openPremiumPlayer = async function(tmdbId, btn) {
         btn.style.pointerEvents = 'none';
     }
 
-    // Якщо кешу немає - шукаємо знову (з Fallback)
     let kpId = await fetchKpByTmdb(tmdbId);
-    
     if (!kpId) {
-        // Якщо по ID не знайшли, пробуємо по Назві
         const movie = getMovieObject(tmdbId);
-        if (movie) {
-            kpId = await fetchKpByName(movie.title);
-        }
+        if (movie) kpId = await fetchKpByName(movie.title);
     }
 
     if (kpId) {
@@ -430,6 +418,9 @@ window.openPremiumPlayer = async function(tmdbId, btn) {
 };
 
 function launchPlayer(kpId) {
+    // 🔥 ГОЛОВНЕ ВИПРАВЛЕННЯ: НЕ ВІДКРИВАЄМО, ЯКЩО НЕМАЄ ID
+    if (!kpId) return;
+
     const playerToken = "eyJhbGciOiJIUzI1NiJ9.eyJ3ZWJTaXRlIjoiMzQiLCJpc3MiOiJhcGktd2VibWFzdGVyIiwic3ViIjoiNDEiLCJpYXQiOjE3NDMwNjA3ODAsImp0aSI6IjIzMTQwMmE0LTM3NTMtNGQ3OS1hNDBjLTA2YTY0MTE0MzNhOSIsInNjb3BlIjoiRExFIn0.4PmKGf512P-ov-tEjwr3gfOVxccjx8SSt28slJXypYU";
     const url = `https://api.rstprgapipt.com/balancer-api/iframe?kp=${kpId}&token=${playerToken}&disabled_share=1`;
 

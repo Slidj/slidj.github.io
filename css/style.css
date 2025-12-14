@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MEDIA HUB (NETFLIX PREMIUM + SHIMMER)
+   🎨 STYLE.CSS: MEDIA HUB (NETFLIX PREMIUM ANIMATIONS)
    ========================================================== */
 
 :root {
@@ -20,20 +20,30 @@ body {
     width: 100%;
 }
 
-/* --- АНІМАЦІЇ --- */
+/* --- ✨ АНІМАЦІЇ ✨ --- */
+
+/* Мерехтіння кнопки (Shimmer) */
 @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
 
+/* Обертання лоадера */
 @keyframes spin { 
     0% { transform: rotate(0deg); } 
     100% { transform: rotate(360deg); } 
 }
 
-@keyframes slideIn { 
-    from { transform: translateY(100%); opacity: 0; } 
-    to { transform: translateY(0); opacity: 1; } 
+/* 🔥 НОВА АНІМАЦІЯ: Виїзд модалки знизу */
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(30%); /* Починаємо трохи нижче */
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0); /* Стаємо на місце */
+    }
 }
 
 /* --- HEADER --- */
@@ -100,19 +110,36 @@ body {
 .hero-btn {
     border: none; border-radius: 4px; padding: 10px 20px; min-width: 110px;
     font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+    transition: transform 0.1s ease-in-out; /* Додано плавність */
 }
+.hero-btn:active { transform: scale(0.95); opacity: 0.9; } /* Ефект натискання */
+
 .hero-btn.white { background: #fff; color: #000; }
 .hero-btn.gray { background: rgba(109, 109, 110, 0.7); color: #fff; backdrop-filter: blur(5px); }
 
-/* --- GRID --- */
+/* --- GRID & CARDS INTERACTIVITY --- */
 .netflix-grid {
     display: grid; grid-template-columns: repeat(3, 1fr);
     gap: 8px; padding: 10px 8px;
 }
+
 .movie-poster-card {
-    position: relative; aspect-ratio: 2/3; border-radius: 4px; overflow: hidden;
-    background: #222; cursor: pointer;
+    position: relative; 
+    aspect-ratio: 2/3; 
+    border-radius: 4px; 
+    overflow: hidden;
+    background: #222; 
+    cursor: pointer;
+    /* 🔥 Плавний перехід для анімації натискання */
+    transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.15s;
 }
+
+/* 🔥 Ефект натискання на картку (втискання) */
+.movie-poster-card:active {
+    transform: scale(0.96); /* Трохи зменшуємо */
+    opacity: 0.8; /* Трохи затемнюємо */
+}
+
 .movie-poster-card img { width: 100%; height: 100%; object-fit: cover; }
 .rating-mini {
     position: absolute; top: 4px; right: 4px;
@@ -131,7 +158,9 @@ body {
 .nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     color: #777; font-size: 10px; gap: 4px; cursor: pointer; width: 60px;
+    transition: transform 0.1s;
 }
+.nav-item:active { transform: scale(0.9); } /* Ефект натискання на меню */
 .nav-item svg { width: 24px; height: 24px; }
 .nav-item.active { color: #fff; }
 
@@ -142,11 +171,16 @@ body {
     border-radius: 4px; color: #fff; padding: 0 15px; font-size: 16px; outline: none;
 }
 
-/* --- МОДАЛЬНЕ ВІКНО ДЕТАЛЕЙ --- */
+/* --- МОДАЛЬНЕ ВІКНО ДЕТАЛЕЙ (З АНІМАЦІЄЮ ПОЯВИ) --- */
 .modal-fullscreen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: #000; z-index: 5000; display: block;
+    background: #000; z-index: 5000; 
+    display: none; /* JS змінює на block */
     overflow-y: scroll; -webkit-overflow-scrolling: touch;
+    
+    /* 🔥 Застосовуємо анімацію виїзду при появі */
+    /* Використовуємо cubic-bezier для "пружинного" ефекту */
+    animation: slideUpFade 0.35s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
 }
 
 /* Контейнер сторінки фільму */
@@ -160,7 +194,9 @@ body {
     border-radius: 50%; background: rgba(30,30,30,0.7); color: #fff;
     border: none; font-size: 24px; display: flex; align-items: center; justify-content: center;
     z-index: 5002; cursor: pointer;
+    transition: transform 0.1s;
 }
+.close-round-btn:active { transform: scale(0.9); }
 
 /* Елементи сторінки фільму */
 .nf-hero { position: relative; height: 55vh; width: 100%; }
@@ -179,25 +215,20 @@ body {
     font-weight: bold; font-size: 16px; border: none; 
     display: flex; align-items: center; justify-content: center; gap: 10px; 
     cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
 }
+.nf-btn:active { transform: scale(0.98); opacity: 0.9; }
 
-/* 🔥 КНОПКА З SHIMMER ЕФЕКТОМ 🔥 */
+/* КНОПКА З SHIMMER ЕФЕКТОМ */
 .nf-play {
-    /* Градієнт для ефекту відблиску */
     background: linear-gradient(110deg, #ffffff 35%, #e6e6e6 50%, #ffffff 65%);
     background-size: 200% 100%;
     color: #000;
-    
-    /* Анімація */
     animation: shimmer 5s infinite linear;
-    
-    /* Світіння */
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
-.nf-play:active { transform: scale(0.98); opacity: 0.9; }
 
 .nf-secondary { background: #333; color: #fff; }
-.nf-secondary:active { background: #444; }
 
 .nf-description { padding: 20px; color: #cccccc; font-size: 15px; line-height: 1.5; }
 .nf-trailer { margin: 0 20px 20px; border-radius: 8px; overflow: hidden; position: relative; padding-bottom: 56.25%; background: #111; }
@@ -208,12 +239,16 @@ body {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: #000; z-index: 99999;
     display: none; align-items: center; justify-content: center;
+    /* Плеєр теж з'являється плавно */
+    animation: slideUpFade 0.3s ease-out forwards;
 }
 #video_frame { width: 100%; height: 100%; border: none; background: #000; }
 .close-player-btn {
     position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
     background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.1s;
 }
+.close-player-btn:active { transform: scale(0.9); }
 
 /* --- LOADER --- */
 #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }

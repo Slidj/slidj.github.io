@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: APP CORE (NETFLIX ORIGINAL LOOK)
+// 🎬 MEDIA HUB: APP CORE (GHOST FIX + ANIMATIONS)
 // ============================================================
 
 // --- АВАРІЙНИЙ ВИХІД ---
@@ -78,7 +78,7 @@ function setupInfiniteScroll() {
     if(trigger) observer.observe(trigger);
 }
 
-// --- 4. НАВІГАЦІЯ ---
+// --- 4. НАВІГАЦІЯ (ВИПРАВЛЕНО "ПРИВИДІВ") ---
 window.switchMode = function(tab) {
     currentTab = tab;
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -92,8 +92,14 @@ window.switchMode = function(tab) {
     const search = document.getElementById('search_bar_container');
     const content = document.getElementById('content_container');
     const trigger = document.getElementById('infinite_trigger');
+    const scrollArea = document.getElementById('main_scroll_area');
 
     if (!hero || !content) return;
+
+    // 🔥 АНІМАЦІЯ: Перезапуск Fade-in
+    scrollArea.classList.remove('fade-in-anim');
+    void scrollArea.offsetWidth; // Trigger reflow
+    scrollArea.classList.add('fade-in-anim');
 
     window.scrollTo({top:0});
 
@@ -103,7 +109,12 @@ window.switchMode = function(tab) {
         search.style.display = 'none';
         content.style.display = 'grid';
         if(trigger) trigger.style.display = 'flex';
-        if (content.children.length === 0) {
+
+        // 🔥 ВИПРАВЛЕННЯ: Якщо там текст "Пошук" або "Пусто" - чистимо!
+        const hasGhostText = content.innerHTML.includes('Пошук...') || content.innerHTML.includes('Список пустий');
+        
+        if (content.children.length === 0 || hasGhostText) {
+            content.innerHTML = ''; // Чистимо "привидів"
             currentPage = 1;
             loadHomeContent(1);
         }
@@ -114,6 +125,7 @@ window.switchMode = function(tab) {
         search.style.display = 'block';
         content.style.display = 'grid';
         if(trigger) trigger.style.display = 'none';
+        // Завжди чистимо при вході в пошук
         content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Пошук...</div>';
     } 
     else if (tab === 'saved') {
@@ -329,7 +341,7 @@ window.openMoviePage = async function(movie) {
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const bgImage = details.backdrop || details.img;
     
-    // Генерируем случайный "Match" (95-99%)
+    // Random Match
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
     const ageRating = details.type === 'tv' ? '16+' : '13+';
 

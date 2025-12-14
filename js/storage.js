@@ -35,7 +35,6 @@ export function loadCloudData() {
 export function saveCloudData() {
     localStorage.setItem('savedItems', JSON.stringify(state.savedItems));
 
-    // Оптимізація для економії місця в хмарі
     const optimizedItems = state.savedItems.map(m => ({
         id: m.id, title: m.title, img: m.img, rating: m.rating, year: m.year, type: m.type
     }));
@@ -48,12 +47,12 @@ export function saveCloudData() {
     }
 }
 
-// Перевірка чи збережено
+// Перевірка
 export function isSaved(id) {
     return state.savedItems.some(m => m.id == id);
 }
 
-// Перемикач (Зберегти/Видалити)
+// Перемикач (Зберегти/Видалити) + ВІБРАЦІЯ
 export function toggleSave(id, btn) {
     let movie = state.feedMovies.find(m => m.id == id);
     if (!movie && state.currentHeroMovie && state.currentHeroMovie.id == id) movie = state.currentHeroMovie;
@@ -63,12 +62,19 @@ export function toggleSave(id, btn) {
 
     const index = state.savedItems.findIndex(m => m.id == id);
     if (index === -1) {
+        // --- ЗБЕРЕЖЕННЯ ---
         state.savedItems.push(movie);
         if (btn) updateBtnState(btn, true);
+        
+        // 🔥 ВІБРАЦІЯ: УСПІХ (Success)
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
     } else {
+        // --- ВИДАЛЕННЯ ---
         state.savedItems.splice(index, 1);
         if (btn) updateBtnState(btn, false);
-        // Якщо ми на вкладці "Моє", треба оновити сітку (імпортуємо динамічно або через подію, але поки просто збережемо)
+
+        // 🔥 ВІБРАЦІЯ: СЕРЕДНЯ (Medium)
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
     }
     saveCloudData();
 }

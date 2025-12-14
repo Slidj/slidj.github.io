@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: APP CORE (GHOST FIX + ANIMATIONS)
+// 🎬 MEDIA HUB: APP CORE (SAVED FIX + SEARCH ANIMATION)
 // ============================================================
 
 // --- АВАРІЙНИЙ ВИХІД ---
@@ -17,7 +17,8 @@ const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280';
 const ALLOHA_TOKEN = 'd317441359e505c343c2063edc97e7';
 
 let currentTab = 'home';
-let feedMovies = [];
+// 🔥 ГОЛОВНИЙ МАСИВ (ТУТ ЗБЕРІГАЮТЬСЯ ВСІ ЗАВАНТАЖЕНІ ФІЛЬМИ)
+let feedMovies = []; 
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
 let currentHeroMovie = null;
 let searchTimeout;
@@ -78,7 +79,7 @@ function setupInfiniteScroll() {
     if(trigger) observer.observe(trigger);
 }
 
-// --- 4. НАВІГАЦІЯ (ВИПРАВЛЕНО "ПРИВИДІВ") ---
+// --- 4. НАВІГАЦІЯ ---
 window.switchMode = function(tab) {
     currentTab = tab;
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -96,9 +97,9 @@ window.switchMode = function(tab) {
 
     if (!hero || !content) return;
 
-    // 🔥 АНІМАЦІЯ: Перезапуск Fade-in
+    // Анімація переходу
     scrollArea.classList.remove('fade-in-anim');
-    void scrollArea.offsetWidth; // Trigger reflow
+    void scrollArea.offsetWidth; 
     scrollArea.classList.add('fade-in-anim');
 
     window.scrollTo({top:0});
@@ -110,11 +111,9 @@ window.switchMode = function(tab) {
         content.style.display = 'grid';
         if(trigger) trigger.style.display = 'flex';
 
-        // 🔥 ВИПРАВЛЕННЯ: Якщо там текст "Пошук" або "Пусто" - чистимо!
         const hasGhostText = content.innerHTML.includes('Пошук...') || content.innerHTML.includes('Список пустий');
-        
         if (content.children.length === 0 || hasGhostText) {
-            content.innerHTML = ''; // Чистимо "привидів"
+            content.innerHTML = ''; 
             currentPage = 1;
             loadHomeContent(1);
         }
@@ -125,7 +124,6 @@ window.switchMode = function(tab) {
         search.style.display = 'block';
         content.style.display = 'grid';
         if(trigger) trigger.style.display = 'none';
-        // Завжди чистимо при вході в пошук
         content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Пошук...</div>';
     } 
     else if (tab === 'saved') {
@@ -177,6 +175,10 @@ async function loadHomeContent(page = 1, isAppend = false) {
         
         if (data.results) {
             const items = data.results.map(mapTMDB);
+            
+            // 🔥 ВИПРАВЛЕННЯ: ЗБЕРІГАЄМО В ЗАГАЛЬНИЙ СПИСОК
+            feedMovies = [...feedMovies, ...items];
+
             if (page === 1 && !isAppend && items.length > 0) {
                 const rand = Math.floor(Math.random() * Math.min(5, items.length));
                 setupHero(items[rand]);
@@ -202,15 +204,20 @@ function mapTMDB(item) {
     };
 }
 
+// 🔥 РЕНДЕРИНГ З АНІМАЦІЄЮ (Staggered Animation)
 function renderGrid(items, isAppend) {
     const container = document.getElementById('content_container');
     if (!container) return;
     
     if (!isAppend) container.innerHTML = '';
     
-    items.forEach(item => {
+    items.forEach((item, index) => {
         const div = document.createElement('div');
-        div.className = 'movie-poster-card';
+        div.className = 'movie-poster-card card-anim'; // Додаємо клас анімації
+        
+        // Кожна картка з'являється трохи пізніше попередньої
+        div.style.animationDelay = `${index * 0.05}s`;
+
         div.onclick = () => window.openMoviePage(item);
         
         const badgeHtml = item.type === 'tv' ? '<div class="type-badge">СЕРІАЛ</div>' : '';
@@ -257,6 +264,10 @@ window.performSearchDelayed = function() {
             const data = await res.json();
             if (data.results) {
                 const results = data.results.filter(i => i.media_type !== 'person' && i.poster_path).map(mapTMDB);
+                
+                // 🔥 Додаємо результати пошуку в пам'ять
+                feedMovies = [...feedMovies, ...results];
+
                 renderGrid(results, false);
             }
         } catch (e) {}
@@ -301,7 +312,7 @@ function getMovieObject(id) {
     return m;
 }
 
-// --- 6. ВІДКРИТТЯ ВІКНА (NETFLIX STYLE) ---
+// --- 6. ВІДКРИТТЯ ВІКНА ---
 window.openMoviePage = async function(movie) {
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
@@ -341,7 +352,6 @@ window.openMoviePage = async function(movie) {
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const bgImage = details.backdrop || details.img;
     
-    // Random Match
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
     const ageRating = details.type === 'tv' ? '16+' : '13+';
 
@@ -399,7 +409,6 @@ window.closeMoviePage = function() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
-// --- 7. ПЛЕЄР ---
 window.openPremiumPlayer = async function(tmdbId, btn) {
     const span = btn ? btn.querySelector('span') : null;
     const originalText = span ? span.innerText : "ДИВИТИСЬ";
@@ -438,13 +447,10 @@ window.openPremiumPlayer = async function(tmdbId, btn) {
 
 function launchPlayer(kpId) {
     if (!kpId) return;
-
     const playerToken = "eyJhbGciOiJIUzI1NiJ9.eyJ3ZWJTaXRlIjoiMzQiLCJpc3MiOiJhcGktd2VibWFzdGVyIiwic3ViIjoiNDEiLCJpYXQiOjE3NDMwNjA3ODAsImp0aSI6IjIzMTQwMmE0LTM3NTMtNGQ3OS1hNDBjLTA2YTY0MTE0MzNhOSIsInNjb3BlIjoiRExFIn0.4PmKGf512P-ov-tEjwr3gfOVxccjx8SSt28slJXypYU";
     const url = `https://api.rstprgapipt.com/balancer-api/iframe?kp=${kpId}&token=${playerToken}&disabled_share=1`;
-
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
-    
     document.getElementById('movie_details_modal').style.display = 'none';
     iframe.src = url;
     modal.style.display = 'flex';

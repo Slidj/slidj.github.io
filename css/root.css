@@ -1,0 +1,26 @@
+/* 1. ПІДКЛЮЧЕННЯ ШРИФТІВ */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@300;400;500;700;900&display=swap');
+
+:root {
+    --bg-color: #000000;
+    --card-bg: #141414;
+    --text-color: #ffffff;
+    --accent-color: #E50914;
+    --match-color: #46d369;
+    --nav-bg: #121212;
+    --font-main: 'Roboto', sans-serif;
+    --font-title: 'Bebas Neue', sans-serif;
+    
+    /* Відступ для Android/iPhone */
+    --safe-top: max(env(safe-area-inset-top), 75px);
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    width: 100%;
+}

@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: APP CORE (OPTIMIZED SPEED + ANIMATION)
+// 🎬 MEDIA HUB: APP CORE (SMART BUTTON NO ALERTS)
 // ============================================================
 
 // --- АВАРІЙНИЙ ВИХІД ---
@@ -16,17 +16,13 @@ const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280'; 
 
 let currentTab = 'home';
-let feedMovies = [];
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
 let currentHeroMovie = null;
 let searchTimeout;
 
-// Змінні для скролу
 let currentPage = 1;
 let isLoading = false;
 let currentGenre = '';
-
-// ⚡️ ЗМІННА ДЛЯ ШВИДКОГО ЗАПУСКУ
 let cachedKpId = null; 
 
 // --- 2. ЗАПУСК ---
@@ -62,7 +58,7 @@ async function initApp() {
     }
 }
 
-// --- 3. БЕЗКІНЕЧНИЙ СКРОЛ ---
+// --- 3. СКРОЛ ---
 function setupInfiniteScroll() {
     const trigger = document.getElementById('infinite_trigger');
     if (!('IntersectionObserver' in window)) return;
@@ -141,7 +137,7 @@ window.setCategory = function(catId) {
     loadHomeContent(1); 
 };
 
-// --- 5. ЗАВАНТАЖЕННЯ ДАНИХ ---
+// --- 5. ДАНІ ---
 async function loadHomeContent(page = 1, isAppend = false) {
     isLoading = true;
     const loader = document.getElementById('scroll_loader');
@@ -170,9 +166,7 @@ async function loadHomeContent(page = 1, isAppend = false) {
             }
             renderGrid(items, isAppend);
         }
-    } catch (e) {
-        console.error("API Error:", e);
-    } finally {
+    } catch (e) {} finally {
         isLoading = false;
         if(loader) loader.style.display = 'none';
     }
@@ -191,7 +185,6 @@ function mapTMDB(item) {
     };
 }
 
-// --- 6. РЕНДЕРИНГ ---
 function renderGrid(items, isAppend) {
     const container = document.getElementById('content_container');
     if (!container) return;
@@ -202,11 +195,7 @@ function renderGrid(items, isAppend) {
         const div = document.createElement('div');
         div.className = 'movie-poster-card';
         div.onclick = () => window.openMoviePage(item);
-        
-        div.innerHTML = `
-            <img src="${item.img}" loading="lazy" alt="${item.title}">
-            <div class="rating-mini">${item.rating}</div>
-        `;
+        div.innerHTML = `<img src="${item.img}" loading="lazy"><div class="rating-mini">${item.rating}</div>`;
         container.appendChild(div);
     });
 }
@@ -222,8 +211,6 @@ function setupHero(movie) {
         hero.style.backgroundImage = `url('${bg}')`;
         if(title) title.innerText = movie.title;
         if(meta) meta.innerText = `🔥 Trending • ${movie.year}`;
-        
-        // Починаємо шукати ID для банера теж!
         preloadKpId(movie.id); 
     }
 }
@@ -235,11 +222,9 @@ window.infoHeroMovie = function() {
     if (currentHeroMovie) window.openMoviePage(currentHeroMovie);
 };
 
-// --- 7. ПОШУК ---
 window.performSearchDelayed = function() {
     clearTimeout(searchTimeout);
     const query = document.getElementById('search_input').value;
-    
     if (!query || query.length < 2) return;
 
     searchTimeout = setTimeout(async () => {
@@ -254,21 +239,16 @@ window.performSearchDelayed = function() {
     }, 600);
 };
 
-// ============================================================
-// 🔥 ПРИСКОРЕНА ЛОГІКА ДЕТАЛЕЙ (PREFETCH)
-// ============================================================
-
-// Функція тихого пошуку ID у фоні
+// --- 6. PRELOAD & DETAILS ---
 async function preloadKpId(tmdbId) {
-    cachedKpId = null; // Скидаємо старий кеш
+    cachedKpId = null; 
     try {
         const res = await fetch(`https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`);
         const data = await res.json();
         if(data.data && data.data.id_kp) {
             cachedKpId = data.data.id_kp;
-            console.log("⚡️ ID Preloaded:", cachedKpId);
         }
-    } catch(e) { console.log("Preload failed"); }
+    } catch(e) {}
 }
 
 window.openMoviePage = async function(movie) {
@@ -277,7 +257,6 @@ window.openMoviePage = async function(movie) {
     
     if (!modal || !content) return;
 
-    // 🚀 СТАРТУЄМО ПОШУК ID ОДРАЗУ!!!
     preloadKpId(movie.id);
 
     modal.style.display = 'block';
@@ -296,10 +275,7 @@ window.openMoviePage = async function(movie) {
         if (res.ok) {
             const data = await res.json();
             details.desc = data.overview || movie.desc;
-            
             if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
-            else if (data.episode_run_time?.length) details.runtime = `${data.episode_run_time[0]} хв`;
-
             if (data.images?.logos?.length > 0) {
                 const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
                 logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
@@ -319,7 +295,6 @@ window.openMoviePage = async function(movie) {
             <div class="nf-hero">
                 <div class="nf-backdrop" style="background-image: url('${bgImage}');"></div>
                 <div class="nf-gradient"></div>
-                
                 <div class="nf-hero-content">
                     ${titleHtml}
                     <div class="nf-meta">
@@ -332,7 +307,7 @@ window.openMoviePage = async function(movie) {
             </div>
 
             <div class="nf-btn-row">
-                <button class="nf-btn nf-play" onclick="openPremiumPlayer('${movie.id}', this)">
+                <button class="nf-btn nf-play" id="btn-play-action" onclick="openPremiumPlayer('${movie.id}', this)">
                     <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg>
                     <span>ДИВИТИСЬ</span>
                 </button>
@@ -364,42 +339,58 @@ window.closeMoviePage = function() {
     if (modal) modal.style.display = 'none';
     document.getElementById('movie_details_content').innerHTML = '';
     document.body.style.overflow = '';
-    cachedKpId = null; // Очистити кеш
+    cachedKpId = null; 
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
-// --- 8. ВІДКРИТТЯ ПЛЕЄРА (МИТТЄВЕ) ---
+// ============================================================
+// 🔥 BUTTON LOGIC: NO ALERTS, CHANGE TEXT
+// ============================================================
 window.openPremiumPlayer = async function(tmdbId, btn) {
-    const originalText = btn ? btn.querySelector('span').innerText : "";
+    const span = btn ? btn.querySelector('span') : null;
+    const originalText = span ? span.innerText : "ДИВИТИСЬ";
     
-    // Якщо кеш уже є - запускаємо миттєво!
+    // Якщо ID вже є
     if (cachedKpId) {
         launchPlayer(cachedKpId);
         return;
     }
 
-    // Якщо кешу немає - показуємо "Запуск..." і чекаємо
-    if(btn) {
-        btn.style.opacity = 0.6;
-        btn.querySelector('span').innerText = "Запуск...";
+    // 1. Змінюємо текст на "ПЕРЕВІРКА..."
+    if(btn && span) {
+        btn.style.opacity = 0.7;
+        span.innerText = "ПЕРЕВІРКА...";
         btn.style.pointerEvents = 'none';
     }
 
     try {
-        // Повторний запит, якщо preload не встиг
         const res = await fetch(`https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`);
         const data = await res.json();
         
+        // 2. Якщо знайдено -> Запускаємо
         if(data.data && data.data.id_kp) {
+            // Відновлюємо кнопку перед запуском (щоб при поверненні вона була ок)
+            if(btn && span) {
+                btn.style.opacity = 1;
+                span.innerText = originalText;
+                btn.style.pointerEvents = 'auto';
+            }
             launchPlayer(data.data.id_kp);
         } else {
-            alert("Фільм не знайдено.");
+            // 3. Якщо НЕ знайдено -> Кнопка стає СІРОЮ і пише НЕДОСТУПНО
+            if(btn && span) {
+                btn.classList.add('error'); // Додаємо клас .nf-btn.error з CSS
+                span.innerText = "НЕДОСТУПНО";
+                // Залишаємо pointerEvents = none, щоб не клікали
+            }
         }
     } catch(e) {
-        alert("Помилка з'єднання.");
+        // Помилка мережі
+        if(btn && span) {
+            btn.classList.add('error');
+            span.innerText = "ПОМИЛКА";
+        }
     }
-    
-    resetBtn(btn, originalText);
 };
 
 function launchPlayer(kpId) {
@@ -414,14 +405,6 @@ function launchPlayer(kpId) {
     modal.style.display = 'flex';
 }
 
-function resetBtn(btn, text) {
-    if(btn) {
-        btn.style.opacity = 1;
-        btn.querySelector('span').innerText = text || "ДИВИТИСЬ";
-        btn.style.pointerEvents = 'auto';
-    }
-}
-
 window.closePlayer = function() {
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
@@ -430,7 +413,6 @@ window.closePlayer = function() {
     document.getElementById('movie_details_modal').style.display = 'block';
 };
 
-// --- 9. ЗБЕРЕЖЕННЯ ---
 window.toggleSave = function(id, btn) {
     let movie = feedMovies.find(m => m.id == id);
     if (!movie && currentHeroMovie && currentHeroMovie.id == id) movie = currentHeroMovie;
@@ -439,19 +421,12 @@ window.toggleSave = function(id, btn) {
     if (!movie) return;
 
     const index = savedItems.findIndex(m => m.id == id);
-    
     if (index === -1) {
         savedItems.push(movie);
-        if (btn) {
-            btn.querySelector('span').innerText = "Збережено";
-            btn.querySelector('svg').setAttribute('fill', 'white');
-        }
+        if (btn) { btn.querySelector('span').innerText = "Збережено"; btn.querySelector('svg').setAttribute('fill', 'white'); }
     } else {
         savedItems.splice(index, 1);
-        if (btn) {
-            btn.querySelector('span').innerText = "Зберегти";
-            btn.querySelector('svg').setAttribute('fill', 'none');
-        }
+        if (btn) { btn.querySelector('span').innerText = "Зберегти"; btn.querySelector('svg').setAttribute('fill', 'none'); }
         if (currentTab === 'saved') renderGrid(savedItems, false);
     }
     localStorage.setItem('savedItems', JSON.stringify(savedItems));
@@ -461,7 +436,6 @@ function isSaved(id) {
     return savedItems.some(m => m.id == id);
 }
 
-// --- 11. ГЛОБАЛЬНИЙ ПОШУК (ЗАПАСНИЙ) ---
 window.searchOnline = function(t) {
     if (window.Telegram?.WebApp) window.Telegram.WebApp.openLink(`https://www.google.com/search?q=дивитися+онлайн+${encodeURIComponent(t)}+eneyida`);
     else window.open(`https://www.google.com/search?q=дивитися+онлайн+${encodeURIComponent(t)}+eneyida`, '_blank');

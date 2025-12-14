@@ -1,11 +1,13 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (VIBRATION + SYNC)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (I18N + VIBRO + SYNC)
 // ============================================================
 
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies } from './api.js';
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer } from './ui.js';
+// 🔥 Імпорт локалізації
+import { t, initLanguage } from './i18n.js';
 
 // --- EXPORTS ---
 window.setCategory = setCategory;
@@ -38,6 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch(e) {}
     }
 
+    // 🔥 Вмикаємо мову (Українська або Англійська)
+    initLanguage();
+
     await loadCloudData();
     setupInfiniteScroll();
     switchMode('home');
@@ -50,7 +55,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // --- NAVIGATION ---
 async function switchMode(tab) {
-    // 🔥 ВІБРАЦІЯ: Легка при кліку по меню
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
 
     state.currentTab = tab;
@@ -88,18 +92,21 @@ async function switchMode(tab) {
         hero.style.display = 'none'; filters.style.display = 'none'; search.style.display = 'block';
         content.style.display = 'grid'; trigger.style.display = 'none';
         content.style.paddingTop = '0px';
-        content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Пошук...</div>';
+        // 🔥 t.searching
+        content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
     } 
     else if (tab === 'saved') {
         hero.style.display = 'none'; filters.style.display = 'none'; search.style.display = 'none';
         content.style.display = 'grid'; trigger.style.display = 'none';
         content.style.paddingTop = 'calc(80px + var(--safe-top))';
         
-        content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Синхронізація...</div>';
+        // 🔥 t.syncing
+        content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.syncing}</div>`;
         await loadCloudData();
 
         if (state.savedItems.length === 0) {
-            content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Список пустий</div>';
+            // 🔥 t.emptyList
+            content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
         } else {
             renderGrid(state.savedItems, false);
         }
@@ -107,7 +114,6 @@ async function switchMode(tab) {
 }
 
 function setCategory(catId) {
-    // 🔥 ВІБРАЦІЯ: Легка при виборі жанру
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
 
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
@@ -122,6 +128,8 @@ function setCategory(catId) {
     loadContent(1); 
 }
 
+// ... (Функції loadContent, setupInfiniteScroll, performSearchDelayed залишаються без змін, вони вже використовують t.heroTrending через ui.js)
+// Але давай я продублюю їх тут, щоб ти міг просто скопіювати весь файл
 // --- LOGIC ---
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;

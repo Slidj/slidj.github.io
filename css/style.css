@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MEDIA HUB (SAFE AREA FIX)
+   🎨 STYLE.CSS: MEDIA HUB (ANDROID FIX v2)
    ========================================================== */
 
 /* 1. ПІДКЛЮЧЕННЯ ШРИФТІВ */
@@ -16,8 +16,10 @@
     --font-main: 'Roboto', sans-serif;
     --font-title: 'Bebas Neue', sans-serif;
 
-    /* 🔥 БЕЗПЕЧНА ЗОНА (для відступів від "чубчика") */
-    --safe-top: env(safe-area-inset-top, 20px);
+    /* 🔥 ГОЛОВНА ЗМІНА ТУТ 🔥 */
+    /* Використовуємо max(). Беремо або системний відступ, або 50px (що більше).
+       Це гарантує, що на Андроїді логотип не сховається під кнопками. */
+    --safe-top: max(env(safe-area-inset-top), 50px);
 }
 
 body {
@@ -35,12 +37,12 @@ body {
 @keyframes slideUpFade { from { opacity: 0; transform: translateY(30%); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* --- HEADER (Виправлено накладання) --- */
+/* --- HEADER --- */
 .netflix-header {
     position: fixed; top: 0; left: 0; width: 100%;
-    /* Висота тепер враховує системний бар */
+    /* Висота header = 60px контент + відступ зверху */
     height: calc(60px + var(--safe-top)); 
-    padding-top: var(--safe-top); /* Відступ контенту вниз */
+    padding-top: var(--safe-top); 
     display: flex; align-items: center; justify-content: space-between;
     padding-left: 20px; padding-right: 20px; box-sizing: border-box;
     background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
@@ -63,10 +65,10 @@ body {
 }
 #default_avatar { background: #333; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 
-/* --- ФІЛЬТРИ (Зсунуті нижче) --- */
+/* --- ФІЛЬТРИ --- */
 .netflix-filters {
     position: absolute; 
-    /* Відступаємо від нового хедера */
+    /* Фільтри починаються одразу під Хедером */
     top: calc(65px + var(--safe-top)); 
     left: 0; width: 100%;
     display: flex; gap: 12px; padding: 0 20px; box-sizing: border-box;
@@ -168,7 +170,6 @@ body {
     border-top: 1px solid #333; backdrop-filter: blur(10px);
     display: flex; justify-content: space-around; align-items: center;
     z-index: 900;
-    /* Відступ для iPhone Home Bar знизу */
     padding-bottom: env(safe-area-inset-bottom);
     height: calc(60px + env(safe-area-inset-bottom));
 }
@@ -181,7 +182,7 @@ body {
 .nav-item svg { width: 24px; height: 24px; }
 .nav-item.active { color: #fff; }
 
-/* --- SEARCH (Зсунутий нижче) --- */
+/* --- SEARCH --- */
 #search_bar_container { 
     /* Враховуємо безпечну зону зверху */
     padding: calc(80px + var(--safe-top)) 15px 10px; 
@@ -207,7 +208,6 @@ body {
 
 .close-round-btn {
     position: fixed; 
-    /* Відступ від чубчика для хрестика */
     top: calc(20px + var(--safe-top)); 
     right: 20px; 
     width: 36px; height: 36px;
@@ -279,7 +279,6 @@ body {
 #video_frame { width: 100%; height: 100%; border: none; background: #000; object-fit: cover; }
 .close-player-btn {
     position: absolute; 
-    /* Відступ від чубчика для плеєра */
     top: calc(20px + var(--safe-top)); 
     right: 20px; 
     color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;

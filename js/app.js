@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: APP CORE (SMART BUTTON NO ALERTS)
+// 🎬 MEDIA HUB: APP CORE (SMART SEARCH + FALLBACK)
 // ============================================================
 
 // --- АВАРІЙНИЙ ВИХІД ---
@@ -14,8 +14,10 @@ setTimeout(() => {
 const API_KEY = '4f06fae67ddcf28e2e5b3f91193cb555';
 const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280'; 
+const ALLOHA_TOKEN = 'd317441359e505c343c2063edc97e7'; // Виніс окремо для зручності
 
 let currentTab = 'home';
+let feedMovies = [];
 let savedItems = JSON.parse(localStorage.getItem('savedItems')) || [];
 let currentHeroMovie = null;
 let searchTimeout;
@@ -211,7 +213,7 @@ function setupHero(movie) {
         hero.style.backgroundImage = `url('${bg}')`;
         if(title) title.innerText = movie.title;
         if(meta) meta.innerText = `🔥 Trending • ${movie.year}`;
-        preloadKpId(movie.id); 
+        preloadKpId(movie); 
     }
 }
 
@@ -239,25 +241,66 @@ window.performSearchDelayed = function() {
     }, 600);
 };
 
-// --- 6. PRELOAD & DETAILS ---
-async function preloadKpId(tmdbId) {
-    cachedKpId = null; 
+// ============================================================
+// 🔥 ЛОГІКА ПОШУКУ ПОСИЛАНЬ (З ПЛАН Б)
+// ============================================================
+
+// 1. Пошук ID за допомогою TMDB ID
+async function fetchKpByTmdb(tmdbId) {
     try {
-        const res = await fetch(`https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`);
+        const res = await fetch(`https://api.alloha.tv/?token=${ALLOHA_TOKEN}&tmdb=${tmdbId}`);
         const data = await res.json();
-        if(data.data && data.data.id_kp) {
-            cachedKpId = data.data.id_kp;
-        }
+        if (data.data && data.data.id_kp) return data.data.id_kp;
     } catch(e) {}
+    return null;
 }
 
+// 2. Пошук ID за Назвою (План Б)
+async function fetchKpByName(name) {
+    try {
+        const res = await fetch(`https://api.alloha.tv/?token=${ALLOHA_TOKEN}&name=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        // Якщо повернувся масив, беремо перший результат
+        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+            return data.data[0].id_kp;
+        }
+    } catch(e) {}
+    return null;
+}
+
+// Функція Preload (тепер розумніша)
+async function preloadKpId(movie) {
+    cachedKpId = null; 
+    
+    // Спроба 1: По ID
+    let id = await fetchKpByTmdb(movie.id);
+    
+    // Спроба 2: По Назві (якщо ID не спрацював)
+    if (!id) {
+        console.log("Preload: fallback to search by name...");
+        id = await fetchKpByName(movie.title);
+    }
+
+    if (id) cachedKpId = id;
+}
+
+// Допоміжна: знайти об'єкт фільму в пам'яті
+function getMovieObject(id) {
+    if (currentHeroMovie && currentHeroMovie.id == id) return currentHeroMovie;
+    let m = feedMovies.find(m => m.id == id);
+    if (!m) m = savedItems.find(m => m.id == id);
+    return m;
+}
+
+// --- 6. ВІДКРИТТЯ ВІКНА ---
 window.openMoviePage = async function(movie) {
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
     
     if (!modal || !content) return;
 
-    preloadKpId(movie.id);
+    // Запускаємо пошук ID
+    preloadKpId(movie);
 
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
@@ -343,52 +386,45 @@ window.closeMoviePage = function() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 };
 
-// ============================================================
-// 🔥 BUTTON LOGIC: NO ALERTS, CHANGE TEXT
-// ============================================================
+// --- 7. ВІДКРИТТЯ ПЛЕЄРА (РОЗУМНИЙ СТАРТ) ---
 window.openPremiumPlayer = async function(tmdbId, btn) {
     const span = btn ? btn.querySelector('span') : null;
     const originalText = span ? span.innerText : "ДИВИТИСЬ";
     
-    // Якщо ID вже є
+    // Якщо ID вже в кеші - старт
     if (cachedKpId) {
         launchPlayer(cachedKpId);
         return;
     }
 
-    // 1. Змінюємо текст на "ПЕРЕВІРКА..."
     if(btn && span) {
         btn.style.opacity = 0.7;
         span.innerText = "ПЕРЕВІРКА...";
         btn.style.pointerEvents = 'none';
     }
 
-    try {
-        const res = await fetch(`https://api.alloha.tv/?token=d317441359e505c343c2063edc97e7&tmdb=${tmdbId}`);
-        const data = await res.json();
-        
-        // 2. Якщо знайдено -> Запускаємо
-        if(data.data && data.data.id_kp) {
-            // Відновлюємо кнопку перед запуском (щоб при поверненні вона була ок)
-            if(btn && span) {
-                btn.style.opacity = 1;
-                span.innerText = originalText;
-                btn.style.pointerEvents = 'auto';
-            }
-            launchPlayer(data.data.id_kp);
-        } else {
-            // 3. Якщо НЕ знайдено -> Кнопка стає СІРОЮ і пише НЕДОСТУПНО
-            if(btn && span) {
-                btn.classList.add('error'); // Додаємо клас .nf-btn.error з CSS
-                span.innerText = "НЕДОСТУПНО";
-                // Залишаємо pointerEvents = none, щоб не клікали
-            }
+    // Якщо кешу немає - шукаємо знову (з Fallback)
+    let kpId = await fetchKpByTmdb(tmdbId);
+    
+    if (!kpId) {
+        // Якщо по ID не знайшли, пробуємо по Назві
+        const movie = getMovieObject(tmdbId);
+        if (movie) {
+            kpId = await fetchKpByName(movie.title);
         }
-    } catch(e) {
-        // Помилка мережі
+    }
+
+    if (kpId) {
+        if(btn && span) {
+            btn.style.opacity = 1;
+            span.innerText = originalText;
+            btn.style.pointerEvents = 'auto';
+        }
+        launchPlayer(kpId);
+    } else {
         if(btn && span) {
             btn.classList.add('error');
-            span.innerText = "ПОМИЛКА";
+            span.innerText = "НЕДОСТУПНО";
         }
     }
 };

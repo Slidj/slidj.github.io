@@ -260,3 +260,12 @@ body {
 /* --- LOADER --- */
 #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
 .netflix-loader { width: 50px; height: 50px; border: 4px solid #E50914; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+/* Стиль кнопки, коли фільм не знайдено */
+.nf-btn.error {
+    background: #333 !important; /* Темно-сірий */
+    color: #777 !important;      /* Тьмяний текст */
+    animation: none !important;  /* Зупиняємо мерехтіння */
+    box-shadow: none !important; /* Прибираємо світіння */
+    cursor: not-allowed;
+    border: 1px solid #444;
+}

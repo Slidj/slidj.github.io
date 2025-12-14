@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (MODULAR)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (AUTO SYNC FIX)
 // ============================================================
 
 import { state } from './state.js';
@@ -7,7 +7,7 @@ import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies } from './api.js';
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer } from './ui.js';
 
-// --- ЕКСПОРТ ДЛЯ HTML (Бо модулі ізольовані) ---
+// --- EXPORTS ---
 window.setCategory = setCategory;
 window.switchMode = switchMode;
 window.playHeroMovie = () => { if(state.currentHeroMovie) openPremiumPlayer(state.currentHeroMovie.id, null); };
@@ -16,17 +16,13 @@ window.closeMoviePage = closeMoviePage;
 window.closePlayer = closePlayer;
 window.performSearchDelayed = performSearchDelayed;
 window.openPremiumPlayer = openPremiumPlayer;
-// Спеціальна обгортка для збереження, щоб UI знав про неї
 window.ui_toggleSave = (id, btn) => {
     toggleSave(id, btn);
-    // Якщо ми в вкладці "Saved", треба перемалювати, якщо видалили
     if (state.currentTab === 'saved') switchMode('saved');
 };
 
-
 // --- INIT ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // TG Init
     const tg = window.Telegram?.WebApp;
     if (tg) {
         try {
@@ -46,18 +42,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupInfiniteScroll();
     switchMode('home');
     
-    // Прибираємо прелоадер
     setTimeout(() => {
         const pre = document.getElementById('preloader');
         if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
     }, 500);
 });
 
-// --- NAVIGATION ---
-function switchMode(tab) {
+// --- NAVIGATION (UPDATED) ---
+async function switchMode(tab) {
     state.currentTab = tab;
     
-    // UI Updates
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const navs = document.querySelectorAll('.nav-item');
     if(tab==='home') navs[0].classList.add('active');
@@ -70,7 +64,7 @@ function switchMode(tab) {
     const content = document.getElementById('content_container');
     const trigger = document.getElementById('infinite_trigger');
 
-    // Анімація переходу
+    // Анімація
     const scrollArea = document.getElementById('main_scroll_area');
     scrollArea.classList.remove('fade-in-anim');
     void scrollArea.offsetWidth; 
@@ -98,6 +92,12 @@ function switchMode(tab) {
         content.style.display = 'grid'; trigger.style.display = 'none';
         content.style.paddingTop = 'calc(80px + var(--safe-top))';
         
+        // 🔥 FIX: Показуємо "Завантаження..." і примусово тягнемо з Хмари
+        content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Синхронізація...</div>';
+        
+        // Примусове оновлення даних перед показом
+        await loadCloudData();
+
         if (state.savedItems.length === 0) {
             content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Список пустий</div>';
         } else {

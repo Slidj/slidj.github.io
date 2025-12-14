@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MEDIA HUB (YELLOW BADGES)
+   🎨 STYLE.CSS: MEDIA HUB (YELLOW BADGES + PLAYER FIX)
    ========================================================== */
 
 /* 1. ПІДКЛЮЧЕННЯ ШРИФТІВ */
@@ -268,18 +268,46 @@ body {
 .nf-trailer { margin: 0 20px 20px; border-radius: 8px; overflow: hidden; position: relative; padding-bottom: 56.25%; background: #111; }
 .nf-trailer iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
 
-/* --- ПЛЕЄР --- */
+/* --- ПЛЕЄР (ОНОВЛЕНО ДЛЯ FULLSCREEN) --- */
 #player_modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: #000; z-index: 99999;
-    display: none; align-items: center; justify-content: center;
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100dvh; /* 🔥 Динамічна висота */
+    background-color: #000; 
+    z-index: 99999;
+    display: none; 
+    align-items: center; 
+    justify-content: center;
     animation: slideUpFade 0.3s ease-out forwards;
 }
-#video_frame { width: 100%; height: 100%; border: none; background: #000; }
+
+#video_frame { 
+    width: 100%; 
+    height: 100%; 
+    border: none; 
+    background: #000;
+    object-fit: cover; /* Запобігає чорним смугам */
+}
+
 .close-player-btn {
-    position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
-    background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    color: #fff; 
+    font-size: 40px; 
+    cursor: pointer; 
+    z-index: 100000;
+    background: rgba(0,0,0,0.5); 
+    width: 50px; 
+    height: 50px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
     transition: transform 0.1s;
+    margin-top: env(safe-area-inset-top); /* Відступ для iPhone Notch */
 }
 .close-player-btn:active { transform: scale(0.9); }
 

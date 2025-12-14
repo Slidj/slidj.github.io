@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (AUTO SYNC FIX)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (TAB SWITCH FIX)
 // ============================================================
 
 import { state } from './state.js';
@@ -18,6 +18,7 @@ window.performSearchDelayed = performSearchDelayed;
 window.openPremiumPlayer = openPremiumPlayer;
 window.ui_toggleSave = (id, btn) => {
     toggleSave(id, btn);
+    // Якщо ми в вкладці "Saved", треба перемалювати список одразу
     if (state.currentTab === 'saved') switchMode('saved');
 };
 
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 500);
 });
 
-// --- NAVIGATION (UPDATED) ---
+// --- NAVIGATION (FIXED) ---
 async function switchMode(tab) {
     state.currentTab = tab;
     
@@ -64,7 +65,7 @@ async function switchMode(tab) {
     const content = document.getElementById('content_container');
     const trigger = document.getElementById('infinite_trigger');
 
-    // Анімація
+    // Анімація переходу (Fade In)
     const scrollArea = document.getElementById('main_scroll_area');
     scrollArea.classList.remove('fade-in-anim');
     void scrollArea.offsetWidth; 
@@ -76,9 +77,15 @@ async function switchMode(tab) {
         content.style.display = 'grid'; trigger.style.display = 'flex';
         content.style.paddingTop = '0px';
 
-        const dirty = content.innerHTML.includes('Пошук...') || content.innerHTML.includes('Список пустий');
-        if (content.children.length === 0 || dirty) {
-            content.innerHTML = ''; state.currentPage = 1; loadContent(1);
+        // 🔥 FIX: Якщо у нас є фільми в пам'яті (feedMovies), ми їх ВІДНОВЛЮЄМО.
+        // Це перезапише те, що залишилось від вкладки "Моє" або "Пошук".
+        if (state.feedMovies.length > 0) {
+            renderGrid(state.feedMovies, false);
+        } else {
+            // Тільки якщо пам'ять пуста (перший запуск), вантажимо з інтернету
+            content.innerHTML = ''; 
+            state.currentPage = 1; 
+            loadContent(1);
         }
     } 
     else if (tab === 'search') {
@@ -92,10 +99,8 @@ async function switchMode(tab) {
         content.style.display = 'grid'; trigger.style.display = 'none';
         content.style.paddingTop = 'calc(80px + var(--safe-top))';
         
-        // 🔥 FIX: Показуємо "Завантаження..." і примусово тягнемо з Хмари
+        // Синхронізація
         content.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Синхронізація...</div>';
-        
-        // Примусове оновлення даних перед показом
         await loadCloudData();
 
         if (state.savedItems.length === 0) {
@@ -114,6 +119,8 @@ function setCategory(catId) {
     }
     state.currentGenre = catId;
     state.currentPage = 1;
+    // Очищаємо пам'ять стрічки, бо жанр змінився
+    state.feedMovies = []; 
     document.getElementById('content_container').innerHTML = ''; 
     loadContent(1); 
 }
@@ -126,6 +133,8 @@ async function loadContent(page, isAppend = false) {
 
     try {
         const items = await fetchHomeContent(page);
+        
+        // Додаємо нові фільми до загального списку
         state.feedMovies = [...state.feedMovies, ...items];
 
         if (page === 1 && !isAppend && items.length > 0) {
@@ -157,7 +166,7 @@ function performSearchDelayed() {
 
     state.searchTimeout = setTimeout(async () => {
         const results = await searchMovies(query);
-        state.feedMovies = [...state.feedMovies, ...results];
+        // Результати пошуку НЕ додаємо в feedMovies, щоб не псувати головну стрічку
         renderGrid(results, false);
     }, 600);
 }

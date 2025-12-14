@@ -2,6 +2,8 @@ import { state } from './state.js';
 import { isSaved, toggleSave } from './storage.js';
 import { fetchMovieDetails, fetchKpId } from './api.js';
 import { PLAYER_TOKEN } from './config.js';
+// 🔥 Імпортуємо переклади
+import { t } from './i18n.js';
 
 // --- GRID RENDER ---
 export function renderGrid(items, isAppend = false) {
@@ -14,13 +16,13 @@ export function renderGrid(items, isAppend = false) {
         div.className = 'movie-poster-card card-anim'; 
         div.style.animationDelay = `${index * 0.05}s`;
         
-        // 🔥 ВІБРАЦІЯ: При кліку на постер
         div.onclick = () => {
             window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
             openMoviePage(item);
         };
         
-        const badgeHtml = item.type === 'tv' ? '<div class="type-badge">СЕРІАЛ</div>' : '';
+        // 🔥 ВИКОРИСТОВУЄМО t.serialBadge
+        const badgeHtml = item.type === 'tv' ? `<div class="type-badge">${t.serialBadge}</div>` : '';
         div.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
         container.appendChild(div);
     });
@@ -37,7 +39,8 @@ export function setupHero(movie) {
         const bg = movie.backdrop || movie.img;
         hero.style.backgroundImage = `url('${bg}')`;
         if(title) title.innerText = movie.title;
-        if(meta) meta.innerText = `🔥 Trending • ${movie.year}`;
+        // 🔥 ВИКОРИСТОВУЄМО t.heroTrending
+        if(meta) meta.innerText = `${t.heroTrending} • ${movie.year}`;
         fetchKpId(movie); 
     }
 }
@@ -51,12 +54,12 @@ export async function openMoviePage(movie) {
     fetchKpId(movie); 
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
-    content.innerHTML = '<div style="height:100vh; display:flex; justify-content:center; align-items:center; color:#555;">Завантаження...</div>';
+    // 🔥 t.loading
+    content.innerHTML = `<div style="height:100vh; display:flex; justify-content:center; align-items:center; color:#555;">${t.loading}</div>`;
 
     if (window.Telegram?.WebApp?.BackButton) {
         window.Telegram.WebApp.BackButton.show();
         window.Telegram.WebApp.BackButton.onClick(() => {
-            // 🔥 ВІБРАЦІЯ: На системну кнопку "Назад"
             window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
             closeMoviePage();
         });
@@ -82,6 +85,7 @@ export async function openMoviePage(movie) {
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
 
+    // 🔥 ТУТ БАГАТО ЗМІН НА t....
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
@@ -90,7 +94,7 @@ export async function openMoviePage(movie) {
                 <div class="nf-hero-content">
                     ${titleHtml}
                     <div class="nf-meta">
-                        <span class="nf-match">${matchScore}% Match</span>
+                        <span class="nf-match">${matchScore}% ${t.match}</span>
                         <span>${details.year}</span>
                         <span class="nf-age">${details.type === 'tv' ? '16+' : '13+'}</span>
                         <span>${details.runtime || ''}</span>
@@ -100,14 +104,14 @@ export async function openMoviePage(movie) {
             </div>
             <div class="nf-btn-row">
                 <button class="nf-btn nf-play" onclick="window.openPremiumPlayer('${movie.id}', this)">
-                    <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg><span>ДИВИТИСЬ</span>
+                    <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg><span>${t.watch}</span>
                 </button>
                 <button class="nf-btn nf-secondary" onclick="window.ui_toggleSave('${movie.id}', this)">
                     <svg viewBox="0 0 24 24" fill="${isSaved(movie.id) ? 'white' : 'none'}" stroke="white" stroke-width="2" width="24" height="24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                    <span>${isSaved(movie.id) ? 'Збережено' : 'Моє'}</span>
+                    <span>${isSaved(movie.id) ? t.saveBtnActive : t.saveBtn}</span>
                 </button>
             </div>
-            <div class="nf-description">${details.desc || 'Опис відсутній.'}</div>
+            <div class="nf-description">${details.desc || t.descMissing}</div>
             ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
             <div style="height: 50px;"></div>
         </div>
@@ -115,7 +119,6 @@ export async function openMoviePage(movie) {
 }
 
 export function closeMoviePage() {
-    // 🔥 ВІБРАЦІЯ: При закритті
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
 
     const modal = document.getElementById('movie_details_modal');
@@ -127,15 +130,16 @@ export function closeMoviePage() {
 
 // --- PLAYER ---
 export async function openPremiumPlayer(tmdbId, btn) {
-    // 🔥 ВІБРАЦІЯ: Важка (HEAVY) при старті перегляду
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
 
     const span = btn?.querySelector('span');
-    const originalText = span ? span.innerText : "ДИВИТИСЬ";
+    // 🔥 t.watch
+    const originalText = span ? span.innerText : t.watch;
 
     if (state.cachedKpId) { launchPlayer(state.cachedKpId); return; }
 
-    if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = "ПЕРЕВІРКА..."; btn.style.pointerEvents = 'none'; }
+    // 🔥 t.checking
+    if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; btn.style.pointerEvents = 'none'; }
 
     let movie = state.feedMovies.find(m => m.id == tmdbId) || state.savedItems.find(m => m.id == tmdbId) || state.currentHeroMovie;
     let kpId = await fetchKpId(movie);
@@ -144,7 +148,8 @@ export async function openPremiumPlayer(tmdbId, btn) {
         if(btn) { btn.style.opacity = 1; if(span) span.innerText = originalText; btn.style.pointerEvents = 'auto'; }
         launchPlayer(kpId);
     } else {
-        if(btn && span) { btn.classList.add('error'); span.innerText = "НЕДОСТУПНО"; }
+        // 🔥 t.unavailable
+        if(btn && span) { btn.classList.add('error'); span.innerText = t.unavailable; }
     }
 }
 
@@ -159,7 +164,6 @@ function launchPlayer(kpId) {
 }
 
 export function closePlayer() {
-    // 🔥 ВІБРАЦІЯ: При закритті плеєра
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
 
     const modal = document.getElementById('player_modal');

@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MEDIA HUB (SAFE AREA FIX v3 - 75px)
+   🎨 STYLE.CSS: MEDIA HUB (NETFLIX ORIGINAL STYLE v4)
    ========================================================== */
 
 /* 1. ПІДКЛЮЧЕННЯ ШРИФТІВ */
@@ -10,14 +10,13 @@
     --card-bg: #141414;
     --text-color: #ffffff;
     --accent-color: #E50914;
+    --match-color: #46d369; /* 🔥 Фірмовий зелений колір Netflix */
     --nav-bg: #121212;
     
-    /* Шрифти */
     --font-main: 'Roboto', sans-serif;
     --font-title: 'Bebas Neue', sans-serif;
 
-    /* 🔥 ЗБІЛЬШИВ ВІДСТУП ДО 75px 🔥 */
-    /* Це має точно опустити логотип під кнопки Телеграму */
+    /* Відступ для Android/iPhone */
     --safe-top: max(env(safe-area-inset-top), 75px);
 }
 
@@ -39,52 +38,29 @@ body {
 /* --- HEADER --- */
 .netflix-header {
     position: fixed; top: 0; left: 0; width: 100%;
-    /* Висота header = 60px контент + відступ зверху */
     height: calc(60px + var(--safe-top)); 
     padding-top: var(--safe-top); 
     display: flex; align-items: center; justify-content: space-between;
     padding-left: 20px; padding-right: 20px; box-sizing: border-box;
     background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
-    z-index: 100;
-    pointer-events: none;
+    z-index: 100; pointer-events: none;
 }
-
-.logo { 
-    font-family: var(--font-title);
-    color: var(--accent-color); 
-    font-size: 32px; 
-    letter-spacing: 2px; 
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    padding-top: 5px;
-}
-
-.header-right img, #default_avatar { 
-    width: 32px; height: 32px; border-radius: 4px; object-fit: cover; 
-    pointer-events: auto;
-}
+.logo { font-family: var(--font-title); color: var(--accent-color); font-size: 32px; letter-spacing: 2px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); padding-top: 5px; }
+.header-right img, #default_avatar { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; pointer-events: auto; }
 #default_avatar { background: #333; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 
 /* --- ФІЛЬТРИ --- */
 .netflix-filters {
-    position: absolute; 
-    /* Фільтри починаються одразу під Хедером */
-    top: calc(65px + var(--safe-top)); 
-    left: 0; width: 100%;
+    position: absolute; top: calc(65px + var(--safe-top)); left: 0; width: 100%;
     display: flex; gap: 12px; padding: 0 20px; box-sizing: border-box;
     background: transparent; z-index: 90;
     overflow-x: auto; scrollbar-width: none;
 }
 .netflix-filters::-webkit-scrollbar { display: none; }
-
 .cat-btn {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-    color: #fff; padding: 6px 16px; 
-    border-radius: 20px; 
-    font-family: var(--font-main);
-    font-size: 13px; font-weight: 500;
-    white-space: nowrap; cursor: pointer; transition: all 0.2s;
+    background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);
+    color: #fff; padding: 6px 16px; border-radius: 20px; font-family: var(--font-main);
+    font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all 0.2s;
 }
 .cat-btn.active { background: #fff; color: #000; border-color: #fff; font-weight: 700; }
 
@@ -98,42 +74,21 @@ body {
     position: absolute; top:0; left:0; width:100%; height:100%;
     background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.4) 60%, #000 100%);
 }
-.hero-content {
-    position: relative; z-index: 2; text-align: center; width: 100%; padding-bottom: 30px;
-}
-.hero-meta { 
-    color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 10px; 
-    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    font-family: var(--font-main);
-    letter-spacing: 1px;
-}
-#hero_title { 
-    font-family: var(--font-title);
-    font-size: 52px; 
-    margin-bottom: 20px; 
-    text-shadow: 0 4px 15px rgba(0,0,0,0.9); 
-    text-transform: uppercase; 
-    line-height: 0.9; padding: 0 15px;
-    letter-spacing: 1px;
-}
-
+.hero-content { position: relative; z-index: 2; text-align: center; width: 100%; padding-bottom: 30px; }
+.hero-meta { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 10px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); font-family: var(--font-main); letter-spacing: 1px; }
+#hero_title { font-family: var(--font-title); font-size: 52px; margin-bottom: 20px; text-shadow: 0 4px 15px rgba(0,0,0,0.9); text-transform: uppercase; line-height: 0.9; padding: 0 15px; letter-spacing: 1px; }
 .hero-buttons { display: flex; justify-content: center; gap: 12px; }
 .hero-btn {
     border: none; border-radius: 4px; padding: 12px 24px; min-width: 120px;
     font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
-    transition: transform 0.1s ease-in-out;
-    font-family: var(--font-main);
+    transition: transform 0.1s ease-in-out; font-family: var(--font-main);
 }
 .hero-btn:active { transform: scale(0.95); opacity: 0.9; }
-
 .hero-btn.white { background: #fff; color: #000; }
 .hero-btn.gray { background: rgba(109, 109, 110, 0.7); color: #fff; backdrop-filter: blur(5px); }
 
 /* --- GRID --- */
-.netflix-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 8px; padding: 10px 8px;
-}
+.netflix-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 8px; }
 .movie-poster-card {
     position: relative; aspect-ratio: 2/3; border-radius: 4px; overflow: hidden;
     background: #222; cursor: pointer;
@@ -141,58 +96,37 @@ body {
 }
 .movie-poster-card:active { transform: scale(0.96); opacity: 0.8; }
 .movie-poster-card img { width: 100%; height: 100%; object-fit: cover; }
-
-/* Рейтинг */
 .rating-mini {
     position: absolute; top: 4px; right: 4px;
     background: var(--accent-color); color: #fff;
-    font-family: var(--font-title); 
-    font-size: 14px; padding: 2px 5px; border-radius: 2px;
-    letter-spacing: 1px;
-    z-index: 2;
+    font-family: var(--font-title); font-size: 14px; padding: 2px 5px; border-radius: 2px; letter-spacing: 1px; z-index: 2;
 }
-
-/* Бейдж серіалу */
 .type-badge {
     position: absolute; top: 4px; left: 4px;
-    background: rgba(0, 0, 0, 0.85);
-    color: #FFD700; font-family: var(--font-main); font-size: 10px; font-weight: 800;
-    padding: 2px 6px; border-radius: 3px;
-    border: 1px solid #FFD700; text-transform: uppercase;
-    z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.85); color: #FFD700; font-family: var(--font-main); font-size: 10px; font-weight: 800;
+    padding: 2px 6px; border-radius: 3px; border: 1px solid #FFD700; text-transform: uppercase; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 /* --- BOTTOM NAV --- */
 .bottom-nav {
     position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
-    background-color: rgba(18, 18, 18, 0.95);
-    border-top: 1px solid #333; backdrop-filter: blur(10px);
-    display: flex; justify-content: space-around; align-items: center;
-    z-index: 900;
-    padding-bottom: env(safe-area-inset-bottom);
-    height: calc(60px + env(safe-area-inset-bottom));
+    background-color: rgba(18, 18, 18, 0.95); border-top: 1px solid #333; backdrop-filter: blur(10px);
+    display: flex; justify-content: space-around; align-items: center; z-index: 900;
+    padding-bottom: env(safe-area-inset-bottom); height: calc(60px + env(safe-area-inset-bottom));
 }
 .nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    color: #777; font-size: 10px; gap: 4px; cursor: pointer; width: 60px;
-    transition: transform 0.1s;
+    color: #777; font-size: 10px; gap: 4px; cursor: pointer; width: 60px; transition: transform 0.1s;
 }
 .nav-item:active { transform: scale(0.9); }
 .nav-item svg { width: 24px; height: 24px; }
 .nav-item.active { color: #fff; }
 
 /* --- SEARCH --- */
-#search_bar_container { 
-    /* Враховуємо безпечну зону зверху */
-    padding: calc(80px + var(--safe-top)) 15px 10px; 
-}
-#search_input {
-    width: 100%; height: 45px; background: #333; border: none;
-    border-radius: 4px; color: #fff; padding: 0 15px; font-size: 16px; outline: none;
-    font-family: var(--font-main);
-}
+#search_bar_container { padding: calc(80px + var(--safe-top)) 15px 10px; }
+#search_input { width: 100%; height: 45px; background: #333; border: none; border-radius: 4px; color: #fff; padding: 0 15px; font-size: 16px; outline: none; font-family: var(--font-main); }
 
-/* --- MOVIE PAGE --- */
+/* --- 🔥 MOVIE DETAILS PAGE (NETFLIX STYLE) 🔥 --- */
 .modal-fullscreen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #000; z-index: 5000; 
@@ -200,45 +134,45 @@ body {
     animation: slideUpFade 0.35s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
 }
 
-.nf-container {
-    background-color: #000; min-height: 100%;
-    padding-bottom: 100px; position: relative;
-}
+.nf-container { background-color: #000; min-height: 100%; padding-bottom: 100px; position: relative; }
 
 .close-round-btn {
-    position: fixed; 
-    top: calc(20px + var(--safe-top)); 
-    right: 20px; 
-    width: 36px; height: 36px;
+    position: fixed; top: calc(20px + var(--safe-top)); right: 20px; width: 36px; height: 36px;
     border-radius: 50%; background: rgba(30,30,30,0.7); color: #fff;
     border: none; font-size: 24px; display: flex; align-items: center; justify-content: center;
     z-index: 5002; cursor: pointer; transition: transform 0.1s;
 }
 .close-round-btn:active { transform: scale(0.9); }
 
-.nf-hero { position: relative; height: 55vh; width: 100%; }
+/* Постер з градієнтом */
+.nf-hero { position: relative; height: 65vh; width: 100%; }
 .nf-backdrop { width: 100%; height: 100%; background-size: cover; background-position: top center; }
-.nf-gradient { position: absolute; bottom: 0; width: 100%; height: 100%; background: linear-gradient(transparent, #000); }
+/* Градієнт, який робить плавний перехід в чорний */
+.nf-gradient { 
+    position: absolute; bottom: 0; width: 100%; height: 100%; 
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, #000 100%); 
+}
 .nf-hero-content { position: absolute; bottom: 0; width: 100%; padding: 20px; box-sizing: border-box; text-align: center; }
 
+/* Заголовок та Лого */
 .nf-title-text { 
-    font-family: var(--font-title); 
-    font-size: 42px; 
-    margin-bottom: 10px; 
-    text-transform: uppercase; 
-    letter-spacing: 1px;
-    line-height: 0.95;
+    font-family: var(--font-title); font-size: 48px; margin-bottom: 15px; 
+    text-transform: uppercase; letter-spacing: 1px; line-height: 0.95; 
     text-shadow: 0 4px 10px rgba(0,0,0,0.8);
 }
-.nf-logo { width: 70%; max-width: 280px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
+.nf-logo { width: 80%; max-width: 300px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
 
-.nf-meta { display: flex; gap: 10px; justify-content: center; font-size: 14px; color: #ccc; margin-bottom: 20px; font-weight: 500; }
-.nf-match { color: #46d369; font-weight: 900; }
-.nf-badge { border: 1px solid #777; padding: 0 4px; border-radius: 2px; font-size: 12px; }
+/* Мета дані: Рейтинг, Рік, HD */
+.nf-meta { display: flex; gap: 12px; justify-content: center; align-items: center; font-size: 13px; color: #bcbcbc; margin-bottom: 25px; font-weight: 500; }
+.nf-match { color: var(--match-color); font-weight: 900; font-family: var(--font-main); }
+.nf-age { background: #333; padding: 1px 5px; border-radius: 2px; color: #fff; }
+.nf-badge { border: 1px solid #777; padding: 0 4px; border-radius: 2px; font-size: 10px; font-weight: bold; color: #fff; }
 
-.nf-btn-row { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+/* Кнопки */
+.nf-btn-row { padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
+
 .nf-btn { 
-    width: 100%; height: 48px; border-radius: 4px; 
+    width: 100%; height: 45px; border-radius: 4px; 
     font-weight: bold; font-size: 16px; border: none; 
     display: flex; align-items: center; justify-content: center; gap: 10px; 
     cursor: pointer; transition: transform 0.1s, opacity 0.1s;
@@ -246,40 +180,40 @@ body {
 }
 .nf-btn:active { transform: scale(0.98); opacity: 0.9; }
 
-/* КНОПКА З SHIMMER ЕФЕКТОМ */
+/* Біла кнопка PLAY (Як в оригіналі) */
 .nf-play {
-    background: linear-gradient(110deg, #ffffff 35%, #e6e6e6 50%, #ffffff 65%);
-    background-size: 200% 100%;
-    color: #000;
-    animation: shimmer 5s infinite linear;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    background: #ffffff; /* Чисто біла */
+    color: #000000; /* Чорний текст */
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }
+
+/* Темна кнопка (Як в оригіналі) */
+.nf-secondary { 
+    background: #2a2a2a; 
+    color: #ffffff; 
+    font-weight: 600;
+}
+.nf-secondary:active { background: #3a3a3a; }
 
 .nf-btn.error {
-    background: #333 !important; color: #777 !important; animation: none !important; box-shadow: none !important; cursor: not-allowed; border: 1px solid #444;
+    background: #222 !important; color: #555 !important; 
+    cursor: not-allowed; border: 1px solid #333;
 }
 
-.nf-secondary { background: #333; color: #fff; }
-.nf-secondary:active { background: #444; }
-
-.nf-description { padding: 20px; color: #dcdcdc; font-size: 15px; line-height: 1.5; font-weight: 300; }
+.nf-description { padding: 20px; color: #ffffff; font-size: 14px; line-height: 1.5; font-weight: 400; opacity: 0.9; }
 .nf-trailer { margin: 0 20px 20px; border-radius: 8px; overflow: hidden; position: relative; padding-bottom: 56.25%; background: #111; }
 .nf-trailer iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
 
 /* --- ПЛЕЄР --- */
 #player_modal {
-    position: fixed; 
-    top: 0; left: 0; 
-    width: 100vw; height: 100dvh; 
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; 
     background-color: #000; z-index: 99999;
     display: none; align-items: center; justify-content: center;
     animation: slideUpFade 0.3s ease-out forwards;
 }
 #video_frame { width: 100%; height: 100%; border: none; background: #000; object-fit: cover; }
 .close-player-btn {
-    position: absolute; 
-    top: calc(20px + var(--safe-top)); 
-    right: 20px; 
+    position: absolute; top: calc(20px + var(--safe-top)); right: 20px; 
     color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
     background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     transition: transform 0.1s;

@@ -219,21 +219,19 @@ export async function openMoviePage(movie) {
         if (target) openMoviePage(target);
     };
 
-    // 🔥 ОНОВЛЕНА SHARE (ГЕНЕРУЄ ГЛИБОКЕ ПОСИЛАННЯ)
+    // 🔥 ОНОВЛЕНА SHARE (Тепер використовує /app)
     window.ui_share = (id) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
         if(!m) return;
         
-        // Формуємо параметр: type_id (наприклад: movie_550)
         const startParam = `${m.type}_${m.id}`;
         
-        // Посилання на твій WebApp (заміни 'start' на назву свого застосунку в BotFather, якщо вона інша)
-        // Якщо не впевнений, 'start' часто працює за замовчуванням
-        const appLink = `https://t.me/younews_app_bot/start?startapp=${startParam}`;
+        // 🚀 ВИКОРИСТОВУЄМО ВАШЕ НОВЕ ПОСИЛАННЯ:
+        const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
         
         const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(appLink)}&text=${encodeURIComponent(text)}`;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
         
         window.Telegram?.WebApp?.openTelegramLink(shareUrl);
     };

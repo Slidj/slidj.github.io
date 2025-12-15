@@ -1,51 +1,95 @@
 import { state } from './state.js';
-// 🔥 Імпортуємо переклади
 import { t } from './i18n.js';
 
-// ... (функції loadCloudData, saveCloudData, isSaved залишаються ТАКИМИ САМИМИ, як були) ...
-// Я пропущу їх тут для економії місця, скопіюй їх з минулого разу або залиш як є.
-// ТРЕБА ОНОВИТИ ТІЛЬКИ toggleSave і updateBtnState 👇
-
+// --- LOAD DATA ---
 export function loadCloudData() {
     return new Promise((resolve) => {
         const tg = window.Telegram?.WebApp;
-        const localData = localStorage.getItem('savedItems');
-        if (localData) { try { state.savedItems = JSON.parse(localData); } catch(e) {} }
+        
+        // 1. Load LocalStorage (Backup)
+        try {
+            const localSaved = localStorage.getItem('savedItems');
+            if (localSaved) state.savedItems = JSON.parse(localSaved);
+            
+            const localHistory = localStorage.getItem('historyItems');
+            if (localHistory) state.historyItems = JSON.parse(localHistory);
+        } catch(e) {}
+
+        // 2. Load CloudStorage (Primary)
         if (tg && tg.CloudStorage) {
-            tg.CloudStorage.getItem('saved_movies_v1', (err, value) => {
-                if (!err && value) {
+            tg.CloudStorage.getItems(['saved_movies_v1', 'history_movies_v1'], (err, values) => {
+                if (!err && values) {
                     try {
-                        const cloudItems = JSON.parse(value);
-                        if (Array.isArray(cloudItems) && cloudItems.length > 0) {
-                            state.savedItems = cloudItems;
-                            localStorage.setItem('savedItems', JSON.stringify(state.savedItems));
+                        // Saved
+                        if (values['saved_movies_v1']) {
+                            const cloudSaved = JSON.parse(values['saved_movies_v1']);
+                            if (Array.isArray(cloudSaved)) {
+                                state.savedItems = cloudSaved;
+                                localStorage.setItem('savedItems', JSON.stringify(state.savedItems));
+                            }
                         }
-                    } catch (e) { console.error("Cloud Error", e); }
+                        // History
+                        if (values['history_movies_v1']) {
+                            const cloudHistory = JSON.parse(values['history_movies_v1']);
+                            if (Array.isArray(cloudHistory)) {
+                                state.historyItems = cloudHistory;
+                                localStorage.setItem('historyItems', JSON.stringify(state.historyItems));
+                            }
+                        }
+                    } catch (e) { console.error("Cloud Parse Error", e); }
                 }
                 resolve();
             });
-        } else { resolve(); }
+        } else {
+            resolve();
+        }
     });
 }
 
+// --- SAVE DATA ---
 export function saveCloudData() {
+    // Save to LocalStorage
     localStorage.setItem('savedItems', JSON.stringify(state.savedItems));
-    const optimizedItems = state.savedItems.map(m => ({
+    localStorage.setItem('historyItems', JSON.stringify(state.historyItems));
+
+    // Optimize for Cloud (remove heavy descriptions)
+    const optimize = (list) => list.map(m => ({
         id: m.id, title: m.title, img: m.img, rating: m.rating, year: m.year, type: m.type
     }));
+
     const tg = window.Telegram?.WebApp;
     if (tg && tg.CloudStorage) {
-        tg.CloudStorage.setItem('saved_movies_v1', JSON.stringify(optimizedItems), (err) => { if (err) console.error("Save Error", err); });
+        tg.CloudStorage.setItem('saved_movies_v1', JSON.stringify(optimize(state.savedItems)));
+        tg.CloudStorage.setItem('history_movies_v1', JSON.stringify(optimize(state.historyItems)));
     }
 }
 
+// --- HELPERS ---
 export function isSaved(id) { return state.savedItems.some(m => m.id == id); }
 
+// 🔥 НОВА ФУНКЦІЯ: Додати в історію
+export function addToHistory(movie) {
+    if (!movie) return;
+
+    // Видаляємо, якщо вже є (щоб перемістити на початок)
+    state.historyItems = state.historyItems.filter(m => m.id !== movie.id);
+    
+    // Додаємо в початок
+    state.historyItems.unshift(movie);
+    
+    // Ліміт 20 штук
+    if (state.historyItems.length > 20) {
+        state.historyItems.pop();
+    }
+    
+    saveCloudData();
+}
 
 export function toggleSave(id, btn) {
     let movie = state.feedMovies.find(m => m.id == id);
     if (!movie && state.currentHeroMovie && state.currentHeroMovie.id == id) movie = state.currentHeroMovie;
     if (!movie) movie = state.savedItems.find(m => m.id == id);
+    if (!movie) movie = state.historyItems.find(m => m.id == id); // Шукаємо і в історії
 
     if (!movie) return;
 
@@ -66,11 +110,9 @@ function updateBtnState(btn, saved) {
     const span = btn.querySelector('span');
     const svg = btn.querySelector('svg');
     if(saved) {
-        // 🔥 t.saveBtnActive
         if(span) span.innerText = t.saveBtnActive; 
         if(svg) svg.setAttribute('fill', 'white');
     } else {
-        // 🔥 t.saveBtn
         if(span) span.innerText = t.saveBtn; 
         if(svg) svg.setAttribute('fill', 'none');
     }

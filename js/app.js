@@ -1,12 +1,11 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (SKELETONS + FIXES)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (HISTORY UPDATE)
 // ============================================================
 
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies } from './api.js';
-// 🔥 Додано removeSkeletons
-import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons } from './ui.js';
+import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
 import { t, initLanguage } from './i18n.js';
 
 // --- EXPORTS ---
@@ -103,10 +102,35 @@ async function switchMode(tab) {
         content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.syncing}</div>`;
         await loadCloudData();
 
+        content.innerHTML = ''; 
+
+        // 1. 🔥 Спочатку малюємо Історію (якщо є)
+        if (state.historyItems.length > 0) {
+            const historySection = renderHistorySection(state.historyItems);
+            content.appendChild(historySection);
+        }
+
+        // 2. 🔥 Потім малюємо Збережене
         if (state.savedItems.length === 0) {
-            content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
+            if (state.historyItems.length === 0) {
+                content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
+            } else {
+                const msg = document.createElement('div');
+                msg.innerHTML = `<div style="text-align:center; color:#555; padding:20px;">У "Моє" поки пусто</div>`;
+                msg.style.gridColumn = '1/-1';
+                content.appendChild(msg);
+            }
         } else {
-            renderGrid(state.savedItems, false);
+            if (state.historyItems.length > 0) {
+                const title = document.createElement('div');
+                title.className = 'similar-title';
+                title.style.gridColumn = '1/-1';
+                title.style.paddingLeft = '8px';
+                title.style.marginTop = '10px';
+                title.innerText = t.saved || 'Збережено'; 
+                content.appendChild(title);
+            }
+            renderGrid(state.savedItems, true);
         }
     }
 }
@@ -130,7 +154,6 @@ function setCategory(catId) {
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;
     
-    // 🔥 Якщо це дозавантаження (скрол), додаємо 3 скелети в кінець
     if (isAppend) {
         showSkeletons(3, true); 
     }
@@ -144,11 +167,10 @@ async function loadContent(page, isAppend = false) {
             setupHero(items[rand]);
         }
         
-        // 🔥 Прибираємо скелети перед рендером
         removeSkeletons();
         renderGrid(items, isAppend);
     } catch(e) {
-        removeSkeletons(); // На випадок помилки теж прибираємо
+        removeSkeletons(); 
     } finally {
         state.isLoading = false;
     }

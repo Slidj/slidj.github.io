@@ -2,8 +2,9 @@ export const state = {
     currentTab: 'home',
     feedMovies: [],      // Стрічка
     savedItems: [],      // Збережене
+    historyItems: [],    // 🔥 НОВЕ: Історія переглядів
     
-    activeMovie: null,   // 🔥 НОВЕ: Фільм, який зараз відкритий у вікні
+    activeMovie: null,   // Фільм, який зараз відкритий у вікні
     
     currentHeroMovie: null,
     currentPage: 1,

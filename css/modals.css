@@ -1,13 +1,11 @@
-/* --- MOVIE DETAILS PAGE --- */
+/* --- MOVIE DETAILS PAGE (Без змін) --- */
 .modal-fullscreen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #000; z-index: 5000; 
     display: none; overflow-y: scroll; -webkit-overflow-scrolling: touch;
     animation: slideUpFade 0.35s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
 }
-
 .nf-container { background-color: #000; min-height: 100%; padding-bottom: 100px; position: relative; }
-
 .close-round-btn {
     position: fixed; top: calc(20px + var(--safe-top)); right: 20px; width: 36px; height: 36px;
     border-radius: 50%; background: rgba(30,30,30,0.7); color: #fff;
@@ -15,13 +13,9 @@
     z-index: 5002; cursor: pointer; transition: transform 0.1s;
 }
 .close-round-btn:active { transform: scale(0.9); }
-
 .nf-hero { position: relative; height: 65vh; width: 100%; }
 .nf-backdrop { width: 100%; height: 100%; background-size: cover; background-position: top center; }
-.nf-gradient { 
-    position: absolute; bottom: 0; width: 100%; height: 100%; 
-    background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, #000 100%); 
-}
+.nf-gradient { position: absolute; bottom: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, #000 100%); }
 .nf-hero-content { position: absolute; bottom: 0; width: 100%; padding: 20px; box-sizing: border-box; text-align: center; }
 .nf-title-text { font-family: var(--font-title); font-size: 48px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; line-height: 0.95; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
 .nf-logo { width: 80%; max-width: 300px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
@@ -40,7 +34,7 @@
 .nf-trailer { margin: 0 20px 20px; border-radius: 8px; overflow: hidden; position: relative; padding-bottom: 56.25%; background: #111; }
 .nf-trailer iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
 
-/* --- SIMILAR MOVIES --- */
+/* --- SIMILAR MOVIES (Без змін) --- */
 .similar-section { padding: 0 20px; margin-bottom: 30px; }
 .similar-title { color: #fff; font-size: 16px; font-weight: 700; margin-bottom: 12px; font-family: var(--font-main); }
 .similar-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
@@ -50,47 +44,32 @@
 .similar-card:active img { opacity: 0.7; }
 .similar-rating { position: absolute; top: 2px; right: 2px; background: rgba(229, 9, 20, 0.9); color: #fff; font-size: 10px; font-weight: bold; padding: 1px 3px; border-radius: 2px; }
 
-/* --- PLAYER --- */
+/* =========================================
+   🔥 ВИПРАВЛЕННЯ ПЛЕЄРА (The Fix)
+   ========================================= */
+
 #player_modal {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; 
     background-color: #000; z-index: 99999;
-    display: none; align-items: center; justify-content: center;
+    /* Використовуємо flex для центрування відео */
+    display: none; 
+    flex-direction: column; align-items: center; justify-content: center;
     animation: slideUpFade 0.3s ease-out forwards;
     
-    /* Вертикально: відступ тільки зверху */
+    /* Вертикальний режим: відступ зверху під кнопку Телеграм */
     padding-top: var(--safe-top); 
-    box-sizing: border-box; 
+    box-sizing: border-box;
 }
 
-/* 🔥 НАЛАШТУВАННЯ ДЛЯ ГОРИЗОНТАЛЬНОГО РЕЖИМУ (LANDSCAPE) */
-@media (orientation: landscape) {
-    #player_modal {
-        /* 🔥 ЗВУЖЕННЯ ЗВЕРХУ І ЗНИЗУ (чорні смуги, щоб відео не було розтягнутим) */
-        padding-top: 25px !important; 
-        padding-bottom: 25px;
-
-        /* Безпечні зони з боків (щоб не лізло під камеру) */
-        padding-left: max(env(safe-area-inset-left), 40px);
-        padding-right: max(env(safe-area-inset-right), 40px);
-    }
-    
-    /* Кнопка закриття зліва */
-    .close-player-btn {
-        right: auto;
-        left: calc(20px + env(safe-area-inset-left));
-        top: 30px; /* Трохи нижче, бо ми додали відступ */
-        background: rgba(0,0,0,0.3);
-    }
-}
-
+/* Базовий стиль для iframe */
 #video_frame { 
     width: 100%; 
     height: 100%; 
     border: none; 
     background: #000; 
-    /* object-fit прибрали, він тут не працює, розмір регулюється padding-ом контейнера */
 }
 
+/* Кнопка закриття (базова) */
 .close-player-btn {
     position: absolute; top: calc(20px + var(--safe-top)); right: 20px; 
     color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
@@ -98,3 +77,32 @@
     transition: transform 0.1s;
 }
 .close-player-btn:active { transform: scale(0.9); }
+
+
+/* 🔥 ГОРИЗОНТАЛЬНИЙ РЕЖИМ (LANDSCAPE) - ГОЛОВНИЙ ФІКС */
+@media (orientation: landscape) {
+    #player_modal {
+        /* Прибираємо відступ зверху */
+        padding: 0 !important; 
+    }
+
+    #video_frame {
+        /* 🔥 Жорстко задаємо пропорцію 16:9 */
+        aspect-ratio: 16 / 9;
+        /* Займай всю доступну ширину та висоту... */
+        width: 100%;
+        height: 100%;
+        /* ...АЛЕ ніколи не вилазь за межі екрану! */
+        max-width: 100vw;
+        max-height: 100dvh;
+        /* Центруємо (якщо екран ширший за 16:9, будуть чорні смуги збоку) */
+        margin: auto;
+    }
+    
+    /* Кнопку закриття ставимо у зручне місце */
+    .close-player-btn {
+        top: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.5);
+    }
+}

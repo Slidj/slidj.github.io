@@ -1,4 +1,5 @@
 import { state } from './state.js';
+// 🔥 Імпортуємо переклади
 import { t } from './i18n.js';
 
 // --- LOAD DATA ---
@@ -67,7 +68,7 @@ export function saveCloudData() {
 // --- HELPERS ---
 export function isSaved(id) { return state.savedItems.some(m => m.id == id); }
 
-// 🔥 НОВА ФУНКЦІЯ: Додати в історію
+// Додати в історію (Ліміт 20)
 export function addToHistory(movie) {
     if (!movie) return;
 
@@ -77,7 +78,7 @@ export function addToHistory(movie) {
     // Додаємо в початок
     state.historyItems.unshift(movie);
     
-    // Ліміт 20 штук
+    // 🔥 ЛІМІТ ІСТОРІЇ: 20
     if (state.historyItems.length > 20) {
         state.historyItems.pop();
     }
@@ -89,16 +90,27 @@ export function toggleSave(id, btn) {
     let movie = state.feedMovies.find(m => m.id == id);
     if (!movie && state.currentHeroMovie && state.currentHeroMovie.id == id) movie = state.currentHeroMovie;
     if (!movie) movie = state.savedItems.find(m => m.id == id);
-    if (!movie) movie = state.historyItems.find(m => m.id == id); // Шукаємо і в історії
+    if (!movie) movie = state.historyItems.find(m => m.id == id); 
 
     if (!movie) return;
 
     const index = state.savedItems.findIndex(m => m.id == id);
+    
+    // ДОДАВАННЯ В ЗБЕРЕЖЕНЕ
     if (index === -1) {
         state.savedItems.push(movie);
+        
+        // 🔥 ЛІМІТ ЗБЕРЕЖЕНОГО: 30
+        // Якщо стало більше 30, видаляємо найстаріший (перший у списку)
+        if (state.savedItems.length > 30) {
+            state.savedItems.shift(); 
+        }
+
         if (btn) updateBtnState(btn, true);
         window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-    } else {
+    } 
+    // ВИДАЛЕННЯ ЗІ ЗБЕРЕЖЕНОГО
+    else {
         state.savedItems.splice(index, 1);
         if (btn) updateBtnState(btn, false);
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');

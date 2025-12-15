@@ -2,9 +2,7 @@
 // 🌍 LOCALIZATION (UKRAINIAN & ENGLISH)
 // ============================================================
 
-// Об'єкт, який ми будемо використовувати в інших файлах
 export const t = {
-    // Дефолтні значення (заглушка)
     searchPlaceholder: "Search...",
     tabHome: "Home",
     tabSearch: "Search",
@@ -18,18 +16,18 @@ export const t = {
     syncing: "Syncing...",
     watch: "WATCH",
     saved: "Saved",
-    saveBtn: "My List", // Кнопка "Моє" (неактивна)
-    saveBtnActive: "Saved", // Кнопка "Моє" (активна)
+    saveBtn: "My List", 
+    saveBtnActive: "Saved", 
     match: "Match",
     serialBadge: "SERIES",
     heroTrending: "🔥 Trending",
     descMissing: "No description available.",
     loading: "Loading...",
     unavailable: "UNAVAILABLE",
-    checking: "CHECKING..."
+    checking: "CHECKING...",
+    moreLikeThis: "More Like This" // 🔥 NEW
 };
 
-// Словники
 const dictionaries = {
     uk: {
         searchPlaceholder: "Пошук...",
@@ -53,7 +51,8 @@ const dictionaries = {
         descMissing: "Опис відсутній.",
         loading: "Завантаження...",
         unavailable: "НЕДОСТУПНО",
-        checking: "ПЕРЕВІРКА..."
+        checking: "ПЕРЕВІРКА...",
+        moreLikeThis: "Схоже" // 🔥 NEW
     },
     en: {
         searchPlaceholder: "Search...",
@@ -77,28 +76,19 @@ const dictionaries = {
         descMissing: "No description available.",
         loading: "Loading...",
         unavailable: "UNAVAILABLE",
-        checking: "CHECKING..."
+        checking: "CHECKING...",
+        moreLikeThis: "More Like This" // 🔥 NEW
     }
 };
 
-// Функція перемикання мови
 export function initLanguage() {
-    // Отримуємо мову з Telegram (наприклад 'uk', 'ru', 'en')
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-    
-    // Якщо українська (або російська/білоруська для сумісності) - вмикаємо UK
-    // Для всіх інших - EN
     const targetLang = (userLang === 'uk' || userLang === 'ru' || userLang === 'be') ? 'uk' : 'en';
-    
-    // Перезаписуємо значення в об'єкті t
     Object.assign(t, dictionaries[targetLang]);
-    
-    // Оновлюємо статичні тексти на сторінці (меню, фільтри)
     updateStaticInterface();
 }
 
 function updateStaticInterface() {
-    // Оновлюємо кнопки категорій (фільтри)
     const cats = document.querySelectorAll('.cat-btn');
     if(cats.length >= 4) {
         cats[0].innerText = t.catAll;
@@ -107,7 +97,6 @@ function updateStaticInterface() {
         cats[3].innerText = t.catCartoons;
     }
 
-    // Оновлюємо нижнє меню
     const navs = document.querySelectorAll('.nav-item span');
     if(navs.length >= 3) {
         navs[0].innerText = t.tabHome;
@@ -115,7 +104,6 @@ function updateStaticInterface() {
         navs[2].innerText = t.tabSaved;
     }
 
-    // Оновлюємо плейсхолдер пошуку
     const searchInput = document.getElementById('search_input');
     if(searchInput) searchInput.placeholder = t.searchPlaceholder;
 }

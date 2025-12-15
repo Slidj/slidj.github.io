@@ -210,6 +210,17 @@ export async function openMoviePage(movie) {
     };
 }
 
+// 🔥 ВІДНОВЛЕНА ФУНКЦІЯ (Саме через її відсутність була помилка)
+export function closeMoviePage() {
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    const modal = document.getElementById('movie_details_modal');
+    if (modal) modal.style.display = 'none';
+    document.getElementById('movie_details_content').innerHTML = '';
+    document.body.style.overflow = '';
+    state.activeMovie = null; 
+    if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
+}
+
 // --- PLAYER ---
 export async function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');

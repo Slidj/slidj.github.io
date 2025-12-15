@@ -20,45 +20,37 @@ export function removeSkeletons() {
     skeletons.forEach(el => el.remove());
 }
 
-// --- GRID RENDER ---
 export function renderGrid(items, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
-    
     if (!isAppend) container.innerHTML = '';
     
     items.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'movie-poster-card card-anim'; 
         div.style.animationDelay = `${index * 0.05}s`;
-        
         div.onclick = () => {
             window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
             openMoviePage(item);
         };
-        
         const badgeHtml = item.type === 'tv' ? `<div class="type-badge">${t.serialBadge}</div>` : '';
         div.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
         container.appendChild(div);
     });
 }
 
-// 🔥 ВИПРАВЛЕНО: Малює стрічку історії
 export function renderHistorySection(items) {
     const section = document.createElement('div');
     section.className = 'similar-section'; 
     section.style.marginTop = '10px';
     section.style.marginBottom = '30px';
-
-    // 🔥 ГОЛОВНИЙ ФІКС: Розтягуємо блок на всю ширину Grid-сітки
     section.style.gridColumn = '1 / -1'; 
     section.style.width = '100%';
-    section.style.minWidth = '0'; // Важливо для роботи скролу всередині Grid
+    section.style.minWidth = '0'; 
     
     const titleText = t.history || 'Watch History'; 
     
     let html = `<div class="similar-title" style="padding-left:10px;">${titleText}</div><div class="similar-row" style="padding-left:10px;">`;
-    
     items.forEach(m => {
         html += `
             <div class="similar-card" onclick="window.ui_openHistory('${m.id}')">
@@ -67,7 +59,6 @@ export function renderHistorySection(items) {
             </div>
         `;
     });
-    
     html += `</div>`;
     section.innerHTML = html;
 
@@ -78,12 +69,9 @@ export function renderHistorySection(items) {
             openMoviePage(movie);
         }
     };
-
     return section;
 }
 
-
-// --- HERO SECTION ---
 export function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
@@ -143,7 +131,6 @@ export async function openMoviePage(movie) {
     } catch (e) {}
 
     const similarMovies = await fetchSimilar(movie.id, apiType);
-
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
 
@@ -164,6 +151,7 @@ export async function openMoviePage(movie) {
         `;
     }
 
+    // 🔥 ОНОВЛЕНИЙ HTML ДЛЯ КНОПОК
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
@@ -180,15 +168,25 @@ export async function openMoviePage(movie) {
                     </div>
                 </div>
             </div>
+            
             <div class="nf-btn-row">
                 <button class="nf-btn nf-play" onclick="window.openPremiumPlayer('${movie.id}', this)">
                     <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg><span>${t.watch}</span>
                 </button>
-                <button class="nf-btn nf-secondary" onclick="window.ui_toggleSave('${movie.id}', this)">
-                    <svg viewBox="0 0 24 24" fill="${isSaved(movie.id) ? 'white' : 'none'}" stroke="white" stroke-width="2" width="24" height="24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                    <span>${isSaved(movie.id) ? t.saveBtnActive : t.saveBtn}</span>
-                </button>
+                
+                <div class="nf-actions-group">
+                    <button class="nf-btn nf-secondary" onclick="window.ui_toggleSave('${movie.id}', this)">
+                        <svg viewBox="0 0 24 24" fill="${isSaved(movie.id) ? 'white' : 'none'}" stroke="white" stroke-width="2" width="24" height="24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        <span>${isSaved(movie.id) ? t.saveBtnActive : t.saveBtn}</span>
+                    </button>
+                    
+                    <button class="nf-btn nf-secondary" onclick="window.ui_share('${movie.id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                        <span>${t.share}</span>
+                    </button>
+                </div>
             </div>
+
             <div class="nf-description">${details.desc || t.descMissing}</div>
             ${similarHtml}
             ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
@@ -201,16 +199,21 @@ export async function openMoviePage(movie) {
         const target = similarMovies.find(m => m.id == id);
         if (target) openMoviePage(target);
     };
-}
 
-export function closeMoviePage() {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-    const modal = document.getElementById('movie_details_modal');
-    if (modal) modal.style.display = 'none';
-    document.getElementById('movie_details_content').innerHTML = '';
-    document.body.style.overflow = '';
-    state.activeMovie = null; 
-    if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
+    // 🔥 ФУНКЦІЯ SHARE
+    window.ui_share = (id) => {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+        let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
+        if(!m) return;
+
+        // Тут можна вписати посилання на твого бота, якщо хочеш
+        const botLink = 'https://t.me/YOUR_BOT_NAME'; 
+        
+        const text = `🎬 Дивись "${m.title}" (${m.year}) у високій якості!\n\nРейтинг: ${m.rating} ⭐`;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
+        
+        window.Telegram?.WebApp?.openTelegramLink(shareUrl);
+    };
 }
 
 // --- PLAYER ---

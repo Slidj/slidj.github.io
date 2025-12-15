@@ -1,6 +1,5 @@
 import { state } from './state.js';
 import { isSaved, toggleSave } from './storage.js';
-// 🔥 Додано fetchSimilar
 import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
 import { PLAYER_TOKEN } from './config.js';
 import { t } from './i18n.js';
@@ -45,11 +44,19 @@ export function setupHero(movie) {
 
 // --- MOVIE PAGE ---
 export async function openMoviePage(movie) {
+    // 🔥 ФІКС: Запам'ятовуємо цей фільм як "Активний"
+    // Тепер не важливо, звідки він прийшов (з пошуку, схожих чи головної)
+    state.activeMovie = movie;
+
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
     if (!modal) return;
 
-    modal.scrollTop = 0; // Скрол нагору
+    modal.scrollTop = 0;
+    
+    // Скидаємо старий кеш ID, щоб не відкрився старий фільм
+    state.cachedKpId = null; 
+    
     fetchKpId(movie); 
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
@@ -65,8 +72,6 @@ export async function openMoviePage(movie) {
 
     let details = { ...movie };
     let logoUrl = null, trailerKey = null;
-
-    // Визначаємо тип для API
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
 
     try {
@@ -83,13 +88,11 @@ export async function openMoviePage(movie) {
         }
     } catch (e) {}
 
-    // 🔥 ЗАВАНТАЖУЄМО СХОЖІ ФІЛЬМИ
     const similarMovies = await fetchSimilar(movie.id, apiType);
 
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
 
-    // 🔥 ГЕНЕРУЄМО HTML ДЛЯ СХОЖИХ
     let similarHtml = '';
     if (similarMovies.length > 0) {
         const cards = similarMovies.map(m => `
@@ -133,13 +136,12 @@ export async function openMoviePage(movie) {
                 </button>
             </div>
             <div class="nf-description">${details.desc || t.descMissing}</div>
-            
-            ${similarHtml} ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
+            ${similarHtml}
+            ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
             <div style="height: 50px;"></div>
         </div>
     `;
 
-    // Глобальна функція для переходу по схожих фільмах
     window.ui_openSimilar = (id, type) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         const target = similarMovies.find(m => m.id == id);
@@ -154,6 +156,10 @@ export function closeMoviePage() {
     if (modal) modal.style.display = 'none';
     document.getElementById('movie_details_content').innerHTML = '';
     document.body.style.overflow = '';
+    
+    // Очищаємо активний фільм при виході
+    state.activeMovie = null; 
+    
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 }
 
@@ -168,7 +174,18 @@ export async function openPremiumPlayer(tmdbId, btn) {
 
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; btn.style.pointerEvents = 'none'; }
 
-    let movie = state.feedMovies.find(m => m.id == tmdbId) || state.savedItems.find(m => m.id == tmdbId) || state.currentHeroMovie;
+    // 🔥 ФІКС: Спочатку беремо activeMovie, бо це найнадійніше джерело
+    let movie = state.activeMovie 
+             || state.feedMovies.find(m => m.id == tmdbId) 
+             || state.savedItems.find(m => m.id == tmdbId) 
+             || state.currentHeroMovie;
+
+    if (!movie) {
+        // Якщо все погано, і фільм не знайдено (майже неможливо тепер)
+        if(btn && span) { btn.classList.add('error'); span.innerText = "ERROR"; }
+        return;
+    }
+
     let kpId = await fetchKpId(movie);
 
     if (kpId) {

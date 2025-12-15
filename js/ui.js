@@ -151,7 +151,6 @@ export async function openMoviePage(movie) {
         `;
     }
 
-    // HTML кнопок
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
@@ -200,18 +199,13 @@ export async function openMoviePage(movie) {
         if (target) openMoviePage(target);
     };
 
-    // 🔥 ФУНКЦІЯ SHARE (ВИПРАВЛЕНО ПОСИЛАННЯ)
     window.ui_share = (id) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
         if(!m) return;
-
-        // Виправлено: посилання має бути без @ для url-параметра
         const botLink = 'https://t.me/younews_app_bot'; 
-        
         const text = `🎬 Дивись "${m.title}" (${m.year}) у високій якості!\n\nРейтинг: ${m.rating} ⭐`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
-        
         window.Telegram?.WebApp?.openTelegramLink(shareUrl);
     };
 }

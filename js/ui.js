@@ -207,7 +207,7 @@ export async function openMoviePage(movie) {
         if(!m) return;
 
         // Тут можна вписати посилання на твого бота, якщо хочеш
-        const botLink = 'https://t.me/YOUR_BOT_NAME'; 
+        const botLink = 'https://t.me/@younews_app_bot'; 
         
         const text = `🎬 Дивись "${m.title}" (${m.year}) у високій якості!\n\nРейтинг: ${m.rating} ⭐`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;

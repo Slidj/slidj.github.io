@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (HISTORY UPDATE)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (GRID FIX)
 // ============================================================
 
 import { state } from './state.js';
@@ -104,13 +104,14 @@ async function switchMode(tab) {
 
         content.innerHTML = ''; 
 
-        // 1. 🔥 Спочатку малюємо Історію (якщо є)
+        // 1. Малюємо Історію
         if (state.historyItems.length > 0) {
             const historySection = renderHistorySection(state.historyItems);
+            // Ця секція вже має стиль grid-column: 1 / -1 в ui.js
             content.appendChild(historySection);
         }
 
-        // 2. 🔥 Потім малюємо Збережене
+        // 2. Малюємо Збережене
         if (state.savedItems.length === 0) {
             if (state.historyItems.length === 0) {
                 content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
@@ -121,10 +122,12 @@ async function switchMode(tab) {
                 content.appendChild(msg);
             }
         } else {
+            // Додаємо заголовок (якщо є історія)
             if (state.historyItems.length > 0) {
                 const title = document.createElement('div');
                 title.className = 'similar-title';
-                title.style.gridColumn = '1/-1';
+                // 🔥 ВАЖЛИВО: Заголовок теж має розтягуватись
+                title.style.gridColumn = '1/-1'; 
                 title.style.paddingLeft = '8px';
                 title.style.marginTop = '10px';
                 title.innerText = t.saved || 'Збережено'; 

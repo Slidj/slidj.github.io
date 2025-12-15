@@ -43,13 +43,18 @@ export function renderGrid(items, isAppend = false) {
     });
 }
 
-// 🔥 НОВА ФУНКЦІЯ: Малює стрічку історії (горизонтальну)
+// 🔥 ВИПРАВЛЕНО: Малює стрічку історії
 export function renderHistorySection(items) {
     const section = document.createElement('div');
     section.className = 'similar-section'; 
     section.style.marginTop = '10px';
     section.style.marginBottom = '30px';
 
+    // 🔥 ГОЛОВНИЙ ФІКС: Розтягуємо блок на всю ширину Grid-сітки
+    section.style.gridColumn = '1 / -1'; 
+    section.style.width = '100%';
+    section.style.minWidth = '0'; // Важливо для роботи скролу всередині Grid
+    
     const titleText = t.history || 'Watch History'; 
     
     let html = `<div class="similar-title" style="padding-left:10px;">${titleText}</div><div class="similar-row" style="padding-left:10px;">`;
@@ -97,8 +102,6 @@ export function setupHero(movie) {
 // --- MOVIE PAGE ---
 export async function openMoviePage(movie) {
     state.activeMovie = movie;
-    
-    // 🔥 ДОДАЄМО В ІСТОРІЮ ПРИ ВІДКРИТТІ
     addToHistory(movie);
 
     const modal = document.getElementById('movie_details_modal');

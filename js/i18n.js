@@ -27,7 +27,7 @@ export const t = {
     checking: "CHECKING...",
     moreLikeThis: "More Like This",
     history: "Watch History",
-    share: "Share" // 🔥 NEW
+    share: "Share"
 };
 
 const dictionaries = {
@@ -56,7 +56,7 @@ const dictionaries = {
         checking: "ПЕРЕВІРКА...",
         moreLikeThis: "Схоже",
         history: "Історія переглядів",
-        share: "Поділитись" // 🔥 NEW
+        share: "Поділитись"
     },
     en: {
         searchPlaceholder: "Search...",
@@ -83,7 +83,7 @@ const dictionaries = {
         checking: "CHECKING...",
         moreLikeThis: "More Like This",
         history: "Watch History",
-        share: "Share" // 🔥 NEW
+        share: "Share"
     }
 };
 

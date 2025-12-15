@@ -1,12 +1,12 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (I18N + VIBRO + SYNC)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (SKELETONS + FIXES)
 // ============================================================
 
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies } from './api.js';
-import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer } from './ui.js';
-// 🔥 Імпорт локалізації
+// 🔥 ДОДАНО: showSkeletons в імпорті
+import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons } from './ui.js';
 import { t, initLanguage } from './i18n.js';
 
 // --- EXPORTS ---
@@ -40,9 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch(e) {}
     }
 
-    // 🔥 Вмикаємо мову (Українська або Англійська)
     initLanguage();
-
     await loadCloudData();
     setupInfiniteScroll();
     switchMode('home');
@@ -85,14 +83,18 @@ async function switchMode(tab) {
         if (state.feedMovies.length > 0) {
             renderGrid(state.feedMovies, false);
         } else {
-            content.innerHTML = ''; state.currentPage = 1; loadContent(1);
+            // 🔥 ПОКАЗУЄМО СКЕЛЕТИ ПЕРЕД ЗАВАНТАЖЕННЯМ
+            content.innerHTML = ''; 
+            showSkeletons(12);
+            
+            state.currentPage = 1; 
+            loadContent(1);
         }
     } 
     else if (tab === 'search') {
         hero.style.display = 'none'; filters.style.display = 'none'; search.style.display = 'block';
         content.style.display = 'grid'; trigger.style.display = 'none';
         content.style.paddingTop = '0px';
-        // 🔥 t.searching
         content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
     } 
     else if (tab === 'saved') {
@@ -100,12 +102,10 @@ async function switchMode(tab) {
         content.style.display = 'grid'; trigger.style.display = 'none';
         content.style.paddingTop = 'calc(80px + var(--safe-top))';
         
-        // 🔥 t.syncing
         content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.syncing}</div>`;
         await loadCloudData();
 
         if (state.savedItems.length === 0) {
-            // 🔥 t.emptyList
             content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
         } else {
             renderGrid(state.savedItems, false);
@@ -124,12 +124,13 @@ function setCategory(catId) {
     state.currentGenre = catId;
     state.currentPage = 1;
     state.feedMovies = []; 
-    document.getElementById('content_container').innerHTML = ''; 
+    
+    // 🔥 ПОКАЗУЄМО СКЕЛЕТИ ПРИ ЗМІНІ ЖАНРУ
+    showSkeletons(12);
+    
     loadContent(1); 
 }
 
-// ... (Функції loadContent, setupInfiniteScroll, performSearchDelayed залишаються без змін, вони вже використовують t.heroTrending через ui.js)
-// Але давай я продублюю їх тут, щоб ти міг просто скопіювати весь файл
 // --- LOGIC ---
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;
@@ -168,6 +169,8 @@ function performSearchDelayed() {
     if (!query || query.length < 2) return;
 
     state.searchTimeout = setTimeout(async () => {
+        // 🔥 ПОКАЗУЄМО СКЕЛЕТИ ПРИ ПОШУКУ
+        showSkeletons(6); 
         const results = await searchMovies(query);
         renderGrid(results, false);
     }, 600);

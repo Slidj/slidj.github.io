@@ -26,7 +26,8 @@ export const t = {
     unavailable: "UNAVAILABLE",
     checking: "CHECKING...",
     moreLikeThis: "More Like This",
-    history: "Watch History" // 🔥 NEW
+    history: "Watch History",
+    share: "Share" // 🔥 NEW
 };
 
 const dictionaries = {
@@ -54,7 +55,8 @@ const dictionaries = {
         unavailable: "НЕДОСТУПНО",
         checking: "ПЕРЕВІРКА...",
         moreLikeThis: "Схоже",
-        history: "Історія переглядів" // 🔥 NEW
+        history: "Історія переглядів",
+        share: "Поділитись" // 🔥 NEW
     },
     en: {
         searchPlaceholder: "Search...",
@@ -80,7 +82,8 @@ const dictionaries = {
         unavailable: "UNAVAILABLE",
         checking: "CHECKING...",
         moreLikeThis: "More Like This",
-        history: "Watch History" // 🔥 NEW
+        history: "Watch History",
+        share: "Share" // 🔥 NEW
     }
 };
 

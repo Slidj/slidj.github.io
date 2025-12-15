@@ -72,18 +72,46 @@ export function renderHistorySection(items) {
     return section;
 }
 
-export function setupHero(movie) {
+// 🔥 ОНОВЛЕНА ФУНКЦІЯ HERO (З ЛОГОТИПОМ)
+export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
-    const title = document.getElementById('hero_title');
+    const title = document.getElementById('hero_title'); // Це H1 заголовок
     const meta = document.getElementById('hero_meta');
     
     if (hero && movie) {
         const bg = movie.backdrop || movie.img;
         hero.style.backgroundImage = `url('${bg}')`;
-        if(title) title.innerText = movie.title;
+        
+        // Спочатку ставимо текст (щоб не було пусто, поки вантажиться лого)
+        if(title) {
+            title.innerText = movie.title;
+            title.style.display = 'block'; 
+        }
+        
         if(meta) meta.innerText = `${t.heroTrending} • ${movie.year}`;
+        
         fetchKpId(movie); 
+
+        // 🔥 Спроба завантажити логотип
+        try {
+            const apiType = movie.type === 'tv' ? 'tv' : 'movie';
+            const data = await fetchMovieDetails(movie.id, apiType);
+            
+            if (data.images?.logos?.length > 0) {
+                // Шукаємо лого (бажано англійське або оригінальне, вони часто кращі для постерів)
+                const logo = data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
+                
+                if (logo && title) {
+                    const logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
+                    // Замінюємо текст на картинку
+                    title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 120px; width: auto; margin-bottom: 10px;">`;
+                }
+            }
+        } catch (e) {
+            // Якщо помилка - залишається просто текст, нічого страшного
+            console.log('Logo fetch failed', e);
+        }
     }
 }
 
@@ -210,7 +238,6 @@ export async function openMoviePage(movie) {
     };
 }
 
-// 🔥 ВІДНОВЛЕНА ФУНКЦІЯ (Саме через її відсутність була помилка)
 export function closeMoviePage() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     const modal = document.getElementById('movie_details_modal');

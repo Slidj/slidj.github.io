@@ -25,7 +25,8 @@ export const t = {
     loading: "Loading...",
     unavailable: "UNAVAILABLE",
     checking: "CHECKING...",
-    moreLikeThis: "More Like This" // 🔥 NEW
+    moreLikeThis: "More Like This",
+    history: "Watch History" // 🔥 NEW
 };
 
 const dictionaries = {
@@ -52,7 +53,8 @@ const dictionaries = {
         loading: "Завантаження...",
         unavailable: "НЕДОСТУПНО",
         checking: "ПЕРЕВІРКА...",
-        moreLikeThis: "Схоже" // 🔥 NEW
+        moreLikeThis: "Схоже",
+        history: "Історія переглядів" // 🔥 NEW
     },
     en: {
         searchPlaceholder: "Search...",
@@ -77,7 +79,8 @@ const dictionaries = {
         loading: "Loading...",
         unavailable: "UNAVAILABLE",
         checking: "CHECKING...",
-        moreLikeThis: "More Like This" // 🔥 NEW
+        moreLikeThis: "More Like This",
+        history: "Watch History" // 🔥 NEW
     }
 };
 

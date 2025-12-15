@@ -7,6 +7,7 @@
 @import 'layout.css';     /* Хедер, Навігація, Пошук */
 @import 'components.css'; /* Герой, Картки, Лоадер */
 @import 'modals.css';     /* Сторінка фільму, Плеєр */
+
 /* =========================================
    💀 SKELETON LOADING (SHIMMER EFFECT)
    ========================================= */
@@ -33,9 +34,10 @@
         rgba(255, 255, 255, 0.1) 60%,
         rgba(255, 255, 255, 0)
     );
-    animation: shimmer 1.5s infinite; /* Швидкість анімації */
+    /* 🔥 ВИПРАВЛЕНО: Унікальна назва анімації */
+    animation: skeleton-move 1.5s infinite; 
 }
 
-@keyframes shimmer {
+@keyframes skeleton-move {
     100% { transform: translateX(100%); }
 }

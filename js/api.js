@@ -30,11 +30,22 @@ export async function fetchMovieDetails(id, type) {
     return await res.json();
 }
 
+// 🔥 НОВА ФУНКЦІЯ: Схожі фільми
+export async function fetchSimilar(id, type) {
+    try {
+        const url = `https://api.themoviedb.org/3/${type}/${id}/similar?api_key=${API_KEY}&language=uk-UA&page=1`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return data.results ? data.results.map(mapTMDB) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
 // --- ALLOHA API (KP ID) ---
 export async function fetchKpId(movie) {
     state.cachedKpId = null;
     try {
-        // 1. Пошук по TMDB ID
         let res = await fetch(`https://api.alloha.tv/?token=${ALLOHA_TOKEN}&tmdb=${movie.id}`);
         let data = await res.json();
         if (data.data && data.data.id_kp) {
@@ -42,7 +53,6 @@ export async function fetchKpId(movie) {
             return data.data.id_kp;
         }
         
-        // 2. Пошук по назві (резерв)
         res = await fetch(`https://api.alloha.tv/?token=${ALLOHA_TOKEN}&name=${encodeURIComponent(movie.title)}`);
         data = await res.json();
         if (data.data && Array.isArray(data.data) && data.data.length > 0) {

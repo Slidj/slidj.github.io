@@ -5,8 +5,8 @@
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies } from './api.js';
-// 🔥 ДОДАНО: showSkeletons в імпорті
-import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons } from './ui.js';
+// 🔥 Додано removeSkeletons
+import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons } from './ui.js';
 import { t, initLanguage } from './i18n.js';
 
 // --- EXPORTS ---
@@ -83,10 +83,8 @@ async function switchMode(tab) {
         if (state.feedMovies.length > 0) {
             renderGrid(state.feedMovies, false);
         } else {
-            // 🔥 ПОКАЗУЄМО СКЕЛЕТИ ПЕРЕД ЗАВАНТАЖЕННЯМ
             content.innerHTML = ''; 
             showSkeletons(12);
-            
             state.currentPage = 1; 
             loadContent(1);
         }
@@ -124,18 +122,18 @@ function setCategory(catId) {
     state.currentGenre = catId;
     state.currentPage = 1;
     state.feedMovies = []; 
-    
-    // 🔥 ПОКАЗУЄМО СКЕЛЕТИ ПРИ ЗМІНІ ЖАНРУ
     showSkeletons(12);
-    
     loadContent(1); 
 }
 
 // --- LOGIC ---
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;
-    const loader = document.getElementById('scroll_loader');
-    if(loader) loader.style.display = 'block';
+    
+    // 🔥 Якщо це дозавантаження (скрол), додаємо 3 скелети в кінець
+    if (isAppend) {
+        showSkeletons(3, true); 
+    }
 
     try {
         const items = await fetchHomeContent(page);
@@ -145,10 +143,14 @@ async function loadContent(page, isAppend = false) {
             const rand = Math.floor(Math.random() * Math.min(5, items.length));
             setupHero(items[rand]);
         }
+        
+        // 🔥 Прибираємо скелети перед рендером
+        removeSkeletons();
         renderGrid(items, isAppend);
-    } catch(e) {} finally {
+    } catch(e) {
+        removeSkeletons(); // На випадок помилки теж прибираємо
+    } finally {
         state.isLoading = false;
-        if(loader) loader.style.display = 'none';
     }
 }
 
@@ -169,7 +171,6 @@ function performSearchDelayed() {
     if (!query || query.length < 2) return;
 
     state.searchTimeout = setTimeout(async () => {
-        // 🔥 ПОКАЗУЄМО СКЕЛЕТИ ПРИ ПОШУКУ
         showSkeletons(6); 
         const results = await searchMovies(query);
         renderGrid(results, false);

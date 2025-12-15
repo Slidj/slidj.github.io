@@ -1,27 +1,20 @@
 import { state } from './state.js';
-import { isSaved, toggleSave } from './storage.js';
+import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
 import { PLAYER_TOKEN } from './config.js';
 import { t } from './i18n.js';
 
-// 🔥 ОНОВЛЕНО: Малює скелети (вміє додавати в кінець)
 export function showSkeletons(count = 12, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
-    
-    // Якщо це НЕ додавання (перший вхід), чистимо все
     if (!isAppend) container.innerHTML = '';
-    
-    // Генеруємо пусті картки
     for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
-        // Додаємо клас temp-skeleton, щоб потім знайти і видалити саме їх
         div.className = 'movie-poster-card skeleton temp-skeleton'; 
         container.appendChild(div);
     }
 }
 
-// 🔥 НОВА ФУНКЦІЯ: Видаляє тільки скелети
 export function removeSkeletons() {
     const skeletons = document.querySelectorAll('.temp-skeleton');
     skeletons.forEach(el => el.remove());
@@ -50,6 +43,41 @@ export function renderGrid(items, isAppend = false) {
     });
 }
 
+// 🔥 НОВА ФУНКЦІЯ: Малює стрічку історії (горизонтальну)
+export function renderHistorySection(items) {
+    const section = document.createElement('div');
+    section.className = 'similar-section'; 
+    section.style.marginTop = '10px';
+    section.style.marginBottom = '30px';
+
+    const titleText = t.history || 'Watch History'; 
+    
+    let html = `<div class="similar-title" style="padding-left:10px;">${titleText}</div><div class="similar-row" style="padding-left:10px;">`;
+    
+    items.forEach(m => {
+        html += `
+            <div class="similar-card" onclick="window.ui_openHistory('${m.id}')">
+                <img src="${m.img}" loading="lazy">
+                <div class="similar-rating">${m.rating}</div>
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+    section.innerHTML = html;
+
+    window.ui_openHistory = (id) => {
+        const movie = state.historyItems.find(m => m.id == id);
+        if(movie) {
+            window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+            openMoviePage(movie);
+        }
+    };
+
+    return section;
+}
+
+
 // --- HERO SECTION ---
 export function setupHero(movie) {
     state.currentHeroMovie = movie;
@@ -69,6 +97,10 @@ export function setupHero(movie) {
 // --- MOVIE PAGE ---
 export async function openMoviePage(movie) {
     state.activeMovie = movie;
+    
+    // 🔥 ДОДАЄМО В ІСТОРІЮ ПРИ ВІДКРИТТІ
+    addToHistory(movie);
+
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
     if (!modal) return;
@@ -191,6 +223,7 @@ export async function openPremiumPlayer(tmdbId, btn) {
     let movie = state.activeMovie 
              || state.feedMovies.find(m => m.id == tmdbId) 
              || state.savedItems.find(m => m.id == tmdbId) 
+             || state.historyItems.find(m => m.id == tmdbId) 
              || state.currentHeroMovie;
 
     if (!movie) {

@@ -40,7 +40,7 @@
 .nf-trailer { margin: 0 20px 20px; border-radius: 8px; overflow: hidden; position: relative; padding-bottom: 56.25%; background: #111; }
 .nf-trailer iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
 
-/* --- SIMILAR MOVIES (HORIZONTAL SCROLL) --- */
+/* --- SIMILAR MOVIES --- */
 .similar-section { padding: 0 20px; margin-bottom: 30px; }
 .similar-title { color: #fff; font-size: 16px; font-weight: 700; margin-bottom: 12px; font-family: var(--font-main); }
 .similar-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
@@ -50,44 +50,45 @@
 .similar-card:active img { opacity: 0.7; }
 .similar-rating { position: absolute; top: 2px; right: 2px; background: rgba(229, 9, 20, 0.9); color: #fff; font-size: 10px; font-weight: bold; padding: 1px 3px; border-radius: 2px; }
 
-/* --- PLAYER (FIXED LAYOUT & ROTATION) --- */
+/* --- PLAYER --- */
 #player_modal {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; 
     background-color: #000; z-index: 99999;
     display: none; align-items: center; justify-content: center;
     animation: slideUpFade 0.3s ease-out forwards;
     
-    /* Вертикально: відступ зверху під системну кнопку */
+    /* Вертикально: відступ тільки зверху */
     padding-top: var(--safe-top); 
     box-sizing: border-box; 
 }
 
-/* 🔥 Горизонтальний режим */
+/* 🔥 НАЛАШТУВАННЯ ДЛЯ ГОРИЗОНТАЛЬНОГО РЕЖИМУ (LANDSCAPE) */
 @media (orientation: landscape) {
     #player_modal {
-        padding-top: 0 !important;
-        /* 🔥 Додаємо безпечні зони з боків, щоб кнопки не лізли під "чубчик" */
-        padding-left: max(env(safe-area-inset-left), 20px);
-        padding-right: max(env(safe-area-inset-right), 20px);
-        padding-bottom: env(safe-area-inset-bottom);
+        /* 🔥 ЗВУЖЕННЯ ЗВЕРХУ І ЗНИЗУ (чорні смуги, щоб відео не було розтягнутим) */
+        padding-top: 25px !important; 
+        padding-bottom: 25px;
+
+        /* Безпечні зони з боків (щоб не лізло під камеру) */
+        padding-left: max(env(safe-area-inset-left), 40px);
+        padding-right: max(env(safe-area-inset-right), 40px);
     }
     
-    /* Переносимо нашу кнопку закриття вліво, щоб не заважала налаштуванням плеєра (які справа) */
+    /* Кнопка закриття зліва */
     .close-player-btn {
-        right: auto; /* Скасовуємо право */
+        right: auto;
         left: calc(20px + env(safe-area-inset-left));
-        top: 20px;
+        top: 30px; /* Трохи нижче, бо ми додали відступ */
         background: rgba(0,0,0,0.3);
     }
 }
 
-/* 🔥 contain замість cover - щоб відео не обрізалось */
 #video_frame { 
     width: 100%; 
     height: 100%; 
     border: none; 
     background: #000; 
-    object-fit: contain; 
+    /* object-fit прибрали, він тут не працює, розмір регулюється padding-ом контейнера */
 }
 
 .close-player-btn {

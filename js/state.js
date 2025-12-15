@@ -1,7 +1,10 @@
 export const state = {
     currentTab: 'home',
-    feedMovies: [],      // Всі завантажені фільми
-    savedItems: [],      // Вибране
+    feedMovies: [],      // Стрічка
+    savedItems: [],      // Збережене
+    
+    activeMovie: null,   // 🔥 НОВЕ: Фільм, який зараз відкритий у вікні
+    
     currentHeroMovie: null,
     currentPage: 1,
     isLoading: false,

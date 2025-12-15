@@ -4,10 +4,28 @@ import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
 import { PLAYER_TOKEN } from './config.js';
 import { t } from './i18n.js';
 
+// 🔥 НОВА ФУНКЦІЯ: Малює скелети
+export function showSkeletons(count = 12) {
+    const container = document.getElementById('content_container');
+    if (!container) return;
+    
+    // Очищаємо контейнер від старих фільмів
+    container.innerHTML = '';
+    
+    // Генеруємо пусті картки
+    for (let i = 0; i < count; i++) {
+        const div = document.createElement('div');
+        div.className = 'movie-poster-card skeleton'; // Клас skeleton з CSS
+        container.appendChild(div);
+    }
+}
+
 // --- GRID RENDER ---
 export function renderGrid(items, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
+    
+    // Якщо це не дозавантаження (скрол), очищаємо скелети перед показом фільмів
     if (!isAppend) container.innerHTML = '';
     
     items.forEach((item, index) => {
@@ -44,17 +62,12 @@ export function setupHero(movie) {
 
 // --- MOVIE PAGE ---
 export async function openMoviePage(movie) {
-    // 🔥 ФІКС: Запам'ятовуємо цей фільм як "Активний"
-    // Тепер не важливо, звідки він прийшов (з пошуку, схожих чи головної)
     state.activeMovie = movie;
-
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
     if (!modal) return;
 
     modal.scrollTop = 0;
-    
-    // Скидаємо старий кеш ID, щоб не відкрився старий фільм
     state.cachedKpId = null; 
     
     fetchKpId(movie); 
@@ -151,22 +164,17 @@ export async function openMoviePage(movie) {
 
 export function closeMoviePage() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-
     const modal = document.getElementById('movie_details_modal');
     if (modal) modal.style.display = 'none';
     document.getElementById('movie_details_content').innerHTML = '';
     document.body.style.overflow = '';
-    
-    // Очищаємо активний фільм при виході
     state.activeMovie = null; 
-    
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 }
 
 // --- PLAYER ---
 export async function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
-
     const span = btn?.querySelector('span');
     const originalText = span ? span.innerText : t.watch;
 
@@ -174,14 +182,12 @@ export async function openPremiumPlayer(tmdbId, btn) {
 
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; btn.style.pointerEvents = 'none'; }
 
-    // 🔥 ФІКС: Спочатку беремо activeMovie, бо це найнадійніше джерело
     let movie = state.activeMovie 
              || state.feedMovies.find(m => m.id == tmdbId) 
              || state.savedItems.find(m => m.id == tmdbId) 
              || state.currentHeroMovie;
 
     if (!movie) {
-        // Якщо все погано, і фільм не знайдено (майже неможливо тепер)
         if(btn && span) { btn.classList.add('error'); span.innerText = "ERROR"; }
         return;
     }
@@ -200,7 +206,6 @@ function launchPlayer(kpId) {
     const url = `https://api.rstprgapipt.com/balancer-api/iframe?kp=${kpId}&token=${PLAYER_TOKEN}&disabled_share=1`;
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
-    
     document.getElementById('movie_details_modal').style.display = 'none';
     iframe.src = url;
     modal.style.display = 'flex';
@@ -208,7 +213,6 @@ function launchPlayer(kpId) {
 
 export function closePlayer() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     modal.style.display = 'none';

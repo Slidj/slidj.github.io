@@ -1,8 +1,8 @@
 import { state } from './state.js';
 import { isSaved, toggleSave } from './storage.js';
-import { fetchMovieDetails, fetchKpId } from './api.js';
+// 🔥 Додано fetchSimilar
+import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
 import { PLAYER_TOKEN } from './config.js';
-// 🔥 Імпортуємо переклади
 import { t } from './i18n.js';
 
 // --- GRID RENDER ---
@@ -21,7 +21,6 @@ export function renderGrid(items, isAppend = false) {
             openMoviePage(item);
         };
         
-        // 🔥 ВИКОРИСТОВУЄМО t.serialBadge
         const badgeHtml = item.type === 'tv' ? `<div class="type-badge">${t.serialBadge}</div>` : '';
         div.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
         container.appendChild(div);
@@ -39,7 +38,6 @@ export function setupHero(movie) {
         const bg = movie.backdrop || movie.img;
         hero.style.backgroundImage = `url('${bg}')`;
         if(title) title.innerText = movie.title;
-        // 🔥 ВИКОРИСТОВУЄМО t.heroTrending
         if(meta) meta.innerText = `${t.heroTrending} • ${movie.year}`;
         fetchKpId(movie); 
     }
@@ -51,10 +49,10 @@ export async function openMoviePage(movie) {
     const content = document.getElementById('movie_details_content');
     if (!modal) return;
 
+    modal.scrollTop = 0; // Скрол нагору
     fetchKpId(movie); 
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
-    // 🔥 t.loading
     content.innerHTML = `<div style="height:100vh; display:flex; justify-content:center; align-items:center; color:#555;">${t.loading}</div>`;
 
     if (window.Telegram?.WebApp?.BackButton) {
@@ -68,8 +66,11 @@ export async function openMoviePage(movie) {
     let details = { ...movie };
     let logoUrl = null, trailerKey = null;
 
+    // Визначаємо тип для API
+    const apiType = movie.type === 'tv' ? 'tv' : 'movie';
+
     try {
-        const data = await fetchMovieDetails(movie.id, movie.type === 'tv' ? 'tv' : 'movie');
+        const data = await fetchMovieDetails(movie.id, apiType);
         details.desc = data.overview || movie.desc;
         if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
         if (data.images?.logos?.length > 0) {
@@ -82,10 +83,30 @@ export async function openMoviePage(movie) {
         }
     } catch (e) {}
 
+    // 🔥 ЗАВАНТАЖУЄМО СХОЖІ ФІЛЬМИ
+    const similarMovies = await fetchSimilar(movie.id, apiType);
+
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
 
-    // 🔥 ТУТ БАГАТО ЗМІН НА t....
+    // 🔥 ГЕНЕРУЄМО HTML ДЛЯ СХОЖИХ
+    let similarHtml = '';
+    if (similarMovies.length > 0) {
+        const cards = similarMovies.map(m => `
+            <div class="similar-card" onclick="window.ui_openSimilar('${m.id}', '${m.type}')">
+                <img src="${m.img}" loading="lazy">
+                <div class="similar-rating">${m.rating}</div>
+            </div>
+        `).join('');
+        
+        similarHtml = `
+            <div class="similar-section">
+                <div class="similar-title">${t.moreLikeThis}</div>
+                <div class="similar-row">${cards}</div>
+            </div>
+        `;
+    }
+
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
@@ -112,10 +133,18 @@ export async function openMoviePage(movie) {
                 </button>
             </div>
             <div class="nf-description">${details.desc || t.descMissing}</div>
-            ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
+            
+            ${similarHtml} ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
             <div style="height: 50px;"></div>
         </div>
     `;
+
+    // Глобальна функція для переходу по схожих фільмах
+    window.ui_openSimilar = (id, type) => {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+        const target = similarMovies.find(m => m.id == id);
+        if (target) openMoviePage(target);
+    };
 }
 
 export function closeMoviePage() {
@@ -133,12 +162,10 @@ export async function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
 
     const span = btn?.querySelector('span');
-    // 🔥 t.watch
     const originalText = span ? span.innerText : t.watch;
 
     if (state.cachedKpId) { launchPlayer(state.cachedKpId); return; }
 
-    // 🔥 t.checking
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; btn.style.pointerEvents = 'none'; }
 
     let movie = state.feedMovies.find(m => m.id == tmdbId) || state.savedItems.find(m => m.id == tmdbId) || state.currentHeroMovie;
@@ -148,7 +175,6 @@ export async function openPremiumPlayer(tmdbId, btn) {
         if(btn) { btn.style.opacity = 1; if(span) span.innerText = originalText; btn.style.pointerEvents = 'auto'; }
         launchPlayer(kpId);
     } else {
-        // 🔥 t.unavailable
         if(btn && span) { btn.classList.add('error'); span.innerText = t.unavailable; }
     }
 }

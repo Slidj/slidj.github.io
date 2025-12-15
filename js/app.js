@@ -1,10 +1,10 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (GRID FIX)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (DEEP LINK SUPPORT)
 // ============================================================
 
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
-import { fetchHomeContent, searchMovies } from './api.js';
+import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js'; // 🔥 Додали fetchMovieDetails
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
 import { t, initLanguage } from './i18n.js';
 
@@ -44,11 +44,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupInfiniteScroll();
     switchMode('home');
     
+    // 🔥 ПЕРЕВІРКА ГЛИБОКОГО ПОСИЛАННЯ
+    checkDeepLink();
+
     setTimeout(() => {
         const pre = document.getElementById('preloader');
         if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
     }, 500);
 });
+
+// 🔥 ФУНКЦІЯ ОБРОБКИ ПОСИЛАННЯ (movie_123)
+async function checkDeepLink() {
+    const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    if (!startParam) return;
+
+    // Параметр має бути формату "type_id", наприклад "movie_550"
+    const parts = startParam.split('_');
+    if (parts.length !== 2) return;
+
+    const type = parts[0];
+    const id = parts[1];
+
+    // Показуємо лоадер на весь екран, поки вантажимо конкретний фільм
+    const pre = document.getElementById('preloader');
+    if(pre) { pre.style.opacity = '1'; pre.style.display = 'flex'; }
+
+    try {
+        // Отримуємо дані фільму
+        const data = await fetchMovieDetails(id, type);
+        
+        // Формуємо об'єкт для відкриття
+        const movieObj = {
+            id: data.id,
+            title: data.title || data.name,
+            img: `https://image.tmdb.org/t/p/w500${data.poster_path}`,
+            backdrop: `https://image.tmdb.org/t/p/w1280${data.backdrop_path}`,
+            rating: data.vote_average ? data.vote_average.toFixed(1) : 'N/A',
+            year: (data.release_date || data.first_air_date || '').split('-')[0],
+            type: type,
+            desc: data.overview
+        };
+
+        // Відкриваємо сторінку
+        openMoviePage(movieObj);
+
+    } catch (e) {
+        console.error("Deep link error:", e);
+    } finally {
+        // Ховаємо лоадер
+        if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
+    }
+}
 
 // --- NAVIGATION ---
 async function switchMode(tab) {
@@ -107,7 +153,6 @@ async function switchMode(tab) {
         // 1. Малюємо Історію
         if (state.historyItems.length > 0) {
             const historySection = renderHistorySection(state.historyItems);
-            // Ця секція вже має стиль grid-column: 1 / -1 в ui.js
             content.appendChild(historySection);
         }
 
@@ -122,11 +167,9 @@ async function switchMode(tab) {
                 content.appendChild(msg);
             }
         } else {
-            // Додаємо заголовок (якщо є історія)
             if (state.historyItems.length > 0) {
                 const title = document.createElement('div');
                 title.className = 'similar-title';
-                // 🔥 ВАЖЛИВО: Заголовок теж має розтягуватись
                 title.style.gridColumn = '1/-1'; 
                 title.style.paddingLeft = '8px';
                 title.style.marginTop = '10px';

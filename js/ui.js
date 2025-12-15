@@ -4,20 +4,27 @@ import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
 import { PLAYER_TOKEN } from './config.js';
 import { t } from './i18n.js';
 
-// 🔥 НОВА ФУНКЦІЯ: Малює скелети
-export function showSkeletons(count = 12) {
+// 🔥 ОНОВЛЕНО: Малює скелети (вміє додавати в кінець)
+export function showSkeletons(count = 12, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
     
-    // Очищаємо контейнер від старих фільмів
-    container.innerHTML = '';
+    // Якщо це НЕ додавання (перший вхід), чистимо все
+    if (!isAppend) container.innerHTML = '';
     
     // Генеруємо пусті картки
     for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
-        div.className = 'movie-poster-card skeleton'; // Клас skeleton з CSS
+        // Додаємо клас temp-skeleton, щоб потім знайти і видалити саме їх
+        div.className = 'movie-poster-card skeleton temp-skeleton'; 
         container.appendChild(div);
     }
+}
+
+// 🔥 НОВА ФУНКЦІЯ: Видаляє тільки скелети
+export function removeSkeletons() {
+    const skeletons = document.querySelectorAll('.temp-skeleton');
+    skeletons.forEach(el => el.remove());
 }
 
 // --- GRID RENDER ---
@@ -25,7 +32,6 @@ export function renderGrid(items, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
     
-    // Якщо це не дозавантаження (скрол), очищаємо скелети перед показом фільмів
     if (!isAppend) container.innerHTML = '';
     
     items.forEach((item, index) => {

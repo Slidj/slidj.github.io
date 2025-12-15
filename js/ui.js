@@ -72,18 +72,17 @@ export function renderHistorySection(items) {
     return section;
 }
 
-// 🔥 ОНОВЛЕНА ФУНКЦІЯ HERO (З ЛОГОТИПОМ)
+// Функція Setup Hero з підтримкою ЛОГОТИПУ
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
-    const title = document.getElementById('hero_title'); // Це H1 заголовок
+    const title = document.getElementById('hero_title');
     const meta = document.getElementById('hero_meta');
     
     if (hero && movie) {
         const bg = movie.backdrop || movie.img;
         hero.style.backgroundImage = `url('${bg}')`;
         
-        // Спочатку ставимо текст (щоб не було пусто, поки вантажиться лого)
         if(title) {
             title.innerText = movie.title;
             title.style.display = 'block'; 
@@ -93,25 +92,18 @@ export async function setupHero(movie) {
         
         fetchKpId(movie); 
 
-        // 🔥 Спроба завантажити логотип
         try {
             const apiType = movie.type === 'tv' ? 'tv' : 'movie';
             const data = await fetchMovieDetails(movie.id, apiType);
             
             if (data.images?.logos?.length > 0) {
-                // Шукаємо лого (бажано англійське або оригінальне, вони часто кращі для постерів)
                 const logo = data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
-                
                 if (logo && title) {
                     const logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
-                    // Замінюємо текст на картинку
                     title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 120px; width: auto; margin-bottom: 10px;">`;
                 }
             }
-        } catch (e) {
-            // Якщо помилка - залишається просто текст, нічого страшного
-            console.log('Logo fetch failed', e);
-        }
+        } catch (e) { console.log('Logo fetch failed', e); }
     }
 }
 
@@ -227,13 +219,22 @@ export async function openMoviePage(movie) {
         if (target) openMoviePage(target);
     };
 
+    // 🔥 ОНОВЛЕНА SHARE (ГЕНЕРУЄ ГЛИБОКЕ ПОСИЛАННЯ)
     window.ui_share = (id) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
         if(!m) return;
-        const botLink = 'https://t.me/younews_app_bot'; 
-        const text = `🎬 Дивись "${m.title}" (${m.year}) у високій якості!\n\nРейтинг: ${m.rating} ⭐`;
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
+        
+        // Формуємо параметр: type_id (наприклад: movie_550)
+        const startParam = `${m.type}_${m.id}`;
+        
+        // Посилання на твій WebApp (заміни 'start' на назву свого застосунку в BotFather, якщо вона інша)
+        // Якщо не впевнений, 'start' часто працює за замовчуванням
+        const appLink = `https://t.me/younews_app_bot/start?startapp=${startParam}`;
+        
+        const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(appLink)}&text=${encodeURIComponent(text)}`;
+        
         window.Telegram?.WebApp?.openTelegramLink(shareUrl);
     };
 }

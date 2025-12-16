@@ -1,10 +1,10 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (DEEP LINK SUPPORT)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (LAZY SEARCH LOAD)
 // ============================================================
 
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
-import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js'; // 🔥 Додали fetchMovieDetails
+import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
 import { t, initLanguage } from './i18n.js';
 
@@ -41,10 +41,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initLanguage();
     await loadCloudData();
-    setupInfiniteScroll();
+    setupInfiniteScroll(); // Запускаємо спостерігача за скролом
     switchMode('home');
     
-    // 🔥 ПЕРЕВІРКА ГЛИБОКОГО ПОСИЛАННЯ
     checkDeepLink();
 
     setTimeout(() => {
@@ -53,27 +52,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 500);
 });
 
-// 🔥 ФУНКЦІЯ ОБРОБКИ ПОСИЛАННЯ (movie_123)
 async function checkDeepLink() {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
     if (!startParam) return;
 
-    // Параметр має бути формату "type_id", наприклад "movie_550"
     const parts = startParam.split('_');
     if (parts.length !== 2) return;
 
     const type = parts[0];
     const id = parts[1];
 
-    // Показуємо лоадер на весь екран, поки вантажимо конкретний фільм
     const pre = document.getElementById('preloader');
     if(pre) { pre.style.opacity = '1'; pre.style.display = 'flex'; }
 
     try {
-        // Отримуємо дані фільму
         const data = await fetchMovieDetails(id, type);
         
-        // Формуємо об'єкт для відкриття
         const movieObj = {
             id: data.id,
             title: data.title || data.name,
@@ -85,13 +79,11 @@ async function checkDeepLink() {
             desc: data.overview
         };
 
-        // Відкриваємо сторінку
         openMoviePage(movieObj);
 
     } catch (e) {
         console.error("Deep link error:", e);
     } finally {
-        // Ховаємо лоадер
         if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
     }
 }
@@ -136,9 +128,20 @@ async function switchMode(tab) {
     } 
     else if (tab === 'search') {
         hero.style.display = 'none'; filters.style.display = 'none'; search.style.display = 'block';
-        content.style.display = 'grid'; trigger.style.display = 'none';
+        content.style.display = 'grid'; 
+        // 🔥 ВАЖЛИВО: Trigger тепер має бути увімкнений і в пошуку, щоб працювала підгрузка!
+        trigger.style.display = 'flex'; 
         content.style.paddingTop = '0px';
-        content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
+        
+        // Якщо є старі результати - показуємо, якщо ні - текст
+        if (state.searchResults.length > 0) {
+            // Перемальовуємо те, що вже "відкрито"
+            const limit = (state.searchPage) * 12; // скільки вже показали
+            const initialBatch = state.searchResults.slice(0, Math.max(limit, 12));
+            renderGrid(initialBatch, false);
+        } else {
+            content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
+        }
     } 
     else if (tab === 'saved') {
         hero.style.display = 'none'; filters.style.display = 'none'; search.style.display = 'none';
@@ -150,13 +153,11 @@ async function switchMode(tab) {
 
         content.innerHTML = ''; 
 
-        // 1. Малюємо Історію
         if (state.historyItems.length > 0) {
             const historySection = renderHistorySection(state.historyItems);
             content.appendChild(historySection);
         }
 
-        // 2. Малюємо Збережене
         if (state.savedItems.length === 0) {
             if (state.historyItems.length === 0) {
                 content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
@@ -196,7 +197,7 @@ function setCategory(catId) {
     loadContent(1); 
 }
 
-// --- LOGIC ---
+// --- HOME LOGIC ---
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;
     
@@ -222,16 +223,7 @@ async function loadContent(page, isAppend = false) {
     }
 }
 
-function setupInfiniteScroll() {
-    const trigger = document.getElementById('infinite_trigger');
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && state.currentTab === 'home' && !state.isLoading) {
-            state.currentPage++;
-            loadContent(state.currentPage, true);
-        }
-    }, { threshold: 0.1 });
-    if(trigger) observer.observe(trigger);
-}
+// --- 🔥 SEARCH LOGIC (LAZY LOADING) ---
 
 function performSearchDelayed() {
     clearTimeout(state.searchTimeout);
@@ -240,7 +232,66 @@ function performSearchDelayed() {
 
     state.searchTimeout = setTimeout(async () => {
         showSkeletons(6); 
+        
+        // 1. Отримуємо ВСІ результати (але не показуємо їх одразу)
         const results = await searchMovies(query);
-        renderGrid(results, false);
+        
+        // 2. Зберігаємо в state
+        state.searchResults = results;
+        state.searchPage = 0; // Скидаємо лічильник сторінок
+        
+        removeSkeletons(); // Прибираємо скелетони
+        
+        // 3. Очищаємо контейнер перед першим показом
+        const container = document.getElementById('content_container');
+        if (container) container.innerHTML = '';
+
+        if (results.length === 0) {
+            container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`;
+        } else {
+            // 4. Завантажуємо першу порцію (12 шт)
+            loadNextSearchBatch();
+        }
+
     }, 600);
+}
+
+// Функція, яка бере наступну порцію з пам'яті і малює її
+function loadNextSearchBatch() {
+    const BATCH_SIZE = 12; // Скільки підгружати за раз
+    
+    const start = state.searchPage * BATCH_SIZE;
+    const end = start + BATCH_SIZE;
+    
+    // Беремо шматочок масиву
+    const chunk = state.searchResults.slice(start, end);
+    
+    if (chunk.length > 0) {
+        renderGrid(chunk, true); // Додаємо до існуючих (isAppend = true)
+        state.searchPage++;      // Готуємось до наступної сторінки
+    }
+}
+
+// --- 🔥 INFINITE SCROLL (ОНОВЛЕНО) ---
+function setupInfiniteScroll() {
+    const trigger = document.getElementById('infinite_trigger');
+    
+    const observer = new IntersectionObserver((entries) => {
+        // Якщо доскролили до низу і зараз нічого не вантажиться
+        if (entries[0].isIntersecting && !state.isLoading) {
+            
+            // СЦЕНАРІЙ 1: Головна сторінка (вантажимо з інтернету)
+            if (state.currentTab === 'home') {
+                state.currentPage++;
+                loadContent(state.currentPage, true);
+            }
+            
+            // СЦЕНАРІЙ 2: Пошук (беремо з пам'яті наступну порцію)
+            else if (state.currentTab === 'search') {
+                loadNextSearchBatch();
+            }
+        }
+    }, { threshold: 0.1 });
+    
+    if(trigger) observer.observe(trigger);
 }

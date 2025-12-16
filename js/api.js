@@ -1,11 +1,12 @@
 import { API_KEY, BASE_URL, ALLOHA_TOKEN } from './config.js';
 
-// --- БАЗОВІ ЗАПИТИ ДО TMDB ---
+// --- БАЗОВІ ЗАПИТИ TMDB ---
 async function fetchTMDB(endpoint, params = {}) {
-    const url = new URL(`${BASE_URL}${endpoint}`);
+    // Перевірка на випадок, якщо BASE_URL не підтягнувся
+    const base = BASE_URL || 'https://api.themoviedb.org/3';
+    const url = new URL(`${base}${endpoint}`);
     url.searchParams.append('api_key', API_KEY);
     
-    // Мова інтерфейсу (для тексту і картинок)
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
     const lang = (userLang === 'ru') ? 'ru-RU' : 'uk-UA';
     url.searchParams.append('language', lang);
@@ -27,12 +28,11 @@ export async function fetchHomeContent(page = 1) {
     return (data?.results || []).map(formatMovie);
 }
 
-// Пошук фільмів (для інтерфейсу)
 export async function searchMovies(query) {
     const data = await fetchTMDB('/search/multi', { query, include_adult: false });
     const firstResult = data?.results?.[0];
 
-    // Якщо це актор — тягнемо його фільми
+    // Якщо це актор
     if (firstResult && firstResult.media_type === 'person') {
         try {
             const credits = await fetchTMDB(`/person/${firstResult.id}/combined_credits`);
@@ -40,46 +40,34 @@ export async function searchMovies(query) {
                 const allWorks = credits.cast.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
                 return deduplicate(allWorks.map(formatMovie));
             }
-        } catch (e) {
-            console.error("Full credits fetch failed", e);
-        }
+        } catch (e) {}
     }
 
     let results = [];
     (data?.results || []).forEach(item => {
         if (item.media_type === 'person') {
-            if (item.known_for && Array.isArray(item.known_for)) {
-                results.push(...item.known_for);
-            }
+            if (item.known_for) results.push(...item.known_for);
         } else {
             results.push(item);
         }
     });
-
     return deduplicate(results.map(formatMovie));
 }
 
 function deduplicate(items) {
-    const unique = [];
-    const seenIds = new Set();
-    items.forEach(m => {
-        if (!seenIds.has(m.id)) {
-            seenIds.add(m.id);
-            unique.push(m);
-        }
+    const seen = new Set();
+    return items.filter(m => {
+        if (seen.has(m.id)) return false;
+        seen.add(m.id);
+        return true;
     });
-    return unique;
 }
 
-// Отримання деталей фільму
 export async function fetchMovieDetails(id, type) {
-    const params = {
-        // 🔥 ВАЖЛИВО: Ми просимо 'external_ids', щоб отримати IMDb ID
-        append_to_response: 'videos,images,credits,external_ids', 
+    const data = await fetchTMDB(`/${type}/${id}`, { 
+        append_to_response: 'videos,images,credits,external_ids',
         include_image_language: 'uk,en,null'
-    };
-    
-    const data = await fetchTMDB(`/${type}/${id}`, params);
+    });
     return data || {};
 }
 
@@ -88,72 +76,75 @@ export async function fetchSimilar(id, type) {
     return (data?.results || []).map(formatMovie);
 }
 
-// 🔥 ГОЛОВНА ФУНКЦІЯ: ПОШУК ID ДЛЯ ПЛЕЄРА
+// 🔥 ПОТУЖНИЙ ПОШУК ID (ВИКОРИСТОВУЄМО ДЗЕРКАЛА)
 export async function fetchKpId(movie) {
-    // Якщо ми вже знайшли ID раніше — віддаємо його одразу
     if (movie.kpId) return movie.kpId;
 
-    // Функція запиту до бази плеєра
+    // Функція пошуку, яка перебирає дзеркала, якщо основне не працює
     const searchPlayer = async (params) => {
-        try {
-            // Формуємо URL з твоїм токеном
-            let url = `https://api.rstprgapipt.com/balancer-api/search?token=${ALLOHA_TOKEN}`;
-            Object.keys(params).forEach(k => url += `&${k}=${encodeURIComponent(params[k])}`);
-            
-            const res = await fetch(url);
-            const json = await res.json();
-            
-            // Якщо знайшли — повертаємо ID (kp_id або kinopoisk_id)
-            if (json.data && json.data.length > 0) {
-                return json.data[0].kp_id || json.data[0].kinopoisk_id;
+        // Список доменів (основний і запасні)
+        const mirrors = [
+            'https://api.rstprgapipt.com',  // Основний
+            'https://api.apbugall.org',     // Дзеркало 1
+            'https://api.alloha.tv'         // Офіційний
+        ];
+
+        for (const domain of mirrors) {
+            try {
+                let url = `${domain}/balancer-api/search?token=${ALLOHA_TOKEN}`;
+                Object.keys(params).forEach(k => url += `&${k}=${encodeURIComponent(params[k])}`);
+                
+                // Ставимо тайм-аут 3 секунди, щоб не чекати вічно
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                const json = await res.json();
+                
+                if (json.data && json.data.length > 0) {
+                    return json.data[0].kp_id || json.data[0].kinopoisk_id;
+                }
+            } catch (e) {
+                // Якщо дзеркало не працює — пробуємо наступне
+                console.warn(`Mirror failed: ${domain}`, e);
             }
-        } catch (e) {
-            console.error("Player search error:", e);
         }
         return null;
     };
 
-    let foundId = null;
-
-    // 1️⃣ СПРОБА: Шукаємо за IMDb ID (Найнадійніше!)
+    // 1. Отримуємо IMDb ID
     let imdbId = movie.imdb_id;
-    // Якщо в об'єкті немає ID, спробуємо його доввантажити
     if (!imdbId) {
-        try {
-            const ext = await fetchTMDB(`/${movie.type === 'tv' ? 'tv' : 'movie'}/${movie.id}/external_ids`);
-            if (ext?.imdb_id) imdbId = ext.imdb_id;
-        } catch(e){}
+        const type = movie.type === 'tv' ? 'tv' : 'movie'; // Захист типу
+        const ext = await fetchTMDB(`/${type}/${movie.id}/external_ids`);
+        if (ext?.imdb_id) imdbId = ext.imdb_id;
     }
 
+    // 2. Стратегія пошуку
     if (imdbId) {
-        // Шукаємо в базі плеєра за паспортом (IMDb)
-        foundId = await searchPlayer({ imdb: imdbId });
-        if (foundId) return foundId;
+        const id = await searchPlayer({ imdb: imdbId });
+        if (id) return id;
     }
 
-    // 2️⃣ СПРОБА: Якщо IMDb не спрацював, шукаємо за назвою (Українська)
-    foundId = await searchPlayer({ title: movie.title, year: movie.year });
-    if (foundId) return foundId;
+    let id = await searchPlayer({ title: movie.title, year: movie.year });
+    if (id) return id;
 
-    // 3️⃣ СПРОБА: Шукаємо за Оригінальною назвою (Англійська)
-    if (movie.original_title && movie.original_title !== movie.title) {
-        foundId = await searchPlayer({ title: movie.original_title, year: movie.year });
-        if (foundId) return foundId;
+    if (movie.original_title) {
+        id = await searchPlayer({ title: movie.original_title, year: movie.year });
+        if (id) return id;
     }
 
-    // 4️⃣ СПРОБА: Шукаємо тільки за назвою (без року, іноді він відрізняється)
-    foundId = await searchPlayer({ title: movie.title });
-    
-    return foundId;
+    return await searchPlayer({ title: movie.title });
 }
 
-// Форматування даних (тепер зберігаємо більше інфи)
 function formatMovie(item) {
     return {
         id: item.id,
         title: item.title || item.name,
-        original_title: item.original_title || item.original_name, // Потрібно для пошуку
-        imdb_id: item.external_ids?.imdb_id || null,             // Потрібно для пошуку
+        original_title: item.original_title || item.original_name,
+        imdb_id: item.external_ids?.imdb_id || null, 
         img: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'img/no-poster.png',
         backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : null,
         rating: item.vote_average ? item.vote_average.toFixed(1) : 'N/A',

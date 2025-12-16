@@ -5,13 +5,12 @@ async function fetchTMDB(endpoint, params = {}) {
     const url = new URL(`${BASE_URL}${endpoint}`);
     url.searchParams.append('api_key', API_KEY);
     
-    // Визначаємо мову користувача
+    // Визначаємо мову
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
     const lang = (userLang === 'ru') ? 'ru-RU' : 'uk-UA';
     
     url.searchParams.append('language', lang);
     
-    // Додаємо інші параметри
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
     
     try {
@@ -29,43 +28,64 @@ export async function fetchHomeContent(page = 1) {
     return (data?.results || []).map(formatMovie);
 }
 
-// 🔥 ОНОВЛЕНИЙ ПОШУК (Тепер розуміє акторів)
+// 🔥 ОНОВЛЕНО: ТЕПЕР ВАНТАЖИТЬ ВСІ ФІЛЬМИ АКТОРА
 export async function searchMovies(query) {
+    // 1. Робимо звичайний пошук
     const data = await fetchTMDB('/search/multi', { query, include_adult: false });
-    
+    const firstResult = data?.results?.[0];
+
+    // 2. 🔥 ПЕРЕВІРКА: Якщо перший результат — це ЛЮДИНА (актор)
+    if (firstResult && firstResult.media_type === 'person') {
+        try {
+            // Робимо ОКРЕМИЙ запит за повною фільмографією
+            const credits = await fetchTMDB(`/person/${firstResult.id}/combined_credits`);
+            
+            if (credits && credits.cast) {
+                // Сортуємо: спочатку найпопулярніші, потім новіші
+                const allWorks = credits.cast.sort((a, b) => {
+                    return (b.popularity || 0) - (a.popularity || 0);
+                });
+                
+                // Повертаємо відформатований список
+                return deduplicate(allWorks.map(formatMovie));
+            }
+        } catch (e) {
+            console.error("Full credits fetch failed", e);
+        }
+    }
+
+    // 3. Якщо це не актор, а просто назва фільму — працюємо як раніше
     let results = [];
-    
-    // Перебираємо результати пошуку
     (data?.results || []).forEach(item => {
         if (item.media_type === 'person') {
-            // ✅ ЯКЩО ЗНАЙШЛИ АКТОРА — беремо його відомі фільми
             if (item.known_for && Array.isArray(item.known_for)) {
                 results.push(...item.known_for);
             }
         } else {
-            // Якщо це просто фільм — додаємо у список
             results.push(item);
         }
     });
 
-    // Видаляємо дублікати (бо один фільм може повторюватись)
-    const uniqueMovies = [];
+    return deduplicate(results.map(formatMovie));
+}
+
+// Допоміжна функція для видалення дублікатів (бо актор може бути і режисером одного фільму)
+function deduplicate(items) {
+    const unique = [];
     const seenIds = new Set();
-    
-    results.forEach(m => {
+    items.forEach(m => {
         if (!seenIds.has(m.id)) {
             seenIds.add(m.id);
-            uniqueMovies.push(m);
+            unique.push(m);
         }
     });
-
-    return uniqueMovies.map(formatMovie);
+    return unique;
 }
 
 export async function fetchMovieDetails(id, type) {
     const params = {
         append_to_response: 'videos,images,credits',
-        include_image_language: 'uk,en,null' // Дозволяємо англ. картинки
+        include_image_language: 'uk,en,null'
     };
     
     const data = await fetchTMDB(`/${type}/${id}`, params);

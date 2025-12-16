@@ -72,7 +72,6 @@ export function renderHistorySection(items) {
     return section;
 }
 
-// 🔥 ОНОВЛЕНО: ТЕПЕР КАРТИНКА ЧІТКА І НЕ ЗУМИТЬСЯ
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
@@ -80,16 +79,13 @@ export async function setupHero(movie) {
     const meta = document.getElementById('hero_meta');
     
     if (hero && movie) {
-        // 🔥 ЗМІНА 1: Беремо POSTER (img), а не BACKDROP. Він вертикальний і не зумиться.
         let bg = movie.img || movie.backdrop;
-
-        // 🔥 ЗМІНА 2: Підвищуємо якість до MAX (w1280), щоб не було "мила"
         if (bg.includes('image.tmdb.org')) {
             bg = bg.replace('/w500/', '/w1280/').replace('/w780/', '/w1280/');
         }
 
         hero.style.backgroundImage = `url('${bg}')`;
-        hero.style.backgroundPosition = 'center top'; // Фокус на верхню частину (обличчя)
+        hero.style.backgroundPosition = 'center top'; 
         hero.style.backgroundSize = 'cover';
 
         if(title) {
@@ -101,7 +97,6 @@ export async function setupHero(movie) {
         
         fetchKpId(movie); 
 
-        // Завантаження логотипу (якщо є)
         try {
             const apiType = movie.type === 'tv' ? 'tv' : 'movie';
             const data = await fetchMovieDetails(movie.id, apiType);
@@ -143,13 +138,35 @@ export async function openMoviePage(movie) {
     }
 
     let details = { ...movie };
-    let logoUrl = null, trailerKey = null;
+    let logoUrl = null, trailerKey = null, castHtml = '';
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
 
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
         details.desc = data.overview || movie.desc;
         if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
+        
+        // 🎭 ОБРОБКА АКТОРІВ
+        if (data.credits?.cast?.length > 0) {
+            const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); // Тільки з фото
+            if(topCast.length > 0) {
+                const castCards = topCast.map(p => `
+                    <div class="cast-card" onclick="window.ui_searchActor('${p.name.replace(/'/g, "\\'")}')">
+                        <img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img" loading="lazy">
+                        <div class="cast-name">${p.name}</div>
+                        <div class="cast-role">${p.character || ''}</div>
+                    </div>
+                `).join('');
+                
+                castHtml = `
+                    <div class="cast-section">
+                        <div class="cast-title">Актори</div>
+                        <div class="cast-row">${castCards}</div>
+                    </div>
+                `;
+            }
+        }
+
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
@@ -217,7 +234,8 @@ export async function openMoviePage(movie) {
             </div>
 
             <div class="nf-description">${details.desc || t.descMissing}</div>
-            ${similarHtml}
+            
+            ${castHtml} ${similarHtml}
             ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
             <div style="height: 50px;"></div>
         </div>
@@ -233,16 +251,25 @@ export async function openMoviePage(movie) {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
         if(!m) return;
-        
         const startParam = `${m.type}_${m.id}`;
-        
-        // Посилання на бот
         const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
-        
         const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
-        
         window.Telegram?.WebApp?.openTelegramLink(shareUrl);
+    };
+
+    // 🔥 ПОШУК ПО АКТОРУ
+    window.ui_searchActor = (name) => {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+        closeMoviePage(); // Закриваємо модалку
+        switchMode('search'); // Перемикаємось на вкладку пошуку
+        
+        const input = document.getElementById('search_input');
+        if(input) {
+            input.value = name;
+            // Запускаємо пошук (викликаємо глобальну функцію з app.js)
+            if(window.performSearchDelayed) window.performSearchDelayed();
+        }
     };
 }
 

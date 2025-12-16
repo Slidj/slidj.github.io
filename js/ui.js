@@ -1,10 +1,9 @@
 import { state } from './state.js';
 import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
-import { PLAYER_TOKEN, ALLOHA_TOKEN } from './config.js'; // 🔥 Перевірка токенів
+import { PLAYER_TOKEN } from './config.js';
 import { t } from './i18n.js';
 
-// ... (скелетони і рендер залишаємо як були) ...
 export function showSkeletons(count = 12, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
@@ -40,7 +39,6 @@ export function renderGrid(items, isAppend = false) {
 }
 
 export function renderHistorySection(items) {
-    // ... код історії без змін ...
     const section = document.createElement('div');
     section.className = 'similar-section'; 
     section.style.marginTop = '10px'; section.style.marginBottom = '30px'; section.style.gridColumn = '1 / -1'; section.style.width = '100%'; section.style.minWidth = '0'; 
@@ -56,7 +54,6 @@ export function renderHistorySection(items) {
 }
 
 export async function setupHero(movie) {
-    // ... (код Hero без змін) ...
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
     const title = document.getElementById('hero_title');
@@ -74,17 +71,17 @@ export async function setupHero(movie) {
             const apiType = movie.type === 'tv' ? 'tv' : 'movie';
             const data = await fetchMovieDetails(movie.id, apiType);
             if (data.images?.logos?.length > 0) {
-                const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
+                const logos = data.images.logos;
+                const logo = logos.find(l => l.iso_639_1 === 'uk') || logos.find(l => l.iso_639_1 === 'en') || logos[0];
                 if (logo && title) {
                     const logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
-                    title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 120px; width: auto; margin-bottom: 10px;">`;
+                    title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 120px; width: auto; margin-bottom: 10px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));">`;
                 }
             }
         } catch (e) { console.log('Logo fetch failed', e); }
     }
 }
 
-// --- MOVIE PAGE ---
 export async function openMoviePage(movie) {
     state.activeMovie = movie;
     addToHistory(movie);
@@ -94,10 +91,9 @@ export async function openMoviePage(movie) {
     modal.scrollTop = 0;
     state.cachedKpId = null; 
     
-    // 🔥 ДІАГНОСТИКА: Перевіряємо чи є у фільму original_title
-    if (!movie.original_title) console.warn("Увага: у об'єкта movie немає original_title!");
-
+    // Запускаємо пошук плеєра у фоні
     fetchKpId(movie); 
+
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
     content.innerHTML = `<div style="height:100vh; display:flex; justify-content:center; align-items:center; color:#555;">${t.loading}</div>`;
@@ -116,10 +112,18 @@ export async function openMoviePage(movie) {
 
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
+        
+        // 🔥 ВАЖЛИВО: Оновлюємо дані в state, щоб плеєр точно знайшов ID
+        if (data.external_ids?.imdb_id) {
+            state.activeMovie.imdb_id = data.external_ids.imdb_id;
+        }
+        if (data.original_title) {
+            state.activeMovie.original_title = data.original_title;
+        }
+
         details.desc = data.overview || movie.desc;
         if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
         
-        // Актори
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
@@ -133,9 +137,9 @@ export async function openMoviePage(movie) {
                 castHtml = `<div class="cast-section"><div class="cast-title">Актори</div><div class="cast-row">${castCards}</div></div>`;
             }
         }
-
         if (data.images?.logos?.length > 0) {
-            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
+            const logos = data.images.logos;
+            const logo = logos.find(l => l.iso_639_1 === 'uk') || logos.find(l => l.iso_639_1 === 'en') || logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
         if (data.videos?.results) {
@@ -180,49 +184,33 @@ export async function openMoviePage(movie) {
                 <button class="nf-btn nf-play" onclick="window.openPremiumPlayer('${movie.id}', this)">
                     <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg><span>${t.watch}</span>
                 </button>
+                
                 <div class="nf-actions-group">
                     <button class="nf-btn nf-secondary" onclick="window.ui_toggleSave('${movie.id}', this)">
                         <svg viewBox="0 0 24 24" fill="${isSaved(movie.id) ? 'white' : 'none'}" stroke="white" stroke-width="2" width="24" height="24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                         <span>${isSaved(movie.id) ? t.saveBtnActive : t.saveBtn}</span>
                     </button>
+                    
                     <button class="nf-btn nf-secondary" onclick="window.ui_share('${movie.id}')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                         <span>${t.share}</span>
                     </button>
                 </div>
             </div>
+
             <div class="nf-description">${details.desc || t.descMissing}</div>
+            
             ${castHtml}
+            
             ${similarHtml}
             ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
             <div style="height: 50px;"></div>
         </div>
     `;
 
-    window.ui_openSimilar = (id, type) => {
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-        const target = similarMovies.find(m => m.id == id);
-        if (target) openMoviePage(target);
-    };
-
-    window.ui_share = (id) => {
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-        let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
-        if(!m) return;
-        const startParam = `${m.type}_${m.id}`;
-        const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
-        const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
-        window.Telegram?.WebApp?.openTelegramLink(shareUrl);
-    };
-
-    window.ui_searchActor = (name) => {
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-        closeMoviePage();
-        switchMode('search');
-        const input = document.getElementById('search_input');
-        if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); }
-    };
+    window.ui_openSimilar = (id, type) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); const target = similarMovies.find(m => m.id == id); if (target) openMoviePage(target); };
+    window.ui_share = (id) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); if(!m) return; const startParam = `${m.type}_${m.id}`; const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`; const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; window.Telegram?.WebApp?.openTelegramLink(shareUrl); };
+    window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
 }
 
 export function closeMoviePage() {
@@ -235,41 +223,28 @@ export function closeMoviePage() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 }
 
-// 🔥🔥🔥 ФУНКЦІЯ-ШПИГУН (Діагностика) 🔥🔥🔥
 export async function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
     const originalText = span ? span.innerText : t.watch;
 
-    // 1. Перевірка Токена
-    if (!ALLOHA_TOKEN) {
-        alert("🚨 ПОМИЛКА: Не знайдено ALLOHA_TOKEN у config.js!");
-        return;
-    }
-
     if (state.cachedKpId) { launchPlayer(state.cachedKpId); return; }
+
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; btn.style.pointerEvents = 'none'; }
 
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.savedItems.find(m => m.id == tmdbId) || state.historyItems.find(m => m.id == tmdbId) || state.currentHeroMovie;
 
     if (!movie) {
-        alert("🚨 ПОМИЛКА: Фільм не знайдено в state!");
         if(btn && span) { btn.classList.add('error'); span.innerText = "ERROR"; }
         return;
     }
 
-    // 2. Початок пошуку
-    // alert(`🔍 Шукаю: ${movie.title}\nРік: ${movie.year}\nOriginal: ${movie.original_title || 'Н/Д'}`);
-
     let kpId = await fetchKpId(movie);
 
-    // 3. Результат
     if (kpId) {
-        // alert(`✅ ЗНАЙДЕНО! ID: ${kpId}`);
         if(btn) { btn.style.opacity = 1; if(span) span.innerText = originalText; btn.style.pointerEvents = 'auto'; }
         launchPlayer(kpId);
     } else {
-        alert(`❌ НЕ ЗНАЙДЕНО в базі плеєра.\nМи шукали:\n1. IMDb ID: ${movie.imdb_id || 'немає'}\n2. ${movie.title}\n3. ${movie.original_title || 'немає'}`);
         if(btn && span) { btn.classList.add('error'); span.innerText = t.unavailable; }
     }
 }

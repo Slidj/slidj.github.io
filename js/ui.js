@@ -72,7 +72,7 @@ export function renderHistorySection(items) {
     return section;
 }
 
-// 🔥 ОНОВЛЕНО: Виправлено якість та зум картинки
+// 🔥 ОНОВЛЕНО: ТЕПЕР КАРТИНКА ЧІТКА І НЕ ЗУМИТЬСЯ
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
@@ -80,17 +80,16 @@ export async function setupHero(movie) {
     const meta = document.getElementById('hero_meta');
     
     if (hero && movie) {
-        let bg = movie.backdrop || movie.img;
+        // 🔥 ЗМІНА 1: Беремо POSTER (img), а не BACKDROP. Він вертикальний і не зумиться.
+        let bg = movie.img || movie.backdrop;
 
-        // 🔥 ФІКС ЯКОСТІ: Якщо посилання з TMDB, міняємо w500 на w1280 (HD)
+        // 🔥 ЗМІНА 2: Підвищуємо якість до MAX (w1280), щоб не було "мила"
         if (bg.includes('image.tmdb.org')) {
             bg = bg.replace('/w500/', '/w1280/').replace('/w780/', '/w1280/');
         }
 
         hero.style.backgroundImage = `url('${bg}')`;
-        
-        // 🔥 ФІКС ЗУМУ: Центруємо по верхньому краю, щоб не різало голови
-        hero.style.backgroundPosition = 'center top'; 
+        hero.style.backgroundPosition = 'center top'; // Фокус на верхню частину (обличчя)
         hero.style.backgroundSize = 'cover';
 
         if(title) {
@@ -102,6 +101,7 @@ export async function setupHero(movie) {
         
         fetchKpId(movie); 
 
+        // Завантаження логотипу (якщо є)
         try {
             const apiType = movie.type === 'tv' ? 'tv' : 'movie';
             const data = await fetchMovieDetails(movie.id, apiType);
@@ -236,7 +236,7 @@ export async function openMoviePage(movie) {
         
         const startParam = `${m.type}_${m.id}`;
         
-        // ПОСИЛАННЯ (залиш як було, ти вже налаштував)
+        // Посилання на бот
         const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
         
         const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;

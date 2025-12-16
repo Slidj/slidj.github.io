@@ -72,7 +72,7 @@ export function renderHistorySection(items) {
     return section;
 }
 
-// Функція Setup Hero з підтримкою ЛОГОТИПУ
+// 🔥 ОНОВЛЕНО: Виправлено якість та зум картинки
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
@@ -80,9 +80,19 @@ export async function setupHero(movie) {
     const meta = document.getElementById('hero_meta');
     
     if (hero && movie) {
-        const bg = movie.backdrop || movie.img;
+        let bg = movie.backdrop || movie.img;
+
+        // 🔥 ФІКС ЯКОСТІ: Якщо посилання з TMDB, міняємо w500 на w1280 (HD)
+        if (bg.includes('image.tmdb.org')) {
+            bg = bg.replace('/w500/', '/w1280/').replace('/w780/', '/w1280/');
+        }
+
         hero.style.backgroundImage = `url('${bg}')`;
         
+        // 🔥 ФІКС ЗУМУ: Центруємо по верхньому краю, щоб не різало голови
+        hero.style.backgroundPosition = 'center top'; 
+        hero.style.backgroundSize = 'cover';
+
         if(title) {
             title.innerText = movie.title;
             title.style.display = 'block'; 
@@ -219,7 +229,6 @@ export async function openMoviePage(movie) {
         if (target) openMoviePage(target);
     };
 
-    // 🔥 ОНОВЛЕНА SHARE (Тепер використовує /app)
     window.ui_share = (id) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
@@ -227,7 +236,7 @@ export async function openMoviePage(movie) {
         
         const startParam = `${m.type}_${m.id}`;
         
-        // 🚀 ВИКОРИСТОВУЄМО ВАШЕ НОВЕ ПОСИЛАННЯ:
+        // ПОСИЛАННЯ (залиш як було, ти вже налаштував)
         const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
         
         const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;

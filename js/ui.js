@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
-import { PLAYER_BASE_URL } from './config.js'; // 🔥 Новий плеєр
+import { PLAYER_BASE_URL } from './config.js'; // 🔥 VideoCDN
 import { t } from './i18n.js';
 
 export function showSkeletons(count = 12, isAppend = false) {
@@ -70,7 +70,6 @@ export async function setupHero(movie) {
         try {
             const apiType = movie.type === 'tv' ? 'tv' : 'movie';
             const data = await fetchMovieDetails(movie.id, apiType);
-            // Зберігаємо IMDb ID для головного фільму
             if(data.external_ids?.imdb_id) movie.imdb_id = data.external_ids.imdb_id;
             
             if (data.images?.logos?.length > 0) {
@@ -111,10 +110,13 @@ export async function openMoviePage(movie) {
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
         
-        // 🔥 ВАЖЛИВО: Отримуємо та зберігаємо IMDb ID для плеєра
+        // Зберігаємо важливі дані для Smart Player
         if (data.external_ids?.imdb_id) {
             state.activeMovie.imdb_id = data.external_ids.imdb_id;
-            details.imdb_id = data.external_ids.imdb_id; // Також зберігаємо локально
+            details.imdb_id = data.external_ids.imdb_id;
+        }
+        if (data.original_title) {
+            state.activeMovie.original_title = data.original_title;
         }
 
         details.desc = data.overview || movie.desc;
@@ -207,17 +209,7 @@ export async function openMoviePage(movie) {
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
 }
 
-export function closeMoviePage() {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-    const modal = document.getElementById('movie_details_modal');
-    if (modal) modal.style.display = 'none';
-    document.getElementById('movie_details_content').innerHTML = '';
-    document.body.style.overflow = '';
-    state.activeMovie = null; 
-    if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
-}
-
-// 🔥🔥 НОВА ЛОГІКА ЗАПУСКУ ПЛЕЄРА 🔥🔥
+// 🔥🔥 НОВА "РОЗУМНА" ЛОГІКА ЗАПУСКУ 🔥🔥
 export function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
@@ -226,29 +218,38 @@ export function openPremiumPlayer(tmdbId, btn) {
 
     if (!movie) return;
 
-    // 1. Перевіряємо, чи є IMDb ID (ми його завантажили при відкритті сторінки)
-    if (movie.imdb_id) {
-        // Ура! Є паспорт. Відкриваємо пряме посилання VideoCDN
-        launchDirectPlayer(movie.imdb_id);
-    } else {
-        // Якщо раптом немає ID (наприклад, рідкісний фільм), пробуємо знайти його зараз
-        if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
-        
-        // Робимо швидкий запит до TMDB за ID
-        // (Оскільки api.js ми не міняли, використаємо fetch через fetchMovieDetails або direct call, але простіше просто сказати "Недоступно" якщо немає, 
-        // або спробувати знайти).
-        // Але в 99% випадків imdb_id вже є в `state.activeMovie` після `openMoviePage`.
-        
-        if (span) span.innerText = t.unavailable;
-        if (btn) btn.classList.add('error');
+    if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
+
+    // Ми запускаємо плеєр ОДРАЗУ, передаючи всі параметри
+    // Плеєр сам вирішить, як шукати: за IMDb, за назвою чи за Kinopoisk ID
+    launchSmartPlayer(movie);
+    
+    if(btn) { 
+        setTimeout(() => {
+            btn.style.opacity = 1; 
+            if(span) span.innerText = t.watch; 
+        }, 1000);
     }
 }
 
-function launchDirectPlayer(imdbId) {
-    // 🔥 Формуємо посилання: БАЗА + /imdb/ + ID
-    const url = `${PLAYER_BASE_URL}/imdb/${imdbId}?translation=2`; 
-    // translation=2 зазвичай означає дубляж або популярну озвучку
+function launchSmartPlayer(movie) {
+    // 1. Формуємо URL з параметрами (Smart Embed)
+    let url = `${PLAYER_BASE_URL}?`;
     
+    // Додаємо IMDb ID, якщо є
+    if (movie.imdb_id) url += `imdb_id=${movie.imdb_id}&`;
+    
+    // Додаємо Kinopoisk ID, якщо раптом він у нас є (з кешу)
+    if (movie.kpId) url += `kinopoisk_id=${movie.kpId}&`;
+    
+    // Додаємо Назву (ОБОВ'ЯЗКОВО для підстраховки)
+    // Використовуємо оригінальну назву, якщо вона є, бо бази часто англомовні
+    let searchTitle = movie.original_title || movie.title;
+    url += `title=${encodeURIComponent(searchTitle)}&`;
+    
+    // Додаємо переклад (2 = популярний дубляж)
+    url += `translation=2`;
+
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     document.getElementById('movie_details_modal').style.display = 'none';

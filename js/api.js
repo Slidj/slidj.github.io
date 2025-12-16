@@ -5,7 +5,7 @@ async function fetchTMDB(endpoint, params = {}) {
     const url = new URL(`${BASE_URL}${endpoint}`);
     url.searchParams.append('api_key', API_KEY);
     
-    // Визначаємо мову користувача (за замовчуванням uk-UA)
+    // Визначаємо мову користувача
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
     const lang = (userLang === 'ru') ? 'ru-RU' : 'uk-UA';
     
@@ -29,17 +29,43 @@ export async function fetchHomeContent(page = 1) {
     return (data?.results || []).map(formatMovie);
 }
 
+// 🔥 ОНОВЛЕНИЙ ПОШУК (Тепер розуміє акторів)
 export async function searchMovies(query) {
     const data = await fetchTMDB('/search/multi', { query, include_adult: false });
-    return (data?.results || []).filter(i => i.media_type !== 'person').map(formatMovie);
+    
+    let results = [];
+    
+    // Перебираємо результати пошуку
+    (data?.results || []).forEach(item => {
+        if (item.media_type === 'person') {
+            // ✅ ЯКЩО ЗНАЙШЛИ АКТОРА — беремо його відомі фільми
+            if (item.known_for && Array.isArray(item.known_for)) {
+                results.push(...item.known_for);
+            }
+        } else {
+            // Якщо це просто фільм — додаємо у список
+            results.push(item);
+        }
+    });
+
+    // Видаляємо дублікати (бо один фільм може повторюватись)
+    const uniqueMovies = [];
+    const seenIds = new Set();
+    
+    results.forEach(m => {
+        if (!seenIds.has(m.id)) {
+            seenIds.add(m.id);
+            uniqueMovies.push(m);
+        }
+    });
+
+    return uniqueMovies.map(formatMovie);
 }
 
-// 🔥 ОНОВЛЕНО: Додано параметр include_image_language
-// Це змушує сервер віддавати англійські логотипи, навіть якщо мова інтерфейсу українська!
 export async function fetchMovieDetails(id, type) {
     const params = {
         append_to_response: 'videos,images,credits',
-        include_image_language: 'uk,en,null' // <-- ОСЬ ЦЕЙ РЯДОК ВСЕ ВИПРАВЛЯЄ
+        include_image_language: 'uk,en,null' // Дозволяємо англ. картинки
     };
     
     const data = await fetchTMDB(`/${type}/${id}`, params);
@@ -56,7 +82,6 @@ export async function fetchKpId(movie) {
     
     try {
         const cleanTitle = movie.title.replace(/[^\w\sа-яА-Яіїєґ]/gi, '');
-        // Використовуємо проксі для пошуку (замініть домен, якщо у вас свій)
         const searchUrl = `https://api.rstprgapipt.com/balancer-api/search?title=${encodeURIComponent(cleanTitle)}&year=${movie.year}`;
         
         const res = await fetch(searchUrl);

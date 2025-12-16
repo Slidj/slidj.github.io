@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
-import { PLAYER_BASE_URL } from './config.js'; // 🔥 VideoCDN
+import { PLAYER_BASE_URL } from './config.js'; 
 import { t } from './i18n.js';
 
 export function showSkeletons(count = 12, isAppend = false) {
@@ -110,13 +110,12 @@ export async function openMoviePage(movie) {
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
         
-        // Зберігаємо важливі дані для Smart Player
+        // 🔥 Зберігаємо IMDb ID
         if (data.external_ids?.imdb_id) {
             state.activeMovie.imdb_id = data.external_ids.imdb_id;
             details.imdb_id = data.external_ids.imdb_id;
-        }
-        if (data.original_title) {
-            state.activeMovie.original_title = data.original_title;
+        } else {
+            console.warn("IMDb ID не знайдено для цього фільму!");
         }
 
         details.desc = data.overview || movie.desc;
@@ -209,7 +208,7 @@ export async function openMoviePage(movie) {
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
 }
 
-// 🔥🔥 НОВА "РОЗУМНА" ЛОГІКА ЗАПУСКУ 🔥🔥
+// 🔥🔥 ДІАГНОСТИЧНИЙ ЗАПУСК 🔥🔥
 export function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
@@ -220,9 +219,28 @@ export function openPremiumPlayer(tmdbId, btn) {
 
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
 
-    // Ми запускаємо плеєр ОДРАЗУ, передаючи всі параметри
-    // Плеєр сам вирішить, як шукати: за IMDb, за назвою чи за Kinopoisk ID
-    launchSmartPlayer(movie);
+    // 1. Перевіряємо наявність IMDb ID
+    if (!movie.imdb_id) {
+        alert(`🚨 ПОМИЛКА: Немає IMDb ID!\nМи не знаємо "паспорт" фільму "${movie.title}".\nСпробуйте інший фільм.`);
+        if(btn) { btn.classList.add('error'); span.innerText = "NO ID"; }
+        return;
+    }
+
+    // 2. Формуємо URL (Тільки IMDb, без зайвого)
+    // Очищаємо базову URL від можливих зайвих слешів в кінці
+    let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
+    
+    // Формуємо пряме посилання: БАЗА + /imdb/ + ID + параметри
+    let finalUrl = `${baseUrl}/imdb/${movie.imdb_id}?translation=2`;
+
+    // 3. ПОКАЗУЄМО ДІАГНОСТИКУ
+    alert(`🔍 ВІДКРИВАЮ:\n${finalUrl}\n\nЯкщо далі буде "Not Found" - значить фільму немає в цьому плеєрі.`);
+
+    const modal = document.getElementById('player_modal');
+    const iframe = document.getElementById('video_frame');
+    document.getElementById('movie_details_modal').style.display = 'none';
+    iframe.src = finalUrl;
+    modal.style.display = 'flex';
     
     if(btn) { 
         setTimeout(() => {
@@ -230,31 +248,6 @@ export function openPremiumPlayer(tmdbId, btn) {
             if(span) span.innerText = t.watch; 
         }, 1000);
     }
-}
-
-function launchSmartPlayer(movie) {
-    // 1. Формуємо URL з параметрами (Smart Embed)
-    let url = `${PLAYER_BASE_URL}?`;
-    
-    // Додаємо IMDb ID, якщо є
-    if (movie.imdb_id) url += `imdb_id=${movie.imdb_id}&`;
-    
-    // Додаємо Kinopoisk ID, якщо раптом він у нас є (з кешу)
-    if (movie.kpId) url += `kinopoisk_id=${movie.kpId}&`;
-    
-    // Додаємо Назву (ОБОВ'ЯЗКОВО для підстраховки)
-    // Використовуємо оригінальну назву, якщо вона є, бо бази часто англомовні
-    let searchTitle = movie.original_title || movie.title;
-    url += `title=${encodeURIComponent(searchTitle)}&`;
-    
-    // Додаємо переклад (2 = популярний дубляж)
-    url += `translation=2`;
-
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    document.getElementById('movie_details_modal').style.display = 'none';
-    iframe.src = url;
-    modal.style.display = 'flex';
 }
 
 export function closePlayer() {

@@ -1,13 +1,8 @@
 import { state } from './state.js';
 import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
-// 👇 Імпортуємо налаштування і перевіряємо їх
 import { PLAYER_BASE_URL } from './config.js'; 
 import { t } from './i18n.js';
-
-// --- ДІАГНОСТИКА ПРИ ЗАПУСКУ ---
-// Якщо цей alert не з'явиться — значить файл навіть не завантажився
-// setTimeout(() => alert("✅ UI.js завантажено успішно!"), 1000);
 
 export function showSkeletons(count = 12, isAppend = false) {
     const container = document.getElementById('content_container');
@@ -213,15 +208,25 @@ export async function openMoviePage(movie) {
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
 }
 
-// 🔥🔥 ДІАГНОСТИЧНИЙ ЗАПУСК 🔥🔥
+// 🔥🔥 ФУНКЦІЯ, ЯКУ Я ЗАБУВ У МИНУЛОМУ РАЗІ 🔥🔥
+export function closeMoviePage() {
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    const modal = document.getElementById('movie_details_modal');
+    if (modal) modal.style.display = 'none';
+    document.getElementById('movie_details_content').innerHTML = '';
+    document.body.style.overflow = '';
+    state.activeMovie = null; 
+    if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
+}
+
 export function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
     const originalText = span ? span.innerText : t.watch;
 
-    // 1. ПЕРЕВІРКА КОНФІГУ
+    // ПЕРЕВІРКА КОНФІГУ
     if (!PLAYER_BASE_URL) {
-        alert("🚨 ПОМИЛКА STARTUP: Файл config.js не містить PLAYER_BASE_URL!\nДодаток не знає, де плеєр.");
+        alert("🚨 ПОМИЛКА STARTUP: Файл config.js не містить PLAYER_BASE_URL!");
         return;
     }
 
@@ -231,31 +236,36 @@ export function openPremiumPlayer(tmdbId, btn) {
 
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
 
-    // 2. ФОРМУЄМО ПОСИЛАННЯ
-    // Очищаємо URL від зайвих слешів
-    let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
-    let url = `${baseUrl}?`;
+    // Використовуємо ПРЯМЕ ПОСИЛАННЯ (оскільки Smart Embed не спрацював)
+    // Якщо є IMDb ID - використовуємо його. Якщо ні - пробуємо Smart Embed як запасний варіант.
+    if (movie.imdb_id) {
+        // Очищаємо URL
+        let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
+        // Формат: https://base/imdb/tt12345?translation=2
+        let url = `${baseUrl}/imdb/${movie.imdb_id}?translation=2`;
+        
+        launchPlayer(url);
+    } else {
+        // Запасний варіант (Smart)
+        let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
+        let url = `${baseUrl}?title=${encodeURIComponent(movie.original_title || movie.title)}&translation=2`;
+        launchPlayer(url);
+    }
 
-    // Додаємо параметри
-    if (movie.imdb_id) url += `imdb_id=${movie.imdb_id}&`;
-    url += `title=${encodeURIComponent(movie.original_title || movie.title)}&`;
-    url += `translation=2`;
-
-    // 3. ПОКАЗУЄМО ДІАГНОСТИКУ
-    alert(`🔍 Спроба відкрити:\n${url}\n\nIMDb ID: ${movie.imdb_id || 'НЕМАЄ'}`);
-
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    document.getElementById('movie_details_modal').style.display = 'none';
-    iframe.src = url;
-    modal.style.display = 'flex';
-    
     if(btn) { 
         setTimeout(() => {
             btn.style.opacity = 1; 
             if(span) span.innerText = originalText; 
         }, 1000);
     }
+}
+
+function launchPlayer(url) {
+    const modal = document.getElementById('player_modal');
+    const iframe = document.getElementById('video_frame');
+    document.getElementById('movie_details_modal').style.display = 'none';
+    iframe.src = url;
+    modal.style.display = 'flex';
 }
 
 export function closePlayer() {

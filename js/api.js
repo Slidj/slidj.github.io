@@ -1,14 +1,17 @@
 import { API_KEY, BASE_URL, PROXY_URL } from './config.js';
-import { t } from './i18n.js';
 
+// Основна функція запиту
 async function fetchTMDB(endpoint, params = {}) {
     const url = new URL(`${BASE_URL}${endpoint}`);
     url.searchParams.append('api_key', API_KEY);
-    // Визначаємо мову (можна зробити динамічно, але поки зашиваємо на укр/рос для контенту)
+    
+    // Визначаємо мову користувача (за замовчуванням uk-UA)
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-    const lang = (userLang === 'uk' || userLang === 'ru') ? 'uk-UA' : 'en-US';
+    const lang = (userLang === 'ru') ? 'ru-RU' : 'uk-UA';
     
     url.searchParams.append('language', lang);
+    
+    // Додаємо інші параметри
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
     
     try {
@@ -22,7 +25,6 @@ async function fetchTMDB(endpoint, params = {}) {
 }
 
 export async function fetchHomeContent(page = 1) {
-    // Мікс популярних фільмів
     const data = await fetchTMDB('/trending/all/week', { page });
     return (data?.results || []).map(formatMovie);
 }
@@ -32,10 +34,15 @@ export async function searchMovies(query) {
     return (data?.results || []).filter(i => i.media_type !== 'person').map(formatMovie);
 }
 
-// 🔥 ОНОВЛЕНО: Додано запит 'credits' (актори)
+// 🔥 ОНОВЛЕНО: Додано параметр include_image_language
+// Це змушує сервер віддавати англійські логотипи, навіть якщо мова інтерфейсу українська!
 export async function fetchMovieDetails(id, type) {
-    const append = 'videos,images,credits'; // <-- Ось тут ми просимо акторів
-    const data = await fetchTMDB(`/${type}/${id}`, { append_to_response: append });
+    const params = {
+        append_to_response: 'videos,images,credits',
+        include_image_language: 'uk,en,null' // <-- ОСЬ ЦЕЙ РЯДОК ВСЕ ВИПРАВЛЯЄ
+    };
+    
+    const data = await fetchTMDB(`/${type}/${id}`, params);
     return data || {};
 }
 
@@ -44,23 +51,18 @@ export async function fetchSimilar(id, type) {
     return (data?.results || []).map(formatMovie);
 }
 
-// Пошук ID на Kinopoisk (через проксі) для плеєра
 export async function fetchKpId(movie) {
-    // Якщо вже є кеш
     if (movie.kpId) return movie.kpId;
     
-    // Спроба знайти через IMDB ID (найточніше)
-    // Для цього треба було б окремо фечити external_ids, але спробуємо пошук по назві
     try {
         const cleanTitle = movie.title.replace(/[^\w\sа-яА-Яіїєґ]/gi, '');
+        // Використовуємо проксі для пошуку (замініть домен, якщо у вас свій)
         const searchUrl = `https://api.rstprgapipt.com/balancer-api/search?title=${encodeURIComponent(cleanTitle)}&year=${movie.year}`;
         
         const res = await fetch(searchUrl);
         const json = await res.json();
         
-        // Шукаємо найбільш схожий
         if (json && json.length > 0) {
-            // Тут можна додати логіку перевірки (наприклад, співпадіння року)
             const best = json[0];
             return best.id || best.kinopoisk_id;
         }

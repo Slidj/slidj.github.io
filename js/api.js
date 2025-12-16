@@ -28,25 +28,17 @@ export async function fetchHomeContent(page = 1) {
     return (data?.results || []).map(formatMovie);
 }
 
-// 🔥 ОНОВЛЕНО: ТЕПЕР ВАНТАЖИТЬ ВСІ ФІЛЬМИ АКТОРА
+// 🔥 ПОШУК (З логікою для акторів)
 export async function searchMovies(query) {
-    // 1. Робимо звичайний пошук
     const data = await fetchTMDB('/search/multi', { query, include_adult: false });
     const firstResult = data?.results?.[0];
 
-    // 2. 🔥 ПЕРЕВІРКА: Якщо перший результат — це ЛЮДИНА (актор)
+    // Якщо знайшли актора - тягнемо його фільмографію
     if (firstResult && firstResult.media_type === 'person') {
         try {
-            // Робимо ОКРЕМИЙ запит за повною фільмографією
             const credits = await fetchTMDB(`/person/${firstResult.id}/combined_credits`);
-            
             if (credits && credits.cast) {
-                // Сортуємо: спочатку найпопулярніші, потім новіші
-                const allWorks = credits.cast.sort((a, b) => {
-                    return (b.popularity || 0) - (a.popularity || 0);
-                });
-                
-                // Повертаємо відформатований список
+                const allWorks = credits.cast.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
                 return deduplicate(allWorks.map(formatMovie));
             }
         } catch (e) {
@@ -54,7 +46,6 @@ export async function searchMovies(query) {
         }
     }
 
-    // 3. Якщо це не актор, а просто назва фільму — працюємо як раніше
     let results = [];
     (data?.results || []).forEach(item => {
         if (item.media_type === 'person') {
@@ -69,7 +60,6 @@ export async function searchMovies(query) {
     return deduplicate(results.map(formatMovie));
 }
 
-// Допоміжна функція для видалення дублікатів (бо актор може бути і режисером одного фільму)
 function deduplicate(items) {
     const unique = [];
     const seenIds = new Set();
@@ -97,30 +87,49 @@ export async function fetchSimilar(id, type) {
     return (data?.results || []).map(formatMovie);
 }
 
+// 🔥 ВИПРАВЛЕНО: ТЕПЕР ШУКАЄ І УКРАЇНСЬКОЮ, І АНГЛІЙСЬКОЮ
 export async function fetchKpId(movie) {
     if (movie.kpId) return movie.kpId;
     
-    try {
-        const cleanTitle = movie.title.replace(/[^\w\sа-яА-Яіїєґ]/gi, '');
-        const searchUrl = `https://api.rstprgapipt.com/balancer-api/search?title=${encodeURIComponent(cleanTitle)}&year=${movie.year}`;
-        
-        const res = await fetch(searchUrl);
-        const json = await res.json();
-        
-        if (json && json.length > 0) {
-            const best = json[0];
-            return best.id || best.kinopoisk_id;
+    // Допоміжна функція пошуку
+    const performSearch = async (titleToSearch) => {
+        if (!titleToSearch) return null;
+        try {
+            // Очищаємо назву від зайвих символів, але залишаємо букви і цифри
+            const cleanTitle = titleToSearch.replace(/[^\w\sа-яА-Яіїєґ]/gi, '').trim();
+            const searchUrl = `https://api.rstprgapipt.com/balancer-api/search?title=${encodeURIComponent(cleanTitle)}&year=${movie.year}`;
+            
+            const res = await fetch(searchUrl);
+            const json = await res.json();
+            
+            if (json && json.length > 0) {
+                // Шукаємо точний збіг по року, якщо є можливість, або беремо перший
+                return json[0].id || json[0].kinopoisk_id;
+            }
+        } catch (e) {
+            console.error('Search attempt failed for:', titleToSearch);
         }
-    } catch (e) {
-        console.error('KP Search failed', e);
+        return null;
+    };
+
+    // 1. Спроба №1: Шукаємо за поточною назвою (Укр/Рос)
+    let foundId = await performSearch(movie.title);
+    
+    // 2. Спроба №2: Якщо не знайшли, шукаємо за ОРИГІНАЛЬНОЮ назвою (Англ)
+    if (!foundId && movie.original_title && movie.original_title !== movie.title) {
+        console.log(`Не знайшли "${movie.title}", пробуємо "${movie.original_title}"...`);
+        foundId = await performSearch(movie.original_title);
     }
-    return null;
+
+    return foundId;
 }
 
+// 🔥 ОНОВЛЕНО: Додано поле original_title для пошуку плеєра
 function formatMovie(item) {
     return {
         id: item.id,
         title: item.title || item.name,
+        original_title: item.original_title || item.original_name, // <-- ВАЖЛИВО!
         img: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'img/no-poster.png',
         backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : null,
         rating: item.vote_average ? item.vote_average.toFixed(1) : 'N/A',

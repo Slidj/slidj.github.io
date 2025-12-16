@@ -148,7 +148,7 @@ export async function openMoviePage(movie) {
         
         // 🎭 ОБРОБКА АКТОРІВ
         if (data.credits?.cast?.length > 0) {
-            const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); // Тільки з фото
+            const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
                 const castCards = topCast.map(p => `
                     <div class="cast-card" onclick="window.ui_searchActor('${p.name.replace(/'/g, "\\'")}')">
@@ -235,7 +235,9 @@ export async function openMoviePage(movie) {
 
             <div class="nf-description">${details.desc || t.descMissing}</div>
             
-            ${castHtml} ${similarHtml}
+            ${castHtml} 
+            
+            ${similarHtml}
             ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
             <div style="height: 50px;"></div>
         </div>
@@ -252,7 +254,9 @@ export async function openMoviePage(movie) {
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
         if(!m) return;
         const startParam = `${m.type}_${m.id}`;
+        // Посилання на бот
         const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
+        
         const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
         window.Telegram?.WebApp?.openTelegramLink(shareUrl);
@@ -267,12 +271,12 @@ export async function openMoviePage(movie) {
         const input = document.getElementById('search_input');
         if(input) {
             input.value = name;
-            // Запускаємо пошук (викликаємо глобальну функцію з app.js)
             if(window.performSearchDelayed) window.performSearchDelayed();
         }
     };
 }
 
+// 🔥 ВАЖЛИВО: ЦЯ ФУНКЦІЯ ПОВИННА БУТИ ТУТ!
 export function closeMoviePage() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     const modal = document.getElementById('movie_details_modal');

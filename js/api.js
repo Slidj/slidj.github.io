@@ -1,6 +1,6 @@
-import { API_KEY, BASE_URL, PROXY_URL, ALLOHA_TOKEN } from './config.js'; // 🔥 Додали ALLOHA_TOKEN
+import { API_KEY, BASE_URL, PROXY_URL, ALLOHA_TOKEN } from './config.js';
 
-// Основна функція запиту до TMDB
+// --- БАЗОВІ ФУНКЦІЇ ---
 async function fetchTMDB(endpoint, params = {}) {
     const url = new URL(`${BASE_URL}${endpoint}`);
     url.searchParams.append('api_key', API_KEY);
@@ -71,7 +71,7 @@ function deduplicate(items) {
 
 export async function fetchMovieDetails(id, type) {
     const params = {
-        append_to_response: 'videos,images,credits,external_ids', // 🔥 Додали external_ids щоб знайти IMDB ID
+        append_to_response: 'videos,images,credits,external_ids', // 🔥 Треба для точного пошуку
         include_image_language: 'uk,en,null'
     };
     
@@ -84,58 +84,57 @@ export async function fetchSimilar(id, type) {
     return (data?.results || []).map(formatMovie);
 }
 
-// 🔥 ГОЛОВНЕ ВИПРАВЛЕННЯ: ПОШУК ID ДЛЯ ПЛЕЄРА
+// 🔥 ПОТУЖНИЙ ПОШУК ID ДЛЯ ПЛЕЄРА (4 РІВНІ ПЕРЕВІРКИ)
 export async function fetchKpId(movie) {
     if (movie.kpId) return movie.kpId;
 
-    // Крок 1: Спробуємо отримати IMDB ID з TMDB (це найнадійніший спосіб)
-    let imdbId = movie.imdb_id;
-    if (!imdbId) {
+    // Функція-помічник для запиту до бази плеєра
+    const searchAlloha = async (params) => {
         try {
-            // Якщо IMDB ID немає в об'єкті, зробимо швидкий запит щоб отримати його
-            const ext = await fetchTMDB(`/${movie.type === 'tv' ? 'tv' : 'movie'}/${movie.id}/external_ids`);
-            if (ext && ext.imdb_id) imdbId = ext.imdb_id;
-        } catch(e) {}
-    }
-
-    // Крок 2: Якщо є IMDB ID — шукаємо по ньому (це 100% результат)
-    if (imdbId) {
-        try {
-            // 🔥 ВАЖЛИВО: Додали &token=${ALLOHA_TOKEN}
-            const url = `https://api.rstprgapipt.com/balancer-api/search?imdb=${imdbId}&token=${ALLOHA_TOKEN}`;
-            const res = await fetch(url);
-            const json = await res.json();
-            if (json.data && json.data.length > 0) {
-                return json.data[0].kp_id || json.data[0].kinopoisk_id;
-            }
-        } catch(e) { console.error("IMDB search failed", e); }
-    }
-
-    // Крок 3: Якщо IMDB не допоміг, шукаємо за назвою (як запасний варіант)
-    const performSearch = async (titleToSearch) => {
-        if (!titleToSearch) return null;
-        try {
-            const cleanTitle = titleToSearch.replace(/[^\w\sа-яА-Яіїєґ]/gi, '').trim();
-            // 🔥 ВАЖЛИВО: Додали &token=${ALLOHA_TOKEN}
-            const searchUrl = `https://api.rstprgapipt.com/balancer-api/search?title=${encodeURIComponent(cleanTitle)}&year=${movie.year}&token=${ALLOHA_TOKEN}`;
+            // Додаємо токен до кожного запиту!
+            let url = `https://api.rstprgapipt.com/balancer-api/search?token=${ALLOHA_TOKEN}`;
+            Object.keys(params).forEach(k => url += `&${k}=${encodeURIComponent(params[k])}`);
             
-            const res = await fetch(searchUrl);
+            const res = await fetch(url);
             const json = await res.json();
             
             if (json.data && json.data.length > 0) {
                 return json.data[0].kp_id || json.data[0].kinopoisk_id;
             }
         } catch (e) {
-            console.error('Title search failed', e);
+            console.error("Alloha search error:", e);
         }
         return null;
     };
 
-    let foundId = await performSearch(movie.title);
-    if (!foundId && movie.original_title) {
-        foundId = await performSearch(movie.original_title);
+    let foundId = null;
+
+    // 1. СПРОБА: Шукаємо по IMDB ID (Найточніше)
+    let imdbId = movie.imdb_id;
+    // Якщо ID немає в об'єкті, спробуємо його отримати
+    if (!imdbId) {
+        const ext = await fetchTMDB(`/${movie.type === 'tv' ? 'tv' : 'movie'}/${movie.id}/external_ids`);
+        if (ext?.imdb_id) imdbId = ext.imdb_id;
     }
 
+    if (imdbId) {
+        foundId = await searchAlloha({ imdb: imdbId });
+        if (foundId) return foundId;
+    }
+
+    // 2. СПРОБА: Шукаємо по назві + рік (Українська)
+    foundId = await searchAlloha({ title: movie.title, year: movie.year });
+    if (foundId) return foundId;
+
+    // 3. СПРОБА: Шукаємо по оригінальній назві + рік (Англійська)
+    if (movie.original_title && movie.original_title !== movie.title) {
+        foundId = await searchAlloha({ title: movie.original_title, year: movie.year });
+        if (foundId) return foundId;
+    }
+
+    // 4. СПРОБА: Шукаємо БЕЗ року (якщо рік в базах відрізняється)
+    foundId = await searchAlloha({ title: movie.title });
+    
     return foundId;
 }
 
@@ -143,8 +142,8 @@ function formatMovie(item) {
     return {
         id: item.id,
         title: item.title || item.name,
-        original_title: item.original_title || item.original_name,
-        imdb_id: item.external_ids?.imdb_id || null, // Зберігаємо, якщо є
+        original_title: item.original_title || item.original_name, // Важливо для пошуку
+        imdb_id: item.external_ids?.imdb_id || null, 
         img: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'img/no-poster.png',
         backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : null,
         rating: item.vote_average ? item.vote_average.toFixed(1) : 'N/A',

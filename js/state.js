@@ -1,15 +1,22 @@
 export const state = {
-    currentTab: 'home',
-    feedMovies: [],      // Стрічка
-    savedItems: [],      // Збережене
-    historyItems: [],    // 🔥 НОВЕ: Історія переглядів
-    
-    activeMovie: null,   // Фільм, який зараз відкритий у вікні
-    
-    currentHeroMovie: null,
+    // Головна стрічка
+    feedMovies: [],
     currentPage: 1,
     isLoading: false,
-    currentGenre: '',
+    currentGenre: 'all',
+    currentTab: 'home',
+    
+    // Дані для модалок
+    activeMovie: null,
+    currentHeroMovie: null,
     cachedKpId: null,
+    
+    // Історія та збережене
+    savedItems: [],
+    historyItems: [],
+
+    // 🔥 НОВЕ: Для пошуку та пагінації результатів
+    searchResults: [], // Тут лежить повний список знайденого (наприклад 100 фільмів)
+    searchPage: 0,     // Яку "сторінку" (порцію) ми зараз показуємо
     searchTimeout: null
 };

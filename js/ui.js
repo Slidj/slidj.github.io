@@ -110,6 +110,7 @@ export async function openMoviePage(movie) {
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
         
+        // Зберігаємо важливі дані
         if (data.external_ids?.imdb_id) {
             state.activeMovie.imdb_id = data.external_ids.imdb_id;
             details.imdb_id = data.external_ids.imdb_id;
@@ -208,7 +209,7 @@ export async function openMoviePage(movie) {
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
 }
 
-// 🔥🔥 ФУНКЦІЯ, ЯКУ Я ЗАБУВ У МИНУЛОМУ РАЗІ 🔥🔥
+// ✅ ОСЬ ВОНА, РІДНЕНЬКА!
 export function closeMoviePage() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     const modal = document.getElementById('movie_details_modal');
@@ -219,6 +220,7 @@ export function closeMoviePage() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 }
 
+// 🔥🔥 ЛОГІКА ЗАПУСКУ (ALL-IN-ONE) 🔥🔥
 export function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
@@ -236,21 +238,27 @@ export function openPremiumPlayer(tmdbId, btn) {
 
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
 
-    // Використовуємо ПРЯМЕ ПОСИЛАННЯ (оскільки Smart Embed не спрацював)
-    // Якщо є IMDb ID - використовуємо його. Якщо ні - пробуємо Smart Embed як запасний варіант.
-    if (movie.imdb_id) {
-        // Очищаємо URL
-        let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
-        // Формат: https://base/imdb/tt12345?translation=2
-        let url = `${baseUrl}/imdb/${movie.imdb_id}?translation=2`;
-        
-        launchPlayer(url);
-    } else {
-        // Запасний варіант (Smart)
-        let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
-        let url = `${baseUrl}?title=${encodeURIComponent(movie.original_title || movie.title)}&translation=2`;
-        launchPlayer(url);
-    }
+    // 🔥 ФОРМУВАННЯ УНІВЕРСАЛЬНОГО ПОСИЛАННЯ
+    let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
+    
+    // Ми передаємо ВСІ параметри, які маємо. Плеєр розбереться.
+    // 1. TMDB ID (Найнадійніший, бо він у нас рідний)
+    let params = `?tmdb_id=${movie.id}`;
+    
+    // 2. IMDb ID (Теж дуже надійний)
+    if (movie.imdb_id) params += `&imdb_id=${movie.imdb_id}`;
+    
+    // 3. Назва (Запасний варіант)
+    params += `&title=${encodeURIComponent(movie.original_title || movie.title)}`;
+    
+    // 4. Переклад
+    params += `&translation=2`;
+
+    let url = baseUrl + params;
+
+    // alert(`Відкриваю: ${url}`); // Можна розкоментувати для налагодження
+
+    launchPlayer(url);
 
     if(btn) { 
         setTimeout(() => {

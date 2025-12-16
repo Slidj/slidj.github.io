@@ -1,78 +1,84 @@
-import { API_KEY, ALLOHA_TOKEN, TMDB_IMG_URL, TMDB_BACKDROP_URL } from './config.js';
-import { state } from './state.js';
+import { API_KEY, BASE_URL, PROXY_URL } from './config.js';
+import { t } from './i18n.js';
 
-// --- TMDB API ---
-export async function fetchHomeContent(page = 1) {
-    let url = '';
-    if (state.currentGenre === '') {
-        url = `https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=uk-UA&page=${page}`;
-    } else if (state.currentGenre === 'movie') {
-        url = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=uk-UA&sort_by=popularity.desc&page=${page}`;
-    } else if (state.currentGenre === 'tv') {
-        url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=uk-UA&sort_by=popularity.desc&page=${page}`;
-    } else {
-        url = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=uk-UA&with_genres=${state.currentGenre}&sort_by=popularity.desc&page=${page}`;
-    }
+async function fetchTMDB(endpoint, params = {}) {
+    const url = new URL(`${BASE_URL}${endpoint}`);
+    url.searchParams.append('api_key', API_KEY);
+    // Визначаємо мову (можна зробити динамічно, але поки зашиваємо на укр/рос для контенту)
+    const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
+    const lang = (userLang === 'uk' || userLang === 'ru') ? 'uk-UA' : 'en-US';
     
-    const res = await fetch(url);
-    const data = await res.json();
-    return data.results ? data.results.map(mapTMDB) : [];
+    url.searchParams.append('language', lang);
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+    
+    try {
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('API Error');
+        return await res.json();
+    } catch (e) {
+        console.error(e);
+        return null;
+    }
+}
+
+export async function fetchHomeContent(page = 1) {
+    // Мікс популярних фільмів
+    const data = await fetchTMDB('/trending/all/week', { page });
+    return (data?.results || []).map(formatMovie);
 }
 
 export async function searchMovies(query) {
-    const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=uk-UA`);
-    const data = await res.json();
-    return data.results ? data.results.filter(i => i.media_type !== 'person' && i.poster_path).map(mapTMDB) : [];
+    const data = await fetchTMDB('/search/multi', { query, include_adult: false });
+    return (data?.results || []).filter(i => i.media_type !== 'person').map(formatMovie);
 }
 
+// 🔥 ОНОВЛЕНО: Додано запит 'credits' (актори)
 export async function fetchMovieDetails(id, type) {
-    const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=uk-UA&append_to_response=videos,images,release_dates,content_ratings&include_image_language=uk,en,null`);
-    return await res.json();
+    const append = 'videos,images,credits'; // <-- Ось тут ми просимо акторів
+    const data = await fetchTMDB(`/${type}/${id}`, { append_to_response: append });
+    return data || {};
 }
 
-// 🔥 НОВА ФУНКЦІЯ: Схожі фільми
 export async function fetchSimilar(id, type) {
-    try {
-        const url = `https://api.themoviedb.org/3/${type}/${id}/similar?api_key=${API_KEY}&language=uk-UA&page=1`;
-        const res = await fetch(url);
-        const data = await res.json();
-        return data.results ? data.results.map(mapTMDB) : [];
-    } catch (e) {
-        return [];
-    }
+    const data = await fetchTMDB(`/${type}/${id}/recommendations`);
+    return (data?.results || []).map(formatMovie);
 }
 
-// --- ALLOHA API (KP ID) ---
+// Пошук ID на Kinopoisk (через проксі) для плеєра
 export async function fetchKpId(movie) {
-    state.cachedKpId = null;
+    // Якщо вже є кеш
+    if (movie.kpId) return movie.kpId;
+    
+    // Спроба знайти через IMDB ID (найточніше)
+    // Для цього треба було б окремо фечити external_ids, але спробуємо пошук по назві
     try {
-        let res = await fetch(`https://api.alloha.tv/?token=${ALLOHA_TOKEN}&tmdb=${movie.id}`);
-        let data = await res.json();
-        if (data.data && data.data.id_kp) {
-            state.cachedKpId = data.data.id_kp;
-            return data.data.id_kp;
-        }
+        const cleanTitle = movie.title.replace(/[^\w\sа-яА-Яіїєґ]/gi, '');
+        const searchUrl = `https://api.rstprgapipt.com/balancer-api/search?title=${encodeURIComponent(cleanTitle)}&year=${movie.year}`;
         
-        res = await fetch(`https://api.alloha.tv/?token=${ALLOHA_TOKEN}&name=${encodeURIComponent(movie.title)}`);
-        data = await res.json();
-        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-            state.cachedKpId = data.data[0].id_kp;
-            return data.data[0].id_kp;
+        const res = await fetch(searchUrl);
+        const json = await res.json();
+        
+        // Шукаємо найбільш схожий
+        if (json && json.length > 0) {
+            // Тут можна додати логіку перевірки (наприклад, співпадіння року)
+            const best = json[0];
+            return best.id || best.kinopoisk_id;
         }
-    } catch(e) { console.error(e); }
+    } catch (e) {
+        console.error('KP Search failed', e);
+    }
     return null;
 }
 
-// --- HELPER ---
-function mapTMDB(item) {
+function formatMovie(item) {
     return {
         id: item.id,
         title: item.title || item.name,
-        desc: item.overview,
-        img: item.poster_path ? TMDB_IMG_URL + item.poster_path : 'https://via.placeholder.com/200x300?text=No+Img',
-        backdrop: item.backdrop_path ? TMDB_BACKDROP_URL + item.backdrop_path : null,
+        img: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'img/no-poster.png',
+        backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : null,
         rating: item.vote_average ? item.vote_average.toFixed(1) : 'N/A',
-        year: (item.release_date || item.first_air_date || '----').split('-')[0],
-        type: item.media_type || (item.first_air_date ? 'tv' : 'movie')
+        year: (item.release_date || item.first_air_date || '').split('-')[0],
+        type: item.media_type || (item.title ? 'movie' : 'tv'),
+        desc: item.overview
     };
 }

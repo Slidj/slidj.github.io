@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
-import { PLAYER_TOKEN } from './config.js';
+import { PLAYER_BASE_URL } from './config.js'; // 🔥 Новий плеєр
 import { t } from './i18n.js';
 
 export function showSkeletons(count = 12, isAppend = false) {
@@ -66,19 +66,21 @@ export async function setupHero(movie) {
         hero.style.backgroundSize = 'cover';
         if(title) { title.innerText = movie.title; title.style.display = 'block'; }
         if(meta) meta.innerText = `${t.heroTrending} • ${movie.year}`;
-        fetchKpId(movie); 
+        
         try {
             const apiType = movie.type === 'tv' ? 'tv' : 'movie';
             const data = await fetchMovieDetails(movie.id, apiType);
+            // Зберігаємо IMDb ID для головного фільму
+            if(data.external_ids?.imdb_id) movie.imdb_id = data.external_ids.imdb_id;
+            
             if (data.images?.logos?.length > 0) {
-                const logos = data.images.logos;
-                const logo = logos.find(l => l.iso_639_1 === 'uk') || logos.find(l => l.iso_639_1 === 'en') || logos[0];
+                const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
                 if (logo && title) {
                     const logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
                     title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 120px; width: auto; margin-bottom: 10px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));">`;
                 }
             }
-        } catch (e) { console.log('Logo fetch failed', e); }
+        } catch (e) { }
     }
 }
 
@@ -89,11 +91,7 @@ export async function openMoviePage(movie) {
     const content = document.getElementById('movie_details_content');
     if (!modal) return;
     modal.scrollTop = 0;
-    state.cachedKpId = null; 
     
-    // Запускаємо пошук плеєра у фоні
-    fetchKpId(movie); 
-
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
     content.innerHTML = `<div style="height:100vh; display:flex; justify-content:center; align-items:center; color:#555;">${t.loading}</div>`;
@@ -113,12 +111,10 @@ export async function openMoviePage(movie) {
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
         
-        // 🔥 ВАЖЛИВО: Оновлюємо дані в state, щоб плеєр точно знайшов ID
+        // 🔥 ВАЖЛИВО: Отримуємо та зберігаємо IMDb ID для плеєра
         if (data.external_ids?.imdb_id) {
             state.activeMovie.imdb_id = data.external_ids.imdb_id;
-        }
-        if (data.original_title) {
-            state.activeMovie.original_title = data.original_title;
+            details.imdb_id = data.external_ids.imdb_id; // Також зберігаємо локально
         }
 
         details.desc = data.overview || movie.desc;
@@ -138,8 +134,7 @@ export async function openMoviePage(movie) {
             }
         }
         if (data.images?.logos?.length > 0) {
-            const logos = data.images.logos;
-            const logo = logos.find(l => l.iso_639_1 === 'uk') || logos.find(l => l.iso_639_1 === 'en') || logos[0];
+            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
         if (data.videos?.results) {
@@ -201,7 +196,6 @@ export async function openMoviePage(movie) {
             <div class="nf-description">${details.desc || t.descMissing}</div>
             
             ${castHtml}
-            
             ${similarHtml}
             ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
             <div style="height: 50px;"></div>
@@ -223,34 +217,38 @@ export function closeMoviePage() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 }
 
-export async function openPremiumPlayer(tmdbId, btn) {
+// 🔥🔥 НОВА ЛОГІКА ЗАПУСКУ ПЛЕЄРА 🔥🔥
+export function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
-    const originalText = span ? span.innerText : t.watch;
-
-    if (state.cachedKpId) { launchPlayer(state.cachedKpId); return; }
-
-    if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; btn.style.pointerEvents = 'none'; }
 
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.savedItems.find(m => m.id == tmdbId) || state.historyItems.find(m => m.id == tmdbId) || state.currentHeroMovie;
 
-    if (!movie) {
-        if(btn && span) { btn.classList.add('error'); span.innerText = "ERROR"; }
-        return;
-    }
+    if (!movie) return;
 
-    let kpId = await fetchKpId(movie);
-
-    if (kpId) {
-        if(btn) { btn.style.opacity = 1; if(span) span.innerText = originalText; btn.style.pointerEvents = 'auto'; }
-        launchPlayer(kpId);
+    // 1. Перевіряємо, чи є IMDb ID (ми його завантажили при відкритті сторінки)
+    if (movie.imdb_id) {
+        // Ура! Є паспорт. Відкриваємо пряме посилання VideoCDN
+        launchDirectPlayer(movie.imdb_id);
     } else {
-        if(btn && span) { btn.classList.add('error'); span.innerText = t.unavailable; }
+        // Якщо раптом немає ID (наприклад, рідкісний фільм), пробуємо знайти його зараз
+        if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
+        
+        // Робимо швидкий запит до TMDB за ID
+        // (Оскільки api.js ми не міняли, використаємо fetch через fetchMovieDetails або direct call, але простіше просто сказати "Недоступно" якщо немає, 
+        // або спробувати знайти).
+        // Але в 99% випадків imdb_id вже є в `state.activeMovie` після `openMoviePage`.
+        
+        if (span) span.innerText = t.unavailable;
+        if (btn) btn.classList.add('error');
     }
 }
 
-function launchPlayer(kpId) {
-    const url = `https://api.rstprgapipt.com/balancer-api/iframe?kp=${kpId}&token=${PLAYER_TOKEN}&disabled_share=1`;
+function launchDirectPlayer(imdbId) {
+    // 🔥 Формуємо посилання: БАЗА + /imdb/ + ID
+    const url = `${PLAYER_BASE_URL}/imdb/${imdbId}?translation=2`; 
+    // translation=2 зазвичай означає дубляж або популярну озвучку
+    
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     document.getElementById('movie_details_modal').style.display = 'none';

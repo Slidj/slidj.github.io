@@ -1,8 +1,13 @@
 import { state } from './state.js';
 import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
-import { PLAYER_BASE_URL } from './config.js'; // Тепер це спрацює!
+// 👇 Імпортуємо налаштування і перевіряємо їх
+import { PLAYER_BASE_URL } from './config.js'; 
 import { t } from './i18n.js';
+
+// --- ДІАГНОСТИКА ПРИ ЗАПУСКУ ---
+// Якщо цей alert не з'явиться — значить файл навіть не завантажився
+// setTimeout(() => alert("✅ UI.js завантажено успішно!"), 1000);
 
 export function showSkeletons(count = 12, isAppend = false) {
     const container = document.getElementById('content_container');
@@ -110,7 +115,6 @@ export async function openMoviePage(movie) {
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
         
-        // Зберігаємо важливі дані
         if (data.external_ids?.imdb_id) {
             state.activeMovie.imdb_id = data.external_ids.imdb_id;
             details.imdb_id = data.external_ids.imdb_id;
@@ -209,49 +213,49 @@ export async function openMoviePage(movie) {
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
 }
 
-// 🔥 ВАЖЛИВО: Оновлена логіка запуску плеєра
+// 🔥🔥 ДІАГНОСТИЧНИЙ ЗАПУСК 🔥🔥
 export function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
     const originalText = span ? span.innerText : t.watch;
 
+    // 1. ПЕРЕВІРКА КОНФІГУ
+    if (!PLAYER_BASE_URL) {
+        alert("🚨 ПОМИЛКА STARTUP: Файл config.js не містить PLAYER_BASE_URL!\nДодаток не знає, де плеєр.");
+        return;
+    }
+
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.savedItems.find(m => m.id == tmdbId) || state.historyItems.find(m => m.id == tmdbId) || state.currentHeroMovie;
 
-    if (!movie) return;
+    if (!movie) { alert("Помилка: Фільм не знайдено"); return; }
 
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
 
-    // Використовуємо Smart Embed (передаємо все що є)
-    launchSmartPlayer(movie);
-    
-    // Повертаємо кнопку в нормальний стан через секунду
-    if(btn) { 
-        setTimeout(() => {
-            btn.style.opacity = 1; 
-            if(span) span.innerText = originalText; 
-        }, 1000);
-    }
-}
+    // 2. ФОРМУЄМО ПОСИЛАННЯ
+    // Очищаємо URL від зайвих слешів
+    let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
+    let url = `${baseUrl}?`;
 
-function launchSmartPlayer(movie) {
-    // Формуємо розумне посилання для нового плеєра
-    let url = `${PLAYER_BASE_URL}?`;
-    
-    // Пріоритет: IMDb ID
+    // Додаємо параметри
     if (movie.imdb_id) url += `imdb_id=${movie.imdb_id}&`;
-    
-    // Також додаємо назву, щоб плеєр міг шукати сам
-    let searchTitle = movie.original_title || movie.title;
-    url += `title=${encodeURIComponent(searchTitle)}&`;
-    
-    // Озвучка
+    url += `title=${encodeURIComponent(movie.original_title || movie.title)}&`;
     url += `translation=2`;
+
+    // 3. ПОКАЗУЄМО ДІАГНОСТИКУ
+    alert(`🔍 Спроба відкрити:\n${url}\n\nIMDb ID: ${movie.imdb_id || 'НЕМАЄ'}`);
 
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     document.getElementById('movie_details_modal').style.display = 'none';
     iframe.src = url;
     modal.style.display = 'flex';
+    
+    if(btn) { 
+        setTimeout(() => {
+            btn.style.opacity = 1; 
+            if(span) span.innerText = originalText; 
+        }, 1000);
+    }
 }
 
 export function closePlayer() {

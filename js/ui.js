@@ -79,7 +79,6 @@ export async function setupHero(movie) {
     const meta = document.getElementById('hero_meta');
     
     if (hero && movie) {
-        // Вертикальний постер для кращої якості на мобільних
         let bg = movie.img || movie.backdrop;
         if (bg.includes('image.tmdb.org')) {
             bg = bg.replace('/w500/', '/w1280/').replace('/w780/', '/w1280/');
@@ -89,6 +88,7 @@ export async function setupHero(movie) {
         hero.style.backgroundPosition = 'center top'; 
         hero.style.backgroundSize = 'cover';
 
+        // Спочатку показуємо текст (поки вантажиться лого)
         if(title) {
             title.innerText = movie.title;
             title.style.display = 'block'; 
@@ -103,7 +103,11 @@ export async function setupHero(movie) {
             const data = await fetchMovieDetails(movie.id, apiType);
             
             if (data.images?.logos?.length > 0) {
-                const logo = data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
+                // 🔥 РОЗУМНИЙ ПОШУК ЛОГО: UK -> EN -> Будь-яке
+                const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') 
+                          || data.images.logos.find(l => l.iso_639_1 === 'en') 
+                          || data.images.logos[0];
+
                 if (logo && title) {
                     const logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
                     title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 120px; width: auto; margin-bottom: 10px;">`;
@@ -147,7 +151,7 @@ export async function openMoviePage(movie) {
         details.desc = data.overview || movie.desc;
         if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
         
-        // 🎭 Актори
+        // Актори
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
@@ -168,10 +172,14 @@ export async function openMoviePage(movie) {
             }
         }
 
+        // 🔥 РОЗУМНИЙ ПОШУК ЛОГО ДЛЯ КАРТКИ (UK -> EN -> ANY)
         if (data.images?.logos?.length > 0) {
-            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos[0];
+            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') 
+                      || data.images.logos.find(l => l.iso_639_1 === 'en')
+                      || data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
+
         if (data.videos?.results) {
             const tr = data.videos.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
             if(tr) trailerKey = tr.key;
@@ -265,7 +273,6 @@ export async function openMoviePage(movie) {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         closeMoviePage();
         switchMode('search');
-        
         const input = document.getElementById('search_input');
         if(input) {
             input.value = name;
@@ -274,7 +281,6 @@ export async function openMoviePage(movie) {
     };
 }
 
-// 🔥 ОСЬ ВОНА! ЦЕ ТА ФУНКЦІЯ, ЯКУ ТРЕБА
 export function closeMoviePage() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     const modal = document.getElementById('movie_details_modal');
@@ -285,7 +291,6 @@ export function closeMoviePage() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 }
 
-// --- PLAYER ---
 export async function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');

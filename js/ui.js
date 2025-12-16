@@ -79,6 +79,7 @@ export async function setupHero(movie) {
     const meta = document.getElementById('hero_meta');
     
     if (hero && movie) {
+        // Вертикальний постер для кращої якості на мобільних
         let bg = movie.img || movie.backdrop;
         if (bg.includes('image.tmdb.org')) {
             bg = bg.replace('/w500/', '/w1280/').replace('/w780/', '/w1280/');
@@ -146,7 +147,7 @@ export async function openMoviePage(movie) {
         details.desc = data.overview || movie.desc;
         if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
         
-        // 🎭 ОБРОБКА АКТОРІВ
+        // 🎭 Актори
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
@@ -235,7 +236,7 @@ export async function openMoviePage(movie) {
 
             <div class="nf-description">${details.desc || t.descMissing}</div>
             
-            ${castHtml} 
+            ${castHtml}
             
             ${similarHtml}
             ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
@@ -254,19 +255,16 @@ export async function openMoviePage(movie) {
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
         if(!m) return;
         const startParam = `${m.type}_${m.id}`;
-        // Посилання на бот
         const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
-        
         const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
         window.Telegram?.WebApp?.openTelegramLink(shareUrl);
     };
 
-    // 🔥 ПОШУК ПО АКТОРУ
     window.ui_searchActor = (name) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-        closeMoviePage(); // Закриваємо модалку
-        switchMode('search'); // Перемикаємось на вкладку пошуку
+        closeMoviePage();
+        switchMode('search');
         
         const input = document.getElementById('search_input');
         if(input) {
@@ -276,7 +274,7 @@ export async function openMoviePage(movie) {
     };
 }
 
-// 🔥 ВАЖЛИВО: ЦЯ ФУНКЦІЯ ПОВИННА БУТИ ТУТ!
+// 🔥 ОСЬ ВОНА! ЦЕ ТА ФУНКЦІЯ, ЯКУ ТРЕБА
 export function closeMoviePage() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     const modal = document.getElementById('movie_details_modal');

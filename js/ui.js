@@ -72,6 +72,7 @@ export function renderHistorySection(items) {
     return section;
 }
 
+// 🔥 ЛОГОТИПИ (HERO)
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
@@ -88,7 +89,7 @@ export async function setupHero(movie) {
         hero.style.backgroundPosition = 'center top'; 
         hero.style.backgroundSize = 'cover';
 
-        // Спочатку показуємо текст (поки вантажиться лого)
+        // Текст як заглушка
         if(title) {
             title.innerText = movie.title;
             title.style.display = 'block'; 
@@ -102,15 +103,18 @@ export async function setupHero(movie) {
             const apiType = movie.type === 'tv' ? 'tv' : 'movie';
             const data = await fetchMovieDetails(movie.id, apiType);
             
+            // 🔥 ПОКРАЩЕНА ЛОГІКА ПОШУКУ
             if (data.images?.logos?.length > 0) {
-                // 🔥 РОЗУМНИЙ ПОШУК ЛОГО: UK -> EN -> Будь-яке
-                const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') 
-                          || data.images.logos.find(l => l.iso_639_1 === 'en') 
-                          || data.images.logos[0];
+                const logos = data.images.logos;
+                const logo = logos.find(l => l.iso_639_1 === 'uk') // 1. Українська
+                          || logos.find(l => l.iso_639_1 === 'en') // 2. Англійська (найчастіше топ)
+                          || logos.find(l => l.iso_639_1 === null) // 3. Без мови (графіка)
+                          || logos[0];                             // 4. Будь-що
 
                 if (logo && title) {
                     const logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
-                    title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 120px; width: auto; margin-bottom: 10px;">`;
+                    // Стилі для лого на головній
+                    title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 100px; width: auto; margin-bottom: 5px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));">`;
                 }
             }
         } catch (e) { console.log('Logo fetch failed', e); }
@@ -151,7 +155,7 @@ export async function openMoviePage(movie) {
         details.desc = data.overview || movie.desc;
         if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
         
-        // Актори
+        // 🎭 Актори
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
@@ -172,11 +176,14 @@ export async function openMoviePage(movie) {
             }
         }
 
-        // 🔥 РОЗУМНИЙ ПОШУК ЛОГО ДЛЯ КАРТКИ (UK -> EN -> ANY)
+        // 🔥 ПОКРАЩЕНА ЛОГІКА ПОШУКУ (ДЛЯ КАРТКИ)
         if (data.images?.logos?.length > 0) {
-            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') 
-                      || data.images.logos.find(l => l.iso_639_1 === 'en')
-                      || data.images.logos[0];
+            const logos = data.images.logos;
+            const logo = logos.find(l => l.iso_639_1 === 'uk') 
+                      || logos.find(l => l.iso_639_1 === 'en')
+                      || logos.find(l => l.iso_639_1 === null)
+                      || logos[0];
+            
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
@@ -263,6 +270,7 @@ export async function openMoviePage(movie) {
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id);
         if(!m) return;
         const startParam = `${m.type}_${m.id}`;
+        // Переконайся, що посилання вірне:
         const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
         const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;

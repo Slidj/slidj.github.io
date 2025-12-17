@@ -19,22 +19,22 @@
     animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
-/* 2. 📱 МОДАЛЬНЕ ВІКНО (ГАРАНТОВАНИЙ ВИЇЗД) 
-   Ми прибрали opacity, щоб картка була "матеріальною" одразу. */
+/* 2. 📱 МОДАЛЬНЕ ВІКНО (ВИПРАВЛЕНО: GPU ПРИСКОРЕННЯ) */
 @keyframes slideUpModal {
     0% { 
-        transform: translateY(110%); /* Повністю сховане внизу */
+        /* translate3d вмикає відеокарту телефону для плавності */
+        transform: translate3d(0, 100%, 0); 
     }
     100% { 
-        transform: translateY(0);    /* На місці */
+        transform: translate3d(0, 0, 0); 
     }
 }
 
 .modal-fullscreen {
-    /* 0.6s — досить повільно, щоб око зафіксувало рух */
-    /* backwards — критично важливо! Це тримає вікно внизу до старту */
-    animation: slideUpModal 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-    will-change: transform; /* Змушує браузер малювати рух плавно */
+    /* 0.5s ease-out — класична "шторка" iOS */
+    /* both гарантує, що вікно буде там де треба і до, і після анімації */
+    animation: slideUpModal 0.5s ease-out both; 
+    will-change: transform; /* Підказка браузеру */
 }
 
 /* 3. 🎬 ПЛЕЄР (Зум з центру) */
@@ -50,22 +50,23 @@
 }
 
 #player_modal {
-    animation: zoomInPlayer 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Ефект пружини */
+    animation: zoomInPlayer 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* 4. 👆 ЕФЕКТ НАТИСКАННЯ (Tap Feedback) */
+/* 4. 👆 ЕФЕКТ НАТИСКАННЯ */
 .movie-poster-card:active,
 .trailer-card:active,
 .cat-btn:active,
 .nf-btn:active,
 .nav-item:active,
 .hero-btn:active,
-.close-round-btn:active {
+.close-round-btn:active,
+.close-player-btn:active {
     transform: scale(0.92);
     transition: transform 0.1s;
 }
 
-/* 5. 🔄 ОБЕРТАННЯ (Лоадер) */
+/* 5. 🔄 ОБЕРТАННЯ */
 @keyframes spin { 
     0% { transform: rotate(0deg); } 
     100% { transform: rotate(360deg); } 
@@ -81,12 +82,12 @@
     animation: fadeInPage 0.4s ease-out forwards;
 }
 
-/* 7. 🌟 HERO BANNER TEXT */
-@keyframes slideRightHero {
-    from { opacity: 0; transform: translateX(-30px); }
-    to { opacity: 1; transform: translateX(0); }
+/* 7. 🌟 HERO BANNER (ПОВЕРНУЛИ ПОЯВУ ЗНИЗУ) */
+@keyframes slideUpHero {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .hero-content {
-    animation: slideRightHero 0.8s ease-out 0.2s backwards;
+    animation: slideUpHero 0.8s ease-out 0.2s backwards;
 }

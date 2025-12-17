@@ -1,5 +1,5 @@
 // ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (LAZY SEARCH LOAD)
+// 🎬 MEDIA HUB: MAIN CONTROLLER (HYBRID: TG + BROWSER)
 // ============================================================
 
 import { state } from './state.js';
@@ -8,7 +8,7 @@ import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
 import { t, initLanguage } from './i18n.js';
 
-// --- EXPORTS ---
+// --- EXPORTS (Global functions for HTML onclick) ---
 window.setCategory = setCategory;
 window.switchMode = switchMode;
 window.playHeroMovie = () => { if(state.currentHeroMovie) openPremiumPlayer(state.currentHeroMovie.id, null); };
@@ -22,35 +22,77 @@ window.ui_toggleSave = (id, btn) => {
     if (state.currentTab === 'saved') switchMode('saved');
 };
 
+// Безпечний доступ до об'єкта Telegram
+const tg = window.Telegram?.WebApp;
+
 // --- INIT ---
-document.addEventListener('DOMContentLoaded', async () => {
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-        try {
-            tg.ready(); tg.expand();
-            if(tg.requestFullscreen) tg.requestFullscreen();
-            if(tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-            tg.setHeaderColor?.('#000000'); tg.setBackgroundColor?.('#000000');
-            if(tg.initDataUnsafe?.user?.photo_url) {
-                document.getElementById('user_avatar').src = tg.initDataUnsafe.user.photo_url;
-                document.getElementById('user_avatar').style.display = 'block';
-                document.getElementById('default_avatar').style.display = 'none';
+document.addEventListener('DOMContentLoaded', initApp);
+
+async function initApp() {
+    try {
+        // 1. Ініціалізація мови
+        initLanguage();
+
+        // 2. Налаштування Телеграма (ТІЛЬКИ якщо ми в ньому)
+        if (tg) {
+            try {
+                tg.ready(); 
+                tg.expand();
+                if(tg.requestFullscreen) tg.requestFullscreen();
+                if(tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+                // Налаштування кольорів хедера
+                tg.setHeaderColor?.('#000000'); 
+                tg.setBackgroundColor?.('#000000');
+                
+                // Аватарка (якщо є)
+                if(tg.initDataUnsafe?.user?.photo_url) {
+                    const avatar = document.getElementById('user_avatar');
+                    const defAvatar = document.getElementById('default_avatar');
+                    if (avatar && defAvatar) {
+                        avatar.src = tg.initDataUnsafe.user.photo_url;
+                        avatar.style.display = 'block';
+                        defAvatar.style.display = 'none';
+                    }
+                }
+                
+                // Кнопка "Назад" (Android/Telegram)
+                if (tg.BackButton) {
+                    tg.BackButton.onClick(() => {
+                        if (state.activeMovie) {
+                            closeMoviePage();
+                        } else if (state.searchQuery || state.currentTab !== 'home') {
+                            switchMode('home');
+                        }
+                    });
+                }
+            } catch(e) {
+                console.warn("Telegram API setup warning:", e);
             }
-        } catch(e) {}
-    }
+        }
 
-    initLanguage();
-    await loadCloudData();
-    setupInfiniteScroll(); // Запускаємо спостерігача за скролом
-    switchMode('home');
-    
-    checkDeepLink();
+        // 3. Завантаження даних (безпечне для браузера)
+        await loadCloudData();
 
-    setTimeout(() => {
+        // 4. Запуск скролу (Універсальний метод)
+        setupInfiniteScroll(); 
+
+        // 5. Старт додатку
+        switchMode('home');
+        checkDeepLink();
+
+        // 6. Прибираємо прелоадер
+        setTimeout(() => {
+            const pre = document.getElementById('preloader');
+            if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
+        }, 500);
+
+    } catch (error) {
+        console.error("CRITICAL INIT ERROR:", error);
+        // Аварійне відключення прелоадера, щоб користувач хоч щось побачив
         const pre = document.getElementById('preloader');
-        if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
-    }, 500);
-});
+        if(pre) pre.style.display = 'none';
+    }
+}
 
 async function checkDeepLink() {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
@@ -76,7 +118,9 @@ async function checkDeepLink() {
             rating: data.vote_average ? data.vote_average.toFixed(1) : 'N/A',
             year: (data.release_date || data.first_air_date || '').split('-')[0],
             type: type,
-            desc: data.overview
+            desc: data.overview,
+            imdb_id: data.external_ids?.imdb_id, // Важливо для плеєра
+            original_title: data.original_title
         };
 
         openMoviePage(movieObj);
@@ -90,7 +134,8 @@ async function checkDeepLink() {
 
 // --- NAVIGATION ---
 async function switchMode(tab) {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    // Безпечна вібрація
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
     state.currentTab = tab;
     
@@ -107,65 +152,70 @@ async function switchMode(tab) {
     const trigger = document.getElementById('infinite_trigger');
 
     const scrollArea = document.getElementById('main_scroll_area');
-    scrollArea.classList.remove('fade-in-anim');
-    void scrollArea.offsetWidth; 
-    scrollArea.classList.add('fade-in-anim');
+    if(scrollArea) {
+        scrollArea.classList.remove('fade-in-anim');
+        void scrollArea.offsetWidth; 
+        scrollArea.classList.add('fade-in-anim');
+    }
     window.scrollTo({top:0});
 
     if (tab === 'home') {
-        hero.style.display = 'flex'; filters.style.display = 'flex'; search.style.display = 'none';
-        content.style.display = 'grid'; trigger.style.display = 'flex';
-        content.style.paddingTop = '0px';
+        if(hero) hero.style.display = 'flex'; 
+        if(filters) filters.style.display = 'flex'; 
+        if(search) search.style.display = 'none';
+        if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
+        if(trigger) trigger.style.display = 'flex';
 
         if (state.feedMovies.length > 0) {
             renderGrid(state.feedMovies, false);
         } else {
-            content.innerHTML = ''; 
+            if(content) content.innerHTML = ''; 
             showSkeletons(12);
             state.currentPage = 1; 
             loadContent(1);
         }
     } 
     else if (tab === 'search') {
-        hero.style.display = 'none'; filters.style.display = 'none'; search.style.display = 'block';
-        content.style.display = 'grid'; 
-        // 🔥 ВАЖЛИВО: Trigger тепер має бути увімкнений і в пошуку, щоб працювала підгрузка!
-        trigger.style.display = 'flex'; 
-        content.style.paddingTop = '0px';
+        if(hero) hero.style.display = 'none'; 
+        if(filters) filters.style.display = 'none'; 
+        if(search) search.style.display = 'block';
+        if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
+        if(trigger) trigger.style.display = 'flex'; 
         
         // Якщо є старі результати - показуємо, якщо ні - текст
         if (state.searchResults.length > 0) {
-            // Перемальовуємо те, що вже "відкрито"
-            const limit = (state.searchPage) * 12; // скільки вже показали
+            const limit = (state.searchPage) * 12; 
             const initialBatch = state.searchResults.slice(0, Math.max(limit, 12));
             renderGrid(initialBatch, false);
         } else {
-            content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
+            if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
         }
     } 
     else if (tab === 'saved') {
-        hero.style.display = 'none'; filters.style.display = 'none'; search.style.display = 'none';
-        content.style.display = 'grid'; trigger.style.display = 'none';
-        content.style.paddingTop = 'calc(80px + var(--safe-top))';
+        if(hero) hero.style.display = 'none'; 
+        if(filters) filters.style.display = 'none'; 
+        if(search) search.style.display = 'none';
+        if(content) { content.style.display = 'grid'; content.style.paddingTop = 'calc(80px + var(--safe-top))'; }
+        if(trigger) trigger.style.display = 'none';
         
-        content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.syncing}</div>`;
+        if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.syncing}</div>`;
         await loadCloudData();
 
-        content.innerHTML = ''; 
+        if(content) content.innerHTML = ''; 
 
         if (state.historyItems.length > 0) {
             const historySection = renderHistorySection(state.historyItems);
-            content.appendChild(historySection);
+            if(content) content.appendChild(historySection);
         }
 
         if (state.savedItems.length === 0) {
             if (state.historyItems.length === 0) {
-                content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
+                if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
             } else {
                 const msg = document.createElement('div');
                 msg.innerHTML = `<div style="text-align:center; color:#555; padding:20px;">У "Моє" поки пусто</div>`;
                 msg.style.gridColumn = '1/-1';
-                content.appendChild(msg);
+                if(content) content.appendChild(msg);
             }
         } else {
             if (state.historyItems.length > 0) {
@@ -175,7 +225,7 @@ async function switchMode(tab) {
                 title.style.paddingLeft = '8px';
                 title.style.marginTop = '10px';
                 title.innerText = t.saved || 'Збережено'; 
-                content.appendChild(title);
+                if(content) content.appendChild(title);
             }
             renderGrid(state.savedItems, true);
         }
@@ -183,7 +233,7 @@ async function switchMode(tab) {
 }
 
 function setCategory(catId) {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     const btns = document.querySelectorAll('.cat-btn');
@@ -218,6 +268,7 @@ async function loadContent(page, isAppend = false) {
         renderGrid(items, isAppend);
     } catch(e) {
         removeSkeletons(); 
+        console.error(e);
     } finally {
         state.isLoading = false;
     }
@@ -233,65 +284,64 @@ function performSearchDelayed() {
     state.searchTimeout = setTimeout(async () => {
         showSkeletons(6); 
         
-        // 1. Отримуємо ВСІ результати (але не показуємо їх одразу)
+        // 1. Отримуємо ВСІ результати
         const results = await searchMovies(query);
         
         // 2. Зберігаємо в state
         state.searchResults = results;
-        state.searchPage = 0; // Скидаємо лічильник сторінок
+        state.searchPage = 0; 
         
-        removeSkeletons(); // Прибираємо скелетони
+        removeSkeletons(); 
         
-        // 3. Очищаємо контейнер перед першим показом
         const container = document.getElementById('content_container');
         if (container) container.innerHTML = '';
 
         if (results.length === 0) {
-            container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`;
+            if(container) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`;
         } else {
-            // 4. Завантажуємо першу порцію (12 шт)
+            // 4. Завантажуємо першу порцію
             loadNextSearchBatch();
         }
 
     }, 600);
 }
 
-// Функція, яка бере наступну порцію з пам'яті і малює її
 function loadNextSearchBatch() {
-    const BATCH_SIZE = 12; // Скільки підгружати за раз
-    
+    const BATCH_SIZE = 12; 
     const start = state.searchPage * BATCH_SIZE;
     const end = start + BATCH_SIZE;
-    
-    // Беремо шматочок масиву
     const chunk = state.searchResults.slice(start, end);
     
     if (chunk.length > 0) {
-        renderGrid(chunk, true); // Додаємо до існуючих (isAppend = true)
-        state.searchPage++;      // Готуємось до наступної сторінки
+        renderGrid(chunk, true); 
+        state.searchPage++;      
     }
 }
 
-// --- 🔥 INFINITE SCROLL (ОНОВЛЕНО) ---
+// --- 🔥 INFINITE SCROLL (ROBUST BROWSER VERSION) ---
 function setupInfiniteScroll() {
-    const trigger = document.getElementById('infinite_trigger');
-    
-    const observer = new IntersectionObserver((entries) => {
-        // Якщо доскролили до низу і зараз нічого не вантажиться
-        if (entries[0].isIntersecting && !state.isLoading) {
-            
-            // СЦЕНАРІЙ 1: Головна сторінка (вантажимо з інтернету)
+    // Функція, яка перевіряє позицію скролу
+    const checkScroll = () => {
+        if (state.isLoading) return;
+
+        // Висота документа - скрол зверху - висота вікна
+        const scrollBottom = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+        
+        // Якщо до низу залишилось менше 300 пікселів - вантажимо
+        if (scrollBottom < 300) {
             if (state.currentTab === 'home') {
                 state.currentPage++;
                 loadContent(state.currentPage, true);
-            }
-            
-            // СЦЕНАРІЙ 2: Пошук (беремо з пам'яті наступну порцію)
+            } 
             else if (state.currentTab === 'search') {
                 loadNextSearchBatch();
             }
         }
-    }, { threshold: 0.1 });
+    };
+
+    // Додаємо слухача на вікно (найнадійніший спосіб для браузерів)
+    window.addEventListener('scroll', checkScroll);
     
-    if(trigger) observer.observe(trigger);
+    // Про всяк випадок перевіряємо і body (для деяких мобільних браузерів)
+    document.body.addEventListener('scroll', checkScroll);
 }

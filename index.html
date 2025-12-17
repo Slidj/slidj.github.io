@@ -4,27 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-    <title>Netflix Clone</title>
+    <title>MEDIA HUB</title>
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-RPM3X3960Y"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-RPM3X3960Y', {
-    // Вказуємо, що ми в Telegram Mini App
-    'app_name': 'MediaHub_TG',
-    'send_page_view': true
-  });
-</script>
-    
-
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RPM3X3960Y"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-RPM3X3960Y', {
+        'app_name': 'MediaHub_TG',
+        'send_page_view': true
+      });
+    </script>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=100">
+    <link rel="stylesheet" href="css/style.css?v=101">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
 <body>
+
+    <div id="maintenance_screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:20000; text-align:center; flex-direction:column; justify-content:center; align-items:center; color:white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🛠</div>
+        <h2 style="font-size: 24px; margin-bottom: 10px;">Технічне обслуговування</h2>
+        <p style="color:#808080; padding:0 40px; font-size: 16px; line-height: 1.4;">Ми оновлюємо Media Hub для вас.<br>Поверніться за декілька годин!</p>
+    </div>
+
+    <div id="blocked_screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:20000; text-align:center; flex-direction:column; justify-content:center; align-items:center; color:white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🚫</div>
+        <h2 style="font-size: 24px; color:#e50914; margin-bottom: 10px;">Доступ обмежено</h2>
+        <p style="color:#808080; padding:0 40px; font-size: 16px; line-height: 1.4;">Ваш аккаунт було заблоковано адміністратором за порушення правил.</p>
+    </div>
 
     <div id="preloader">
         <div class="netflix-loader"></div>
@@ -43,7 +54,7 @@
         <button class="cat-btn" onclick="setCategory('movie')">Фільми</button>
         <button class="cat-btn" onclick="setCategory('tv')">Серіали</button>
         <button class="cat-btn" onclick="setCategory('16')">Мультики</button>
-        </div>
+    </div>
 
     <div id="search_bar_container" style="display:none;">
         <input type="text" id="search_input" placeholder="Пошук фільмів, серіалів..." oninput="performSearchDelayed()">
@@ -107,7 +118,7 @@
         <div id="movie_details_content"></div>
     </div>
 
-    <script type="module" src="js/app.js?v=6"></script>
+    <script type="module" src="js/app.js?v=7"></script>
     
     <script>
         window.onload = function() {

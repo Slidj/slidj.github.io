@@ -4,42 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-
-<script>
-    // 🔥 ГЛОБАЛЬНИЙ ПЕРЕХОПЛЮВАЧ ПОМИЛОК
-    window.onerror = function(msg, url, line, col, error) {
-        // Створюємо червоний екран смерті
-        var div = document.createElement("div");
-        div.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:#ff5555; z-index:999999; padding:20px; overflow:auto; font-family:monospace; font-size:14px; text-align:left; white-space:pre-wrap;";
-        
-        div.innerHTML = "<h1>💥 CRITICAL ERROR</h1>" +
-            "<hr>" +
-            "<h3>Message: " + msg + "</h3>" +
-            "<p><b>File:</b> " + url + "</p>" +
-            "<p><b>Line:</b> " + line + " : " + col + "</p>" +
-            "<hr>" +
-            "<p><b>Stack:</b><br>" + (error && error.stack ? error.stack : 'No stack trace') + "</p>";
-            
-        document.body.appendChild(div);
-        
-        // Зупиняємо прелоадер, якщо він крутиться
-        var pre = document.getElementById('preloader');
-        if(pre) pre.style.display = 'none';
-        
-        return false;
-    };
-
-    // Перехоплення помилок Promise (асинхронних)
-    window.addEventListener('unhandledrejection', function(event) {
-        window.onerror(
-            "Unhandled Promise Rejection: " + (event.reason ? event.reason.message : event.reason),
-            "Unknown (Async)", 
-            0, 0, 
-            event.reason
-        );
-    });
-</script>
-    
     
     <title>Netflix Clone</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>

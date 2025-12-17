@@ -1,12 +1,100 @@
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-@keyframes slideUpFade { from { opacity: 0; transform: translateY(30%); } to { opacity: 1; transform: translateY(0); } }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeInUpCard { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+/* ==========================================================
+   ✨ ANIMATIONS.CSS: PHYSICS & TRANSITIONS
+   ========================================================== */
 
-.fade-in-anim { animation: fadeIn 0.3s ease-out forwards; }
+/* 1. 🌊 ЕФЕКТ ПОЯВИ КАРТОК (Fade In + Slide Up) 
+   Картки плавно випливають знизу */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
 
 .card-anim {
-    opacity: 0; 
-    animation: fadeInUpCard 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    /* backwards гарантує, що елемент невидимий до початку анімації */
+    animation: fadeInUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* 2. 🔄 ОБЕРТАННЯ (Для лоадерів) 
+   Зберігаємо зі старого файлу, бо це важливо */
+@keyframes spin { 
+    0% { transform: rotate(0deg); } 
+    100% { transform: rotate(360deg); } 
+}
+
+/* 3. 📄 ПЛАВНА ЗМІНА СТОРІНОК 
+   Використовується при перемиканні вкладок */
+.fade-in-anim {
+    animation: fadeInPage 0.3s ease-out forwards;
+}
+
+@keyframes fadeInPage {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 4. 👆 ЕФЕКТ НАТИСКАННЯ (TACTILE FEEDBACK)
+   Найважливіше для відчуття "додатку". Все реагує на палець. */
+.movie-poster-card:active,
+.trailer-card:active,
+.cast-card:active,
+.similar-card:active,
+.cat-btn:active,
+.nf-btn:active,
+.nav-item:active,
+.hero-btn:active,
+.close-player-btn:active,
+.close-round-btn:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+/* 5. 📱 МОДАЛЬНЕ ВІКНО ФІЛЬМУ (Slide Up)
+   Сторінка виїжджає знизу, як на iPhone */
+.modal-fullscreen {
+    animation: slideUpModal 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes slideUpModal {
+    from { 
+        transform: translateY(100%); 
+        opacity: 0;
+    }
+    to { 
+        transform: translateY(0); 
+        opacity: 1;
+    }
+}
+
+/* 6. 🎬 ПЛЕЄР (Zoom In)
+   Плеєр розгортається з центру */
+#player_modal {
+    animation: zoomInPlayer 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes zoomInPlayer {
+    from { 
+        transform: scale(0.95) translateY(20px); 
+        opacity: 0;
+    }
+    to { 
+        transform: scale(1) translateY(0); 
+        opacity: 1;
+    }
+}
+
+/* 7. 🌟 HERO BANNER
+   Текст на головному банері випливає із затримкою */
+.hero-content {
+    animation: fadeHero 0.8s ease-out 0.2s backwards;
+}
+
+@keyframes fadeHero {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
 }

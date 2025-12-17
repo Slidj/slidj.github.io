@@ -84,7 +84,6 @@ export async function setupHero(movie) {
 }
 
 export async function openMoviePage(movie) {
-    // --- 🔥 ДОДАНО: АНАЛІТИКА ПЕРЕГЛЯДУ ФІЛЬМУ ---
     if (typeof gtag === 'function') {
         gtag('event', 'view_item', {
             'item_id': movie.id,
@@ -113,7 +112,7 @@ export async function openMoviePage(movie) {
     }
 
     let details = { ...movie };
-    let logoUrl = null, castHtml = '', trailersHtml = '';
+    let logoUrl = null, castHtml = '', trailersHtml = '', techHtml = '';
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
 
     try {
@@ -129,6 +128,19 @@ export async function openMoviePage(movie) {
 
         details.desc = data.overview || movie.desc;
         if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
+
+        // 🔥 НОВЕ: Збір технічної інформації
+        const directors = data.credits?.crew?.filter(c => c.job === 'Director').map(d => d.name).join(', ');
+        const writers = data.credits?.crew?.filter(c => c.job === 'Writer' || c.job === 'Screenplay').map(w => w.name).join(', ');
+        const genres = data.genres?.map(g => g.name).join(', ');
+
+        techHtml = `
+            <div class="nf-tech-info">
+                ${directors ? `<div class="tech-item"><span class="tech-label">Режисер:</span> ${directors}</div>` : ''}
+                ${writers ? `<div class="tech-item"><span class="tech-label">Сценарій:</span> ${writers}</div>` : ''}
+                ${genres ? `<div class="tech-item"><span class="tech-label">Жанри:</span> ${genres}</div>` : ''}
+            </div>
+        `;
         
         // Актори
         if (data.credits?.cast?.length > 0) {
@@ -151,7 +163,7 @@ export async function openMoviePage(movie) {
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
-        // 🔥🔥 ТРЕЙЛЕРИ (ВИПРАВЛЕНО: пряме посилання на прев’ю YouTube) 🔥🔥
+        // Трейлери
         if (data.videos?.results?.length > 0) {
             const videos = data.videos.results.filter(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
             
@@ -170,7 +182,7 @@ export async function openMoviePage(movie) {
             }
         }
 
-    } catch (e) {}
+    } catch (e) { console.error(e); }
 
     const similarMovies = await fetchSimilar(movie.id, apiType);
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
@@ -224,7 +236,7 @@ export async function openMoviePage(movie) {
 
             <div class="nf-description">${details.desc || t.descMissing}</div>
             
-            ${trailersHtml}
+            ${techHtml} ${trailersHtml}
             ${castHtml}
             ${similarHtml}
             
@@ -236,7 +248,6 @@ export async function openMoviePage(movie) {
     window.ui_share = (id) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); if(!m) return; const startParam = `${m.type}_${m.id}`; const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`; const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; window.Telegram?.WebApp?.openTelegramLink(shareUrl); };
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
     
-    // 🔥 ФУНКЦІЯ ВІДКРИТТЯ ТРЕЙЛЕРА (ВИПРАВЛЕНО URL)
     window.ui_openTrailer = (key) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         const modal = document.getElementById('player_modal');

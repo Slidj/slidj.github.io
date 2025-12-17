@@ -11,10 +11,7 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-RPM3X3960Y', {
-        'app_name': 'MediaHub_TG',
-        'send_page_view': true
-      });
+      gtag('config', 'G-RPM3X3960Y', { 'app_name': 'MediaHub_TG', 'send_page_view': true });
     </script>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -25,16 +22,16 @@
 </head>
 <body>
 
-    <div id="maintenance_screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:20000; text-align:center; flex-direction:column; justify-content:center; align-items:center; color:white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <div id="maintenance_screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:20000; text-align:center; flex-direction:column; justify-content:center; align-items:center; color:white; font-family: sans-serif;">
         <div style="font-size: 80px; margin-bottom: 20px;">🛠</div>
         <h2 style="font-size: 24px; margin-bottom: 10px;">Технічне обслуговування</h2>
-        <p style="color:#808080; padding:0 40px; font-size: 16px; line-height: 1.4;">Ми оновлюємо Media Hub для вас.<br>Поверніться за декілька годин!</p>
+        <p style="color:#808080; padding:0 40px; font-size: 16px; line-height: 1.4;">Ми оновлюємо Media Hub для вас. Поверніться за декілька годин!</p>
     </div>
 
-    <div id="blocked_screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:20000; text-align:center; flex-direction:column; justify-content:center; align-items:center; color:white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <div id="blocked_screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:20000; text-align:center; flex-direction:column; justify-content:center; align-items:center; color:white; font-family: sans-serif;">
         <div style="font-size: 80px; margin-bottom: 20px;">🚫</div>
         <h2 style="font-size: 24px; color:#e50914; margin-bottom: 10px;">Доступ обмежено</h2>
-        <p style="color:#808080; padding:0 40px; font-size: 16px; line-height: 1.4;">Ваш аккаунт було заблоковано адміністратором за порушення правил.</p>
+        <p style="color:#808080; padding:0 40px; font-size: 16px; line-height: 1.4;">Ваш аккаунт було заблоковано адміністратором.</p>
     </div>
 
     <div id="preloader">
@@ -68,49 +65,37 @@
                 <h1 id="hero_title">Завантаження...</h1>
                 <div class="hero-buttons">
                     <button class="hero-btn white" onclick="playHeroMovie()">
-                        <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg> 
-                        Дивитись
+                        <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg> Дивитись
                     </button>
                     <button class="hero-btn gray" onclick="infoHeroMovie()">
-                        <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" fill="none"/><path d="M12 16v-4M12 8h.01" stroke="white" stroke-width="3"/></svg>
-                        Інфо
+                        <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" fill="none"/><path d="M12 16v-4M12 8h.01" stroke="white" stroke-width="3"/></svg> Інфо
                     </button>
                 </div>
             </div>
         </div>
 
         <div id="content_container" class="netflix-grid"></div>
-        
         <div id="infinite_trigger" style="height: 60px; display: flex; justify-content: center; align-items: center; width: 100%;">
             <div class="netflix-loader" style="width: 30px; height: 30px; border-width: 3px; display: none;" id="scroll_loader"></div>
         </div>
-        
         <div style="height: 80px;"></div>
     </div>
 
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="switchMode('home')">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            <span>Головна</span>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> <span>Головна</span>
         </div>
         <div class="nav-item" onclick="switchMode('search')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <span>Пошук</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> <span>Пошук</span>
         </div>
         <div class="nav-item" onclick="switchMode('saved')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-            <span>Моє</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg> <span>Моє</span>
         </div>
     </nav>
 
     <div id="player_modal">
         <div class="close-player-btn" onclick="closePlayer()">&times;</div>
-        <iframe 
-            id="video_frame" 
-            src="" 
-            allow="autoplay; encrypted-media; fullscreen; picture-in-picture" 
-            allowfullscreen>
-        </iframe>
+        <iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
     </div>
 
     <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;">
@@ -118,16 +103,13 @@
         <div id="movie_details_content"></div>
     </div>
 
-    <script type="module" src="js/app.js?v=7"></script>
+    <script type="module" src="js/app.js?v=8"></script>
     
     <script>
         window.onload = function() {
             setTimeout(function() {
                 const pre = document.getElementById('preloader');
-                if(pre) {
-                    pre.style.opacity = '0';
-                    setTimeout(() => pre.style.display = 'none', 500);
-                }
+                if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
             }, 3000); 
         };
     </script>

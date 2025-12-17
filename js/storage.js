@@ -16,7 +16,7 @@ export async function loadCloudData() {
                         try { state.historyItems = JSON.parse(values.history_movies); } catch (e) {}
                     }
                 }
-                resolve(); // Кажемо "Готово", код може йти далі
+                resolve(); 
             });
         } 
         // ВАРІАНТ 2: Ми в Браузері -> Тягнемо з LocalStorage
@@ -29,7 +29,7 @@ export async function loadCloudData() {
             } catch (e) {
                 console.error("Local storage error", e);
             }
-            resolve(); // Кажемо "Готово" миттєво
+            resolve();
         }
     });
 }
@@ -40,8 +40,15 @@ export function saveCloudData() {
 
     // ВАРІАНТ 1: Зберігаємо в Telegram
     if (isTg()) {
-        window.Telegram.WebApp.CloudStorage.setItem('saved_movies', savedStr);
-        window.Telegram.WebApp.CloudStorage.setItem('history_movies', historyStr);
+        // CloudStorage має ліміт 4096 байт на ключ.
+        // Якщо рядок задовгий - він не збережеться.
+        // Тому ми контролюємо довжину масивів у функціях toggleSave та addToHistory
+        window.Telegram.WebApp.CloudStorage.setItem('saved_movies', savedStr, (err, stored) => {
+            if(err) console.warn("Save Error (Saved):", err);
+        });
+        window.Telegram.WebApp.CloudStorage.setItem('history_movies', historyStr, (err, stored) => {
+            if(err) console.warn("Save Error (History):", err);
+        });
     } 
     // ВАРІАНТ 2: Зберігаємо в Браузері
     else {
@@ -49,8 +56,6 @@ export function saveCloudData() {
         localStorage.setItem('history_movies', historyStr);
     }
 }
-
-// --- Решта функцій без змін, але вони тепер використовують saveCloudData ---
 
 export function isSaved(id) {
     return state.savedItems.some(i => i.id == id);
@@ -69,29 +74,33 @@ export function toggleSave(id, btn) {
         if (btn) {
             const span = btn.querySelector('span');
             const svg = btn.querySelector('svg');
-            if(span) span.innerText = 'У "Моє"'; // Текст з api.js/i18n краще брати, але тут хардкод для прикладу
+            if(span) span.innerText = 'В моє'; // Хардкод або t.saveBtn
             if(svg) { svg.setAttribute('fill', 'none'); svg.style.fill = 'none'; }
         }
     } else {
         // Додаємо
         let movie = state.activeMovie; 
         if (!movie) movie = state.feedMovies.find(m => m.id == id);
-        if (!movie) movie = state.historyItems.find(m => m.id == id); // Шукаємо в історії теж
+        if (!movie) movie = state.searchResults.find(m => m.id == id); // Шукаємо в пошуку
+        if (!movie) movie = state.historyItems.find(m => m.id == id); // Шукаємо в історії
         
         if (movie) {
-            // Зберігаємо мінімум даних, щоб не забити пам'ять
+            // 🔥 ОПТИМІЗАЦІЯ: Зберігаємо тільки те, що треба для списку
             const minMovie = {
                 id: movie.id,
                 title: movie.title,
                 img: movie.img,
                 rating: movie.rating,
                 year: movie.year,
-                type: movie.type,
-                original_title: movie.original_title, // Важливо для плеєра
-                imdb_id: movie.imdb_id // Важливо для плеєра
+                type: movie.type
+                // Прибираємо heavy fields (original_title, imdb_id), щоб влазило більше.
+                // При відкритті фільму ми все одно підвантажимо деталі з API.
             };
             state.savedItems.unshift(minMovie);
             
+            // Ліміт збережених (щоб не впертися в 4096 байт)
+            if (state.savedItems.length > 25) state.savedItems.pop();
+
             if (btn) {
                 const span = btn.querySelector('span');
                 const svg = btn.querySelector('svg');
@@ -104,25 +113,25 @@ export function toggleSave(id, btn) {
 }
 
 export function addToHistory(movie) {
-    // Видаляємо дублікат, якщо вже є
+    // Видаляємо дублікат
     state.historyItems = state.historyItems.filter(i => i.id !== movie.id);
     
+    // 🔥 ОПТИМІЗАЦІЯ: Максимально стискаємо об'єкт
     const minMovie = {
         id: movie.id,
         title: movie.title,
         img: movie.img,
         rating: movie.rating,
-        year: movie.year,
-        type: movie.type,
-        original_title: movie.original_title,
-        imdb_id: movie.imdb_id
+        type: movie.type
+        // Ми не зберігаємо year, original_title, imdb_id в історії, щоб економити місце.
+        // Для відображення в стрічці "Історія" цього достатньо.
     };
     
-    // Додаємо на початок
     state.historyItems.unshift(minMovie);
     
-    // Обмежуємо історію (наприклад, останні 50)
-    if (state.historyItems.length > 50) {
+    // 🔥 ЖОРСТКИЙ ЛІМІТ: 20 елементів
+    // Це гарантує, що JSON рядок буде менше 4096 байт
+    if (state.historyItems.length > 20) {
         state.historyItems.pop();
     }
     

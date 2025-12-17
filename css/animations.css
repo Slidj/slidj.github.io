@@ -2,12 +2,11 @@
    ✨ ANIMATIONS.CSS: PHYSICS & TRANSITIONS
    ========================================================== */
 
-/* 1. 🌊 ЕФЕКТ ПОЯВИ КАРТОК (Fade In + Slide Up) 
-   Картки плавно випливають знизу */
+/* 1. 🌊 КАРТКИ ФІЛЬМІВ (Каскадна поява) */
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(20px) scale(0.96);
+        transform: translateY(40px) scale(0.9); /* Починаємо нижче */
     }
     to {
         opacity: 1;
@@ -16,85 +15,77 @@
 }
 
 .card-anim {
-    /* backwards гарантує, що елемент невидимий до початку анімації */
-    animation: fadeInUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    /* backwards ховає картку до старту, щоб не було "миготіння" */
+    animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
-/* 2. 🔄 ОБЕРТАННЯ (Для лоадерів) 
-   Зберігаємо зі старого файлу, бо це важливо */
+/* 2. 📱 МОДАЛЬНЕ ВІКНО (Справжній Slide Up) 
+   Виправлено: Прибрали opacity, щоб воно не "з'являлося з повітря", а саме виїжджало */
+@keyframes slideUpModal {
+    0% { 
+        transform: translateY(100vh); /* Повністю за межами екрану */
+    }
+    100% { 
+        transform: translateY(0); 
+    }
+}
+
+.modal-fullscreen {
+    /* 0.5s — трохи повільніше, щоб око помітило рух */
+    animation: slideUpModal 0.5s cubic-bezier(0.16, 1, 0.3, 1); 
+    will-change: transform; /* Підказка браузеру для плавності */
+}
+
+/* 3. 🎬 ПЛЕЄР (Pop-up ефект) */
+@keyframes zoomInPlayer {
+    from { 
+        transform: scale(0.8); 
+        opacity: 0;
+    }
+    to { 
+        transform: scale(1); 
+        opacity: 1;
+    }
+}
+
+#player_modal {
+    animation: zoomInPlayer 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Ефект пружини */
+}
+
+/* 4. 👆 ЕФЕКТ НАТИСКАННЯ (Tap Feedback) */
+.movie-poster-card:active,
+.trailer-card:active,
+.cat-btn:active,
+.nf-btn:active,
+.nav-item:active,
+.hero-btn:active,
+.close-round-btn:active {
+    transform: scale(0.92); /* Більш помітне натискання */
+    transition: transform 0.1s;
+}
+
+/* 5. 🔄 ОБЕРТАННЯ (Лоадер) */
 @keyframes spin { 
     0% { transform: rotate(0deg); } 
     100% { transform: rotate(360deg); } 
 }
 
-/* 3. 📄 ПЛАВНА ЗМІНА СТОРІНОК 
-   Використовується при перемиканні вкладок */
+/* 6. 📄 ПЛАВНИЙ ПЕРЕХІД МІЖ ВКЛАДКАМИ */
+@keyframes fadeInPage {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 .fade-in-anim {
     animation: fadeInPage 0.3s ease-out forwards;
 }
 
-@keyframes fadeInPage {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+/* 7. 🌟 HERO BANNER TEXT */
+@keyframes slideRightHero {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
 }
 
-/* 4. 👆 ЕФЕКТ НАТИСКАННЯ (TACTILE FEEDBACK)
-   Найважливіше для відчуття "додатку". Все реагує на палець. */
-.movie-poster-card:active,
-.trailer-card:active,
-.cast-card:active,
-.similar-card:active,
-.cat-btn:active,
-.nf-btn:active,
-.nav-item:active,
-.hero-btn:active,
-.close-player-btn:active,
-.close-round-btn:active {
-    transform: scale(0.95);
-    transition: transform 0.1s ease;
-}
-
-/* 5. 📱 МОДАЛЬНЕ ВІКНО ФІЛЬМУ (Slide Up)
-   Сторінка виїжджає знизу, як на iPhone */
-.modal-fullscreen {
-    animation: slideUpModal 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes slideUpModal {
-    from { 
-        transform: translateY(100%); 
-        opacity: 0;
-    }
-    to { 
-        transform: translateY(0); 
-        opacity: 1;
-    }
-}
-
-/* 6. 🎬 ПЛЕЄР (Zoom In)
-   Плеєр розгортається з центру */
-#player_modal {
-    animation: zoomInPlayer 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes zoomInPlayer {
-    from { 
-        transform: scale(0.95) translateY(20px); 
-        opacity: 0;
-    }
-    to { 
-        transform: scale(1) translateY(0); 
-        opacity: 1;
-    }
-}
-
-/* 7. 🌟 HERO BANNER
-   Текст на головному банері випливає із затримкою */
 .hero-content {
-    animation: fadeHero 0.8s ease-out 0.2s backwards;
-}
-
-@keyframes fadeHero {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
+    animation: slideRightHero 0.8s ease-out 0.2s backwards;
 }

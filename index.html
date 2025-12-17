@@ -15,7 +15,7 @@
     </script>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=101">
+    <link rel="stylesheet" href="css/style.css?v=102">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -41,6 +41,9 @@
     <header class="netflix-header">
         <div class="logo">MEDIA HUB</div>
         <div class="header-right">
+            <div id="admin_btn" style="display:none; margin-right: 15px; cursor: pointer;" onclick="window.openAdminPanel()">
+                <svg viewBox="0 0 24 24" fill="white" width="28" height="28"><path d="M12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5zm7.43-2.53l1.96-1.56c.18-.14.23-.4.11-.6l-2-3.46c-.12-.21-.37-.28-.58-.2l-2.31.93c-.48-.37-1-.69-1.57-.93l-.35-2.46c-.03-.23-.23-.4-.46-.4h-4c-.23 0-.43.17-.46.4l-.35 2.46c-.57.24-1.09.56-1.57.93l-2.31-.93c-.21-.08-.46 0-.58.2l-2 3.46c-.12.2-.07.46.11.6l1.96 1.56c-.03.17-.05.35-.05.53s.02.36.05.53l-1.96 1.56c-.18.14-.23.4-.11.6l2 3.46c.12.21.37.28.58.2l2.31-.93c.48.37 1 .69 1.57.93l.35 2.46c.03.23.23.4.46.4h4c.23 0 .43-.17.46-.4l.35-2.46c.57-.24 1.09-.56 1.57-.93l2.31.93c.21.08.46 0 .58-.2l2-3.46c.12-.2.07-.46-.11-.6l-1.96-1.56c.03-.17.05-.35.05-.53s-.02-.36-.05-.53z"/></svg>
+            </div>
             <img id="user_avatar" src="" alt="" style="display:none;">
             <div id="default_avatar">👤</div>
         </div>
@@ -93,6 +96,29 @@
         </div>
     </nav>
 
+    <div id="admin_modal" class="modal-fullscreen" style="display:none; background: #141414; z-index: 10000;">
+        <div style="padding: 20px; padding-top: calc(20px + var(--safe-top));">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h2 style="color:white; margin:0;">Адмін-панель</h2>
+                <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">&times;</button>
+            </div>
+            
+            <div id="admin_stats" style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; color:#aaa; font-size:14px;">
+                Завантаження статистики...
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <button id="maint_toggle_btn" onclick="window.toggleMaintenanceMode()" style="width:100%; padding:12px; border-radius:5px; border:none; font-weight:bold; cursor:pointer;">
+                    Завантаження...
+                </button>
+            </div>
+
+            <h3 style="color:white; font-size:16px;">Користувачі:</h3>
+            <div id="admin_user_list" style="display:flex; flex-direction:column; gap:10px;">
+                </div>
+        </div>
+    </div>
+
     <div id="player_modal">
         <div class="close-player-btn" onclick="closePlayer()">&times;</div>
         <iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
@@ -103,7 +129,7 @@
         <div id="movie_details_content"></div>
     </div>
 
-    <script type="module" src="js/app.js?v=100"></script>
+    <script type="module" src="js/app.js?v=9"></script>
     
     <script>
         window.onload = function() {

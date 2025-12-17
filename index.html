@@ -38,16 +38,17 @@
         <div class="netflix-loader"></div>
     </div>
 
-    <header class="netflix-header" style="padding-top: var(--safe-top); display: flex; align-items: center; justify-content: space-between; padding-left: 15px; padding-right: 15px;">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <div id="admin_btn" style="display:none; cursor: pointer; padding: 10px; z-index: 10001; margin-left: -10px;" onclick="window.openAdminPanel()">
-                <svg viewBox="0 0 24 24" fill="white" width="28" height="28">
-                    <path d="M12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5zm7.43-2.53l1.96-1.56c.18-.14.23-.4.11-.6l-2-3.46c-.12-.21-.37-.28-.58-.2l-2.31.93c-.48-.37-1-.69-1.57-.93l-.35-2.46c-.03-.23-.23-.4-.46-.4h-4c-.23 0-.43.17-.46.4l-.35 2.46c-.57.24-1.09.56-1.57.93l-2.31-.93c-.21-.08-.46 0-.58.2l-2 3.46c-.12.2-.07.46.11.6l1.96 1.56c-.03.17-.05.35-.05.53s.02.36.05.53l-1.96 1.56c-.18.14-.23.4-.11.6l2 3.46c.12.21.37.28.58.2l2.31-.93c.48.37 1 .69 1.57.93l.35 2.46c.03.23.23.4.46.4h4c.23 0 .43-.17.46-.4l.35-2.46c.57-.24 1.09-.56 1.57-.93l2.31.93c.21.08.46 0 .58-.2l2-3.46c.12-.2.07-.46-.11-.6l-1.96-1.56c.03-.17.05-.35.05-.53s-.02-.36-.05-.53z"></path>
-                </svg>
-            </div>
-            <div class="logo">MEDIA HUB</div>
+    <header class="netflix-header" style="position: relative; padding-top: var(--safe-top); height: 60px; display: flex; align-items: center; justify-content: center; background: #000;">
+        
+        <div id="admin_btn" style="display:none; position: absolute; left: 10px; top: var(--safe-top); height: 60px; display: flex; align-items: center; justify-content: center; padding: 0 10px; cursor: pointer; z-index: 10005;" onclick="window.openAdminPanel()">
+            <svg viewBox="0 0 24 24" fill="white" width="28" height="28">
+                <path d="M12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5zm7.43-2.53l1.96-1.56c.18-.14.23-.4.11-.6l-2-3.46c-.12-.21-.37-.28-.58-.2l-2.31.93c-.48-.37-1-.69-1.57-.93l-.35-2.46c-.03-.23-.23-.4-.46-.4h-4c-.23 0-.43.17-.46.4l-.35 2.46c-.57.24-1.09.56-1.57.93l-2.31-.93c-.21-.08-.46 0-.58.2l-2 3.46c-.12.2-.07.46.11.6l1.96 1.56c-.03.17-.05.35-.05.53s.02.36.05.53l-1.96 1.56c-.18.14-.23.4-.11.6l2 3.46c.12.21.37.28.58.2l2.31-.93c.48.37 1 .69 1.57.93l.35 2.46c.03.23.23.4.46.4h4c.23 0 .43-.17.46-.4l.35-2.46c.57-.24 1.09-.56 1.57-.93l2.31.93c.21.08.46 0 .58-.2l2-3.46c.12-.2.07-.46-.11-.6l-1.96-1.56c.03-.17.05-.35.05-.53s-.02-.36-.05-.53z"></path>
+            </svg>
         </div>
-        <div class="header-right">
+
+        <div class="logo" style="z-index: 10001;">MEDIA HUB</div>
+
+        <div class="header-right" style="position: absolute; right: 15px; top: var(--safe-top); height: 60px; display: flex; align-items: center;">
             <img id="user_avatar" src="" alt="" style="display:none; width: 32px; height: 32px; border-radius: 50%;">
             <div id="default_avatar">👤</div>
         </div>
@@ -100,7 +101,7 @@
         </div>
     </nav>
 
-    <div id="admin_modal" class="modal-fullscreen" style="display:none; background: #141414; z-index: 10000;">
+    <div id="admin_modal" class="modal-fullscreen" style="display:none; background: #141414; z-index: 100000;">
         <div style="padding: 20px; padding-top: calc(20px + var(--safe-top));">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                 <h2 style="color:white; margin:0;">Адмін-панель</h2>
@@ -119,7 +120,7 @@
 
             <h3 style="color:white; font-size:16px;">Користувачі:</h3>
             <div id="admin_user_list" style="display:flex; flex-direction:column; gap:10px;">
-                </div>
+            </div>
         </div>
     </div>
 
@@ -133,7 +134,7 @@
         <div id="movie_details_content"></div>
     </div>
 
-    <script type="module" src="js/app.js?v=100"></script>
+    <script type="module" src="js/app.js?v=101"></script>
     
     <script>
         window.onload = function() {

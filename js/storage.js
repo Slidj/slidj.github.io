@@ -5,7 +5,6 @@ const isTg = () => window.Telegram?.WebApp?.CloudStorage;
 
 export async function loadCloudData() {
     return new Promise((resolve) => {
-        // ВАРІАНТ 1: Ми в Telegram -> Тягнемо з хмари
         if (isTg()) {
             window.Telegram.WebApp.CloudStorage.getItems(['saved_movies', 'history_movies'], (err, values) => {
                 if (!err && values) {
@@ -18,43 +17,46 @@ export async function loadCloudData() {
                 }
                 resolve(); 
             });
-        } 
-        // ВАРІАНТ 2: Ми в Браузері -> Тягнемо з LocalStorage
-        else {
+        } else {
+            // Браузер
             try {
                 const saved = localStorage.getItem('saved_movies');
                 const history = localStorage.getItem('history_movies');
                 if (saved) state.savedItems = JSON.parse(saved);
                 if (history) state.historyItems = JSON.parse(history);
-            } catch (e) {
-                console.error("Local storage error", e);
-            }
+            } catch (e) {}
             resolve();
         }
     });
 }
 
-export function saveCloudData() {
-    const savedStr = JSON.stringify(state.savedItems);
-    const historyStr = JSON.stringify(state.historyItems);
-
-    // ВАРІАНТ 1: Зберігаємо в Telegram
-    if (isTg()) {
-        // CloudStorage має ліміт 4096 байт на ключ.
-        // Якщо рядок задовгий - він не збережеться.
-        // Тому ми контролюємо довжину масивів у функціях toggleSave та addToHistory
-        window.Telegram.WebApp.CloudStorage.setItem('saved_movies', savedStr, (err, stored) => {
-            if(err) console.warn("Save Error (Saved):", err);
-        });
-        window.Telegram.WebApp.CloudStorage.setItem('history_movies', historyStr, (err, stored) => {
-            if(err) console.warn("Save Error (History):", err);
-        });
-    } 
-    // ВАРІАНТ 2: Зберігаємо в Браузері
-    else {
-        localStorage.setItem('saved_movies', savedStr);
-        localStorage.setItem('history_movies', historyStr);
+// Функція для безпечного збереження
+function safeSave(key, dataArray) {
+    try {
+        const jsonStr = JSON.stringify(dataArray);
+        
+        if (isTg()) {
+            window.Telegram.WebApp.CloudStorage.setItem(key, jsonStr, (err, stored) => {
+                if (err) {
+                    console.warn(`Error saving ${key}:`, err);
+                    // Якщо помилка (швидше за все ліміт), пробуємо видалити останній елемент і зберегти знову
+                    if (dataArray.length > 1) {
+                        dataArray.pop(); 
+                        safeSave(key, dataArray); // Рекурсивна спроба
+                    }
+                }
+            });
+        } else {
+            localStorage.setItem(key, jsonStr);
+        }
+    } catch (e) {
+        console.error("Save error", e);
     }
+}
+
+export function saveCloudData() {
+    safeSave('saved_movies', state.savedItems);
+    safeSave('history_movies', state.historyItems);
 }
 
 export function isSaved(id) {
@@ -71,69 +73,66 @@ export function toggleSave(id, btn) {
     if (index >= 0) {
         // Видаляємо
         state.savedItems.splice(index, 1);
-        if (btn) {
-            const span = btn.querySelector('span');
-            const svg = btn.querySelector('svg');
-            if(span) span.innerText = 'В моє'; // Хардкод або t.saveBtn
-            if(svg) { svg.setAttribute('fill', 'none'); svg.style.fill = 'none'; }
-        }
+        updateBtnState(btn, false);
     } else {
         // Додаємо
-        let movie = state.activeMovie; 
-        if (!movie) movie = state.feedMovies.find(m => m.id == id);
-        if (!movie) movie = state.searchResults.find(m => m.id == id); // Шукаємо в пошуку
-        if (!movie) movie = state.historyItems.find(m => m.id == id); // Шукаємо в історії
-        
+        const movie = findMovieById(id);
         if (movie) {
-            // 🔥 ОПТИМІЗАЦІЯ: Зберігаємо тільки те, що треба для списку
-            const minMovie = {
-                id: movie.id,
-                title: movie.title,
-                img: movie.img,
-                rating: movie.rating,
-                year: movie.year,
-                type: movie.type
-                // Прибираємо heavy fields (original_title, imdb_id), щоб влазило більше.
-                // При відкритті фільму ми все одно підвантажимо деталі з API.
-            };
-            state.savedItems.unshift(minMovie);
-            
-            // Ліміт збережених (щоб не впертися в 4096 байт)
-            if (state.savedItems.length > 25) state.savedItems.pop();
-
-            if (btn) {
-                const span = btn.querySelector('span');
-                const svg = btn.querySelector('svg');
-                if(span) span.innerText = 'Збережено';
-                if(svg) { svg.setAttribute('fill', 'white'); svg.style.fill = 'white'; }
-            }
+            state.savedItems.unshift(minifyMovie(movie));
+            // ЛІМІТ: 20 штук для збережених
+            if (state.savedItems.length > 20) state.savedItems.pop();
+            updateBtnState(btn, true);
         }
     }
     saveCloudData();
 }
 
 export function addToHistory(movie) {
+    if (!movie || !movie.id) return;
+
     // Видаляємо дублікат
     state.historyItems = state.historyItems.filter(i => i.id !== movie.id);
     
-    // 🔥 ОПТИМІЗАЦІЯ: Максимально стискаємо об'єкт
-    const minMovie = {
-        id: movie.id,
-        title: movie.title,
-        img: movie.img,
-        rating: movie.rating,
-        type: movie.type
-        // Ми не зберігаємо year, original_title, imdb_id в історії, щоб економити місце.
-        // Для відображення в стрічці "Історія" цього достатньо.
-    };
+    // Додаємо на початок
+    state.historyItems.unshift(minifyMovie(movie));
     
-    state.historyItems.unshift(minMovie);
-    
-    // 🔥 ЖОРСТКИЙ ЛІМІТ: 20 елементів
-    // Це гарантує, що JSON рядок буде менше 4096 байт
-    if (state.historyItems.length > 20) {
+    // 🔥 ЖОРСТКИЙ ЛІМІТ: 15 штук для історії
+    // Це дає гарантію, що ми вліземо в ліміт навіть з довгими назвами
+    if (state.historyItems.length > 15) {
         state.historyItems.pop();
     }
     
     saveCloudData();
+}
+
+// --- Допоміжні функції ---
+
+function findMovieById(id) {
+    return state.activeMovie || 
+           state.feedMovies.find(m => m.id == id) || 
+           state.searchResults.find(m => m.id == id) || 
+           state.historyItems.find(m => m.id == id);
+}
+
+function minifyMovie(movie) {
+    // Зберігаємо тільки критично важливі дані
+    return {
+        id: movie.id,
+        title: movie.title ? movie.title.substring(0, 50) : 'Movie', // Обрізаємо дуже довгі назви
+        img: movie.img,
+        rating: movie.rating,
+        type: movie.type
+    };
+}
+
+function updateBtnState(btn, saved) {
+    if (!btn) return;
+    const span = btn.querySelector('span');
+    const svg = btn.querySelector('svg');
+    // Тексти можна брати з t.saveBtn, але тут спрощено для надійності
+    if(span) span.innerText = saved ? 'Збережено' : 'В моє';
+    if(svg) { 
+        svg.setAttribute('fill', saved ? 'white' : 'none'); 
+        svg.style.fill = saved ? 'white' : 'none'; 
+    }
 }

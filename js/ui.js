@@ -151,7 +151,7 @@ export async function openMoviePage(movie) {
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
-        // 🔥🔥 ТРЕЙЛЕРИ (БЕЗ ПІДПИСІВ, КРАЩА ЯКІСТЬ КАРТИНКИ) 🔥🔥
+        // 🔥🔥 ТРЕЙЛЕРИ (ВИПРАВЛЕНО: пряме посилання на прев’ю YouTube) 🔥🔥
         if (data.videos?.results?.length > 0) {
             const videos = data.videos.results.filter(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
             
@@ -159,7 +159,7 @@ export async function openMoviePage(movie) {
                 const videoCards = videos.map(v => `
                     <div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')">
                         <div class="trailer-img-box">
-                            <img src="http://googleusercontent.com/youtube.com/vi/${v.key}/hqdefault.jpg" loading="lazy">
+                            <img src="https://img.youtube.com/vi/${v.key}/hqdefault.jpg" loading="lazy">
                             <div class="trailer-play-icon">
                                 <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
                             </div>
@@ -236,6 +236,7 @@ export async function openMoviePage(movie) {
     window.ui_share = (id) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); if(!m) return; const startParam = `${m.type}_${m.id}`; const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`; const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; window.Telegram?.WebApp?.openTelegramLink(shareUrl); };
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
     
+    // 🔥 ФУНКЦІЯ ВІДКРИТТЯ ТРЕЙЛЕРА (ВИПРАВЛЕНО URL)
     window.ui_openTrailer = (key) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         const modal = document.getElementById('player_modal');

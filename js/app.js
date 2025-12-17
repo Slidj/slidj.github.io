@@ -8,7 +8,7 @@ import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
 import { t, initLanguage } from './i18n.js';
 
-// --- EXPORTS (Global functions for HTML onclick) ---
+// --- EXPORTS ---
 window.setCategory = setCategory;
 window.switchMode = switchMode;
 window.playHeroMovie = () => { if(state.currentHeroMovie) openPremiumPlayer(state.currentHeroMovie.id, null); };
@@ -22,7 +22,6 @@ window.ui_toggleSave = (id, btn) => {
     if (state.currentTab === 'saved') switchMode('saved');
 };
 
-// Безпечний доступ до об'єкта Telegram
 const tg = window.Telegram?.WebApp;
 
 // --- INIT ---
@@ -30,21 +29,17 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
     try {
-        // 1. Ініціалізація мови
         initLanguage();
 
-        // 2. Налаштування Телеграма (ТІЛЬКИ якщо ми в ньому)
         if (tg) {
             try {
                 tg.ready(); 
                 tg.expand();
                 if(tg.requestFullscreen) tg.requestFullscreen();
                 if(tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-                // Налаштування кольорів хедера
                 tg.setHeaderColor?.('#000000'); 
                 tg.setBackgroundColor?.('#000000');
                 
-                // Аватарка (якщо є)
                 if(tg.initDataUnsafe?.user?.photo_url) {
                     const avatar = document.getElementById('user_avatar');
                     const defAvatar = document.getElementById('default_avatar');
@@ -55,7 +50,6 @@ async function initApp() {
                     }
                 }
                 
-                // Кнопка "Назад" (Android/Telegram)
                 if (tg.BackButton) {
                     tg.BackButton.onClick(() => {
                         if (state.activeMovie) {
@@ -70,17 +64,12 @@ async function initApp() {
             }
         }
 
-        // 3. Завантаження даних (безпечне для браузера)
         await loadCloudData();
-
-        // 4. Запуск скролу (Універсальний метод)
         setupInfiniteScroll(); 
 
-        // 5. Старт додатку
         switchMode('home');
         checkDeepLink();
 
-        // 6. Прибираємо прелоадер
         setTimeout(() => {
             const pre = document.getElementById('preloader');
             if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
@@ -88,7 +77,6 @@ async function initApp() {
 
     } catch (error) {
         console.error("CRITICAL INIT ERROR:", error);
-        // Аварійне відключення прелоадера, щоб користувач хоч щось побачив
         const pre = document.getElementById('preloader');
         if(pre) pre.style.display = 'none';
     }
@@ -119,7 +107,7 @@ async function checkDeepLink() {
             year: (data.release_date || data.first_air_date || '').split('-')[0],
             type: type,
             desc: data.overview,
-            imdb_id: data.external_ids?.imdb_id, // Важливо для плеєра
+            imdb_id: data.external_ids?.imdb_id,
             original_title: data.original_title
         };
 
@@ -134,7 +122,6 @@ async function checkDeepLink() {
 
 // --- NAVIGATION ---
 async function switchMode(tab) {
-    // Безпечна вібрація
     if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
     state.currentTab = tab;
@@ -160,13 +147,19 @@ async function switchMode(tab) {
     window.scrollTo({top:0});
 
     if (tab === 'home') {
-        if(hero) hero.style.display = 'flex'; 
         if(filters) filters.style.display = 'flex'; 
         if(search) search.style.display = 'none';
         if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
         if(trigger) trigger.style.display = 'flex';
 
         if (state.feedMovies.length > 0) {
+            // Відновлюємо стан Hero банера
+            const cat = state.currentGenre || 'all';
+            if (cat === 'all') {
+                if(hero) hero.style.display = 'flex';
+            } else {
+                if(hero) hero.style.display = 'none';
+            }
             renderGrid(state.feedMovies, false);
         } else {
             if(content) content.innerHTML = ''; 
@@ -182,7 +175,6 @@ async function switchMode(tab) {
         if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
         if(trigger) trigger.style.display = 'flex'; 
         
-        // Якщо є старі результати - показуємо, якщо ні - текст
         if (state.searchResults.length > 0) {
             const limit = (state.searchPage) * 12; 
             const initialBatch = state.searchResults.slice(0, Math.max(limit, 12));
@@ -247,7 +239,7 @@ function setCategory(catId) {
     loadContent(1); 
 }
 
-// --- HOME LOGIC ---
+// --- 🔥 ОНОВЛЕНО: LOAD CONTENT З УРАХУВАННЯМ КАТЕГОРІЇ ---
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;
     
@@ -256,12 +248,25 @@ async function loadContent(page, isAppend = false) {
     }
 
     try {
-        const items = await fetchHomeContent(page);
+        // Беремо категорію зі state (або 'all')
+        const category = state.currentGenre || 'all';
+        const items = await fetchHomeContent(page, category);
+        
         state.feedMovies = [...state.feedMovies, ...items];
 
-        if (page === 1 && !isAppend && items.length > 0) {
-            const rand = Math.floor(Math.random() * Math.min(5, items.length));
-            setupHero(items[rand]);
+        // Логіка Hero-банера
+        if (page === 1 && !isAppend) {
+            if (category === 'all' && items.length > 0) {
+                // Тільки для "Усі" показуємо Hero
+                const rand = Math.floor(Math.random() * Math.min(5, items.length));
+                setupHero(items[rand]);
+                const hero = document.getElementById('hero_section');
+                if(hero) hero.style.display = 'flex';
+            } else {
+                // Для інших категорій ховаємо Hero
+                const hero = document.getElementById('hero_section');
+                if(hero) hero.style.display = 'none';
+            }
         }
         
         removeSkeletons();
@@ -274,8 +279,6 @@ async function loadContent(page, isAppend = false) {
     }
 }
 
-// --- 🔥 SEARCH LOGIC (LAZY LOADING) ---
-
 function performSearchDelayed() {
     clearTimeout(state.searchTimeout);
     const query = document.getElementById('search_input').value;
@@ -283,26 +286,18 @@ function performSearchDelayed() {
 
     state.searchTimeout = setTimeout(async () => {
         showSkeletons(6); 
-        
-        // 1. Отримуємо ВСІ результати
         const results = await searchMovies(query);
-        
-        // 2. Зберігаємо в state
         state.searchResults = results;
         state.searchPage = 0; 
-        
         removeSkeletons(); 
-        
         const container = document.getElementById('content_container');
         if (container) container.innerHTML = '';
 
         if (results.length === 0) {
             if(container) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`;
         } else {
-            // 4. Завантажуємо першу порцію
             loadNextSearchBatch();
         }
-
     }, 600);
 }
 
@@ -311,23 +306,16 @@ function loadNextSearchBatch() {
     const start = state.searchPage * BATCH_SIZE;
     const end = start + BATCH_SIZE;
     const chunk = state.searchResults.slice(start, end);
-    
     if (chunk.length > 0) {
         renderGrid(chunk, true); 
         state.searchPage++;      
     }
 }
 
-// --- 🔥 INFINITE SCROLL (ROBUST BROWSER VERSION) ---
 function setupInfiniteScroll() {
-    // Функція, яка перевіряє позицію скролу
     const checkScroll = () => {
         if (state.isLoading) return;
-
-        // Висота документа - скрол зверху - висота вікна
         const scrollBottom = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
-        
-        // Якщо до низу залишилось менше 300 пікселів - вантажимо
         if (scrollBottom < 300) {
             if (state.currentTab === 'home') {
                 state.currentPage++;
@@ -338,10 +326,6 @@ function setupInfiniteScroll() {
             }
         }
     };
-
-    // Додаємо слухача на вікно (найнадійніший спосіб для браузерів)
     window.addEventListener('scroll', checkScroll);
-    
-    // Про всяк випадок перевіряємо і body (для деяких мобільних браузерів)
     document.body.addEventListener('scroll', checkScroll);
 }

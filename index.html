@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-    
     <title>Netflix Clone</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="css/style.css?v=3">
-    
-    
 </head>
 <body>
 
@@ -26,12 +23,11 @@
     </header>
 
     <div id="filters_wrapper" class="netflix-filters">
-        <button class="cat-btn active" onclick="setCategory('')">Усі</button>
+        <button class="cat-btn active" onclick="setCategory('all')">Усі</button>
         <button class="cat-btn" onclick="setCategory('movie')">Фільми</button>
         <button class="cat-btn" onclick="setCategory('tv')">Серіали</button>
-        <button class="cat-btn" onclick="setCategory('16')">Мультфільми</button>
-        <button class="cat-btn" onclick="setCategory('28')">Бойовики</button>
-    </div>
+        <button class="cat-btn" onclick="setCategory('16')">Мультики</button>
+        </div>
 
     <div id="search_bar_container" style="display:none;">
         <input type="text" id="search_input" placeholder="Пошук фільмів, серіалів..." oninput="performSearchDelayed()">
@@ -95,7 +91,7 @@
         <div id="movie_details_content"></div>
     </div>
 
-    <script type="module" src="js/app.js?v=30"></script>
+    <script type="module" src="js/app.js?v=4000"></script>
     
     <script>
         window.onload = function() {

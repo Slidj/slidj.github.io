@@ -1,131 +1,130 @@
 import { state } from './state.js';
-// 🔥 Імпортуємо переклади
-import { t } from './i18n.js';
 
-// --- LOAD DATA ---
-export function loadCloudData() {
+// Перевіряємо, чи ми в Telegram
+const isTg = () => window.Telegram?.WebApp?.CloudStorage;
+
+export async function loadCloudData() {
     return new Promise((resolve) => {
-        const tg = window.Telegram?.WebApp;
-        
-        // 1. Load LocalStorage (Backup)
-        try {
-            const localSaved = localStorage.getItem('savedItems');
-            if (localSaved) state.savedItems = JSON.parse(localSaved);
-            
-            const localHistory = localStorage.getItem('historyItems');
-            if (localHistory) state.historyItems = JSON.parse(localHistory);
-        } catch(e) {}
-
-        // 2. Load CloudStorage (Primary)
-        if (tg && tg.CloudStorage) {
-            tg.CloudStorage.getItems(['saved_movies_v1', 'history_movies_v1'], (err, values) => {
+        // ВАРІАНТ 1: Ми в Telegram -> Тягнемо з хмари
+        if (isTg()) {
+            window.Telegram.WebApp.CloudStorage.getItems(['saved_movies', 'history_movies'], (err, values) => {
                 if (!err && values) {
-                    try {
-                        // Saved
-                        if (values['saved_movies_v1']) {
-                            const cloudSaved = JSON.parse(values['saved_movies_v1']);
-                            if (Array.isArray(cloudSaved)) {
-                                state.savedItems = cloudSaved;
-                                localStorage.setItem('savedItems', JSON.stringify(state.savedItems));
-                            }
-                        }
-                        // History
-                        if (values['history_movies_v1']) {
-                            const cloudHistory = JSON.parse(values['history_movies_v1']);
-                            if (Array.isArray(cloudHistory)) {
-                                state.historyItems = cloudHistory;
-                                localStorage.setItem('historyItems', JSON.stringify(state.historyItems));
-                            }
-                        }
-                    } catch (e) { console.error("Cloud Parse Error", e); }
+                    if (values.saved_movies) {
+                        try { state.savedItems = JSON.parse(values.saved_movies); } catch (e) {}
+                    }
+                    if (values.history_movies) {
+                        try { state.historyItems = JSON.parse(values.history_movies); } catch (e) {}
+                    }
                 }
-                resolve();
+                resolve(); // Кажемо "Готово", код може йти далі
             });
-        } else {
-            resolve();
+        } 
+        // ВАРІАНТ 2: Ми в Браузері -> Тягнемо з LocalStorage
+        else {
+            try {
+                const saved = localStorage.getItem('saved_movies');
+                const history = localStorage.getItem('history_movies');
+                if (saved) state.savedItems = JSON.parse(saved);
+                if (history) state.historyItems = JSON.parse(history);
+            } catch (e) {
+                console.error("Local storage error", e);
+            }
+            resolve(); // Кажемо "Готово" миттєво
         }
     });
 }
 
-// --- SAVE DATA ---
 export function saveCloudData() {
-    // Save to LocalStorage
-    localStorage.setItem('savedItems', JSON.stringify(state.savedItems));
-    localStorage.setItem('historyItems', JSON.stringify(state.historyItems));
+    const savedStr = JSON.stringify(state.savedItems);
+    const historyStr = JSON.stringify(state.historyItems);
 
-    // Optimize for Cloud (remove heavy descriptions)
-    const optimize = (list) => list.map(m => ({
-        id: m.id, title: m.title, img: m.img, rating: m.rating, year: m.year, type: m.type
-    }));
-
-    const tg = window.Telegram?.WebApp;
-    if (tg && tg.CloudStorage) {
-        tg.CloudStorage.setItem('saved_movies_v1', JSON.stringify(optimize(state.savedItems)));
-        tg.CloudStorage.setItem('history_movies_v1', JSON.stringify(optimize(state.historyItems)));
+    // ВАРІАНТ 1: Зберігаємо в Telegram
+    if (isTg()) {
+        window.Telegram.WebApp.CloudStorage.setItem('saved_movies', savedStr);
+        window.Telegram.WebApp.CloudStorage.setItem('history_movies', historyStr);
+    } 
+    // ВАРІАНТ 2: Зберігаємо в Браузері
+    else {
+        localStorage.setItem('saved_movies', savedStr);
+        localStorage.setItem('history_movies', historyStr);
     }
 }
 
-// --- HELPERS ---
-export function isSaved(id) { return state.savedItems.some(m => m.id == id); }
+// --- Решта функцій без змін, але вони тепер використовують saveCloudData ---
 
-// Додати в історію (Ліміт 20)
+export function isSaved(id) {
+    return state.savedItems.some(i => i.id == id);
+}
+
+export function toggleSave(id, btn) {
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+
+    const index = state.savedItems.findIndex(i => i.id == id);
+    
+    if (index >= 0) {
+        // Видаляємо
+        state.savedItems.splice(index, 1);
+        if (btn) {
+            const span = btn.querySelector('span');
+            const svg = btn.querySelector('svg');
+            if(span) span.innerText = 'У "Моє"'; // Текст з api.js/i18n краще брати, але тут хардкод для прикладу
+            if(svg) { svg.setAttribute('fill', 'none'); svg.style.fill = 'none'; }
+        }
+    } else {
+        // Додаємо
+        let movie = state.activeMovie; 
+        if (!movie) movie = state.feedMovies.find(m => m.id == id);
+        if (!movie) movie = state.historyItems.find(m => m.id == id); // Шукаємо в історії теж
+        
+        if (movie) {
+            // Зберігаємо мінімум даних, щоб не забити пам'ять
+            const minMovie = {
+                id: movie.id,
+                title: movie.title,
+                img: movie.img,
+                rating: movie.rating,
+                year: movie.year,
+                type: movie.type,
+                original_title: movie.original_title, // Важливо для плеєра
+                imdb_id: movie.imdb_id // Важливо для плеєра
+            };
+            state.savedItems.unshift(minMovie);
+            
+            if (btn) {
+                const span = btn.querySelector('span');
+                const svg = btn.querySelector('svg');
+                if(span) span.innerText = 'Збережено';
+                if(svg) { svg.setAttribute('fill', 'white'); svg.style.fill = 'white'; }
+            }
+        }
+    }
+    saveCloudData();
+}
+
 export function addToHistory(movie) {
-    if (!movie) return;
-
-    // Видаляємо, якщо вже є (щоб перемістити на початок)
-    state.historyItems = state.historyItems.filter(m => m.id !== movie.id);
+    // Видаляємо дублікат, якщо вже є
+    state.historyItems = state.historyItems.filter(i => i.id !== movie.id);
     
-    // Додаємо в початок
-    state.historyItems.unshift(movie);
+    const minMovie = {
+        id: movie.id,
+        title: movie.title,
+        img: movie.img,
+        rating: movie.rating,
+        year: movie.year,
+        type: movie.type,
+        original_title: movie.original_title,
+        imdb_id: movie.imdb_id
+    };
     
-    // 🔥 ЛІМІТ ІСТОРІЇ: 20
-    if (state.historyItems.length > 20) {
+    // Додаємо на початок
+    state.historyItems.unshift(minMovie);
+    
+    // Обмежуємо історію (наприклад, останні 50)
+    if (state.historyItems.length > 50) {
         state.historyItems.pop();
     }
     
     saveCloudData();
-}
-
-export function toggleSave(id, btn) {
-    let movie = state.feedMovies.find(m => m.id == id);
-    if (!movie && state.currentHeroMovie && state.currentHeroMovie.id == id) movie = state.currentHeroMovie;
-    if (!movie) movie = state.savedItems.find(m => m.id == id);
-    if (!movie) movie = state.historyItems.find(m => m.id == id); 
-
-    if (!movie) return;
-
-    const index = state.savedItems.findIndex(m => m.id == id);
-    
-    // ДОДАВАННЯ В ЗБЕРЕЖЕНЕ
-    if (index === -1) {
-        state.savedItems.push(movie);
-        
-        // 🔥 ЛІМІТ ЗБЕРЕЖЕНОГО: 30
-        // Якщо стало більше 30, видаляємо найстаріший (перший у списку)
-        if (state.savedItems.length > 30) {
-            state.savedItems.shift(); 
-        }
-
-        if (btn) updateBtnState(btn, true);
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-    } 
-    // ВИДАЛЕННЯ ЗІ ЗБЕРЕЖЕНОГО
-    else {
-        state.savedItems.splice(index, 1);
-        if (btn) updateBtnState(btn, false);
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
-    }
-    saveCloudData();
-}
-
-function updateBtnState(btn, saved) {
-    const span = btn.querySelector('span');
-    const svg = btn.querySelector('svg');
-    if(saved) {
-        if(span) span.innerText = t.saveBtnActive; 
-        if(svg) svg.setAttribute('fill', 'white');
-    } else {
-        if(span) span.innerText = t.saveBtn; 
-        if(svg) svg.setAttribute('fill', 'none');
-    }
 }

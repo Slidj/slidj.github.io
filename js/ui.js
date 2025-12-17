@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { isSaved, toggleSave, addToHistory } from './storage.js';
-import { fetchMovieDetails, fetchKpId, fetchSimilar } from './api.js';
+import { fetchMovieDetails, fetchSimilar } from './api.js';
 import { PLAYER_BASE_URL } from './config.js'; 
 import { t } from './i18n.js';
 
@@ -104,13 +104,12 @@ export async function openMoviePage(movie) {
     }
 
     let details = { ...movie };
-    let logoUrl = null, trailerKey = null, castHtml = '';
+    let logoUrl = null, castHtml = '', trailersHtml = '';
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
 
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
         
-        // Зберігаємо важливі дані
         if (data.external_ids?.imdb_id) {
             state.activeMovie.imdb_id = data.external_ids.imdb_id;
             details.imdb_id = data.external_ids.imdb_id;
@@ -122,6 +121,7 @@ export async function openMoviePage(movie) {
         details.desc = data.overview || movie.desc;
         if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
         
+        // 1. Актори
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
@@ -135,14 +135,34 @@ export async function openMoviePage(movie) {
                 castHtml = `<div class="cast-section"><div class="cast-title">Актори</div><div class="cast-row">${castCards}</div></div>`;
             }
         }
+
+        // 2. Лого
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
-        if (data.videos?.results) {
-            const tr = data.videos.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
-            if(tr) trailerKey = tr.key;
+
+        // 3. 🔥🔥 ТРЕЙЛЕРИ (НОВЕ) 🔥🔥
+        if (data.videos?.results?.length > 0) {
+            // Фільтруємо тільки Youtube і тільки Трейлери/Тизери
+            const videos = data.videos.results.filter(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
+            
+            if (videos.length > 0) {
+                const videoCards = videos.map(v => `
+                    <div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')">
+                        <div class="trailer-img-box">
+                            <img src="https://img.youtube.com/vi/${v.key}/mqdefault.jpg" loading="lazy">
+                            <div class="trailer-play-icon">
+                                <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+                        <div class="trailer-name">${v.name}</div>
+                    </div>
+                `).join('');
+                trailersHtml = `<div class="trailer-section"><div class="trailer-title">Трейлери та інше</div><div class="trailer-row">${videoCards}</div></div>`;
+            }
         }
+
     } catch (e) {}
 
     const similarMovies = await fetchSimilar(movie.id, apiType);
@@ -197,19 +217,29 @@ export async function openMoviePage(movie) {
 
             <div class="nf-description">${details.desc || t.descMissing}</div>
             
-            ${castHtml}
+            ${trailersHtml} ${castHtml}
             ${similarHtml}
-            ${trailerKey ? `<div class="nf-trailer"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0&controls=1&modestbranding=1" frameborder="0" allowfullscreen></iframe></div>` : ''}
+            
             <div style="height: 50px;"></div>
         </div>
     `;
 
+    // Глобальні обробники
     window.ui_openSimilar = (id, type) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); const target = similarMovies.find(m => m.id == id); if (target) openMoviePage(target); };
     window.ui_share = (id) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); if(!m) return; const startParam = `${m.type}_${m.id}`; const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`; const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; window.Telegram?.WebApp?.openTelegramLink(shareUrl); };
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
+    
+    // 🔥 ФУНКЦІЯ ВІДКРИТТЯ ТРЕЙЛЕРА (в тому ж модальному вікні, що і фільм)
+    window.ui_openTrailer = (key) => {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
+        const modal = document.getElementById('player_modal');
+        const iframe = document.getElementById('video_frame');
+        document.getElementById('movie_details_modal').style.display = 'none';
+        iframe.src = `https://www.youtube.com/embed/${key}?autoplay=1&rel=0`;
+        modal.style.display = 'flex';
+    };
 }
 
-// ✅ ОСЬ ВОНА, РІДНЕНЬКА!
 export function closeMoviePage() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     const modal = document.getElementById('movie_details_modal');
@@ -220,15 +250,13 @@ export function closeMoviePage() {
     if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide();
 }
 
-// 🔥🔥 ЛОГІКА ЗАПУСКУ (ALL-IN-ONE) 🔥🔥
 export function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
     const originalText = span ? span.innerText : t.watch;
 
-    // ПЕРЕВІРКА КОНФІГУ
     if (!PLAYER_BASE_URL) {
-        alert("🚨 ПОМИЛКА STARTUP: Файл config.js не містить PLAYER_BASE_URL!");
+        alert("🚨 ПОМИЛКА: Немає PLAYER_BASE_URL");
         return;
     }
 
@@ -238,26 +266,13 @@ export function openPremiumPlayer(tmdbId, btn) {
 
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
 
-    // 🔥 ФОРМУВАННЯ УНІВЕРСАЛЬНОГО ПОСИЛАННЯ
     let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
-    
-    // Ми передаємо ВСІ параметри, які маємо. Плеєр розбереться.
-    // 1. TMDB ID (Найнадійніший, бо він у нас рідний)
     let params = `?tmdb_id=${movie.id}`;
-    
-    // 2. IMDb ID (Теж дуже надійний)
     if (movie.imdb_id) params += `&imdb_id=${movie.imdb_id}`;
-    
-    // 3. Назва (Запасний варіант)
     params += `&title=${encodeURIComponent(movie.original_title || movie.title)}`;
-    
-    // 4. Переклад
     params += `&translation=2`;
 
     let url = baseUrl + params;
-
-    // alert(`Відкриваю: ${url}`); // Можна розкоментувати для налагодження
-
     launchPlayer(url);
 
     if(btn) { 

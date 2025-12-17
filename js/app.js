@@ -147,19 +147,13 @@ async function switchMode(tab) {
     window.scrollTo({top:0});
 
     if (tab === 'home') {
+        if(hero) hero.style.display = 'flex'; // Завжди показуємо банер
         if(filters) filters.style.display = 'flex'; 
         if(search) search.style.display = 'none';
         if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
         if(trigger) trigger.style.display = 'flex';
 
         if (state.feedMovies.length > 0) {
-            // Відновлюємо стан Hero банера
-            const cat = state.currentGenre || 'all';
-            if (cat === 'all') {
-                if(hero) hero.style.display = 'flex';
-            } else {
-                if(hero) hero.style.display = 'none';
-            }
             renderGrid(state.feedMovies, false);
         } else {
             if(content) content.innerHTML = ''; 
@@ -239,7 +233,7 @@ function setCategory(catId) {
     loadContent(1); 
 }
 
-// --- 🔥 ОНОВЛЕНО: LOAD CONTENT З УРАХУВАННЯМ КАТЕГОРІЇ ---
+// --- 🔥 ОНОВЛЕНО: БАНЕР ТЕПЕР ОНОВЛЮЄТЬСЯ І НЕ ЗНИКАЄ ---
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;
     
@@ -248,25 +242,21 @@ async function loadContent(page, isAppend = false) {
     }
 
     try {
-        // Беремо категорію зі state (або 'all')
         const category = state.currentGenre || 'all';
         const items = await fetchHomeContent(page, category);
         
         state.feedMovies = [...state.feedMovies, ...items];
 
-        // Логіка Hero-банера
-        if (page === 1 && !isAppend) {
-            if (category === 'all' && items.length > 0) {
-                // Тільки для "Усі" показуємо Hero
-                const rand = Math.floor(Math.random() * Math.min(5, items.length));
-                setupHero(items[rand]);
-                const hero = document.getElementById('hero_section');
-                if(hero) hero.style.display = 'flex';
-            } else {
-                // Для інших категорій ховаємо Hero
-                const hero = document.getElementById('hero_section');
-                if(hero) hero.style.display = 'none';
-            }
+        // 🔥 ЛОГІКА HERO БАНЕРА (ЗМІНЕНО)
+        // Тепер ми оновлюємо банер ДЛЯ ВСІХ категорій, якщо це перша сторінка
+        if (page === 1 && !isAppend && items.length > 0) {
+            // Беремо випадковий фільм з топ-5 отриманих результатів
+            const rand = Math.floor(Math.random() * Math.min(5, items.length));
+            setupHero(items[rand]);
+            
+            // Завжди показуємо банер
+            const hero = document.getElementById('hero_section');
+            if(hero) hero.style.display = 'flex';
         }
         
         removeSkeletons();

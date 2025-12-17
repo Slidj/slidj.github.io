@@ -2,7 +2,6 @@ import { API_KEY, BASE_URL, ALLOHA_TOKEN } from './config.js';
 
 // --- БАЗОВІ ЗАПИТИ TMDB ---
 async function fetchTMDB(endpoint, params = {}) {
-    // Перевірка на випадок, якщо BASE_URL не підтягнувся
     const base = BASE_URL || 'https://api.themoviedb.org/3';
     const url = new URL(`${base}${endpoint}`);
     url.searchParams.append('api_key', API_KEY);
@@ -23,8 +22,34 @@ async function fetchTMDB(endpoint, params = {}) {
     }
 }
 
-export async function fetchHomeContent(page = 1) {
-    const data = await fetchTMDB('/trending/all/week', { page });
+// 🔥 ОНОВЛЕНО: Додано параметр category
+export async function fetchHomeContent(page = 1, category = 'all') {
+    let endpoint;
+    let params = { page };
+
+    switch (category) {
+        case 'movie':
+            // Популярні фільми
+            endpoint = '/movie/popular';
+            break;
+        case 'tv':
+            // Популярні серіали
+            endpoint = '/tv/popular';
+            break;
+        case '16':
+            // Мультики (через Discover)
+            endpoint = '/discover/movie';
+            params.with_genres = '16';
+            params.sort_by = 'popularity.desc';
+            break;
+        case 'all':
+        default:
+            // Тренди (як було раніше)
+            endpoint = '/trending/all/week';
+            break;
+    }
+
+    const data = await fetchTMDB(endpoint, params);
     return (data?.results || []).map(formatMovie);
 }
 
@@ -76,17 +101,15 @@ export async function fetchSimilar(id, type) {
     return (data?.results || []).map(formatMovie);
 }
 
-// 🔥 ПОТУЖНИЙ ПОШУК ID (ВИКОРИСТОВУЄМО ДЗЕРКАЛА)
+// 🔥 ПОТУЖНИЙ ПОШУК ID
 export async function fetchKpId(movie) {
     if (movie.kpId) return movie.kpId;
 
-    // Функція пошуку, яка перебирає дзеркала, якщо основне не працює
     const searchPlayer = async (params) => {
-        // Список доменів (основний і запасні)
         const mirrors = [
-            'https://api.rstprgapipt.com',  // Основний
-            'https://api.apbugall.org',     // Дзеркало 1
-            'https://api.alloha.tv'         // Офіційний
+            'https://api.rstprgapipt.com',  
+            'https://api.apbugall.org',     
+            'https://api.alloha.tv'         
         ];
 
         for (const domain of mirrors) {
@@ -94,7 +117,6 @@ export async function fetchKpId(movie) {
                 let url = `${domain}/balancer-api/search?token=${ALLOHA_TOKEN}`;
                 Object.keys(params).forEach(k => url += `&${k}=${encodeURIComponent(params[k])}`);
                 
-                // Ставимо тайм-аут 3 секунди, щоб не чекати вічно
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 3000);
                 
@@ -107,22 +129,19 @@ export async function fetchKpId(movie) {
                     return json.data[0].kp_id || json.data[0].kinopoisk_id;
                 }
             } catch (e) {
-                // Якщо дзеркало не працює — пробуємо наступне
                 console.warn(`Mirror failed: ${domain}`, e);
             }
         }
         return null;
     };
 
-    // 1. Отримуємо IMDb ID
     let imdbId = movie.imdb_id;
     if (!imdbId) {
-        const type = movie.type === 'tv' ? 'tv' : 'movie'; // Захист типу
+        const type = movie.type === 'tv' ? 'tv' : 'movie';
         const ext = await fetchTMDB(`/${type}/${movie.id}/external_ids`);
         if (ext?.imdb_id) imdbId = ext.imdb_id;
     }
 
-    // 2. Стратегія пошуку
     if (imdbId) {
         const id = await searchPlayer({ imdb: imdbId });
         if (id) return id;

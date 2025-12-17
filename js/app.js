@@ -8,6 +8,9 @@ import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
 import { t, initLanguage } from './i18n.js';
 
+// 🔥 КРОК 3: Імпортуємо адмін-систему
+import { initAdminSystem } from './firebase-logic.js'; 
+
 // --- EXPORTS ---
 window.setCategory = setCategory;
 window.switchMode = switchMode;
@@ -29,6 +32,9 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
     try {
+        // 🔥 КРОК 3: Запускаємо перевірку доступу через Firebase першою
+        await initAdminSystem(); 
+
         initLanguage();
 
         if (tg) {
@@ -147,7 +153,7 @@ async function switchMode(tab) {
     window.scrollTo({top:0});
 
     if (tab === 'home') {
-        if(hero) hero.style.display = 'flex'; // Завжди показуємо банер
+        if(hero) hero.style.display = 'flex'; 
         if(filters) filters.style.display = 'flex'; 
         if(search) search.style.display = 'none';
         if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
@@ -233,7 +239,6 @@ function setCategory(catId) {
     loadContent(1); 
 }
 
-// --- 🔥 ОНОВЛЕНО: БАНЕР ТЕПЕР ОНОВЛЮЄТЬСЯ І НЕ ЗНИКАЄ ---
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;
     
@@ -247,14 +252,9 @@ async function loadContent(page, isAppend = false) {
         
         state.feedMovies = [...state.feedMovies, ...items];
 
-        // 🔥 ЛОГІКА HERO БАНЕРА (ЗМІНЕНО)
-        // Тепер ми оновлюємо банер ДЛЯ ВСІХ категорій, якщо це перша сторінка
         if (page === 1 && !isAppend && items.length > 0) {
-            // Беремо випадковий фільм з топ-5 отриманих результатів
             const rand = Math.floor(Math.random() * Math.min(5, items.length));
             setupHero(items[rand]);
-            
-            // Завжди показуємо банер
             const hero = document.getElementById('hero_section');
             if(hero) hero.style.display = 'flex';
         }

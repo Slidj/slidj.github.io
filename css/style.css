@@ -41,3 +41,77 @@
 @keyframes skeleton-move {
     100% { transform: translateX(100%); }
 }
+/* --- TRAILERS SECTION --- */
+.trailer-section {
+    margin-top: 20px;
+    padding-left: 16px;
+}
+
+.trailer-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #fff;
+}
+
+.trailer-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding-bottom: 10px;
+    padding-right: 16px;
+    /* Ховаємо скролбар */
+    scrollbar-width: none; 
+}
+.trailer-row::-webkit-scrollbar { display: none; }
+
+.trailer-card {
+    flex: 0 0 200px; /* Ширина картки */
+    cursor: pointer;
+}
+
+.trailer-img-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.trailer-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.trailer-card:active .trailer-img-box img {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+
+.trailer-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 50%;
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+.trailer-name {
+    font-size: 13px;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -88,9 +88,23 @@ const dictionaries = {
 };
 
 export function initLanguage() {
+    // 🔥 БРОНЬОВАНИЙ ЗАХИСТ ВІД ПОМИЛОК
+    // Використовуємо ?. щоб не падало, якщо window.Telegram не існує (в браузері)
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-    const targetLang = (userLang === 'uk' || userLang === 'ru' || userLang === 'be') ? 'uk' : 'en';
-    Object.assign(t, dictionaries[targetLang]);
+
+    // Логіка вибору мови:
+    // 1. Якщо це uk, ru або be -> ставимо 'uk'
+    // 2. Якщо userLang взагалі немає (ми в браузері) -> ставимо 'uk' (за замовчуванням)
+    // 3. В усіх інших випадках (англієць, француз тощо) -> ставимо 'en'
+    const targetLang = (userLang === 'uk' || userLang === 'ru' || userLang === 'be' || !userLang) ? 'uk' : 'en';
+    
+    // Застосовуємо словник
+    if (dictionaries[targetLang]) {
+        Object.assign(t, dictionaries[targetLang]);
+    }
+    
+    console.log(`Language initialized: ${targetLang} (User lang detected: ${userLang})`);
+    
     updateStaticInterface();
 }
 

@@ -84,6 +84,15 @@ export async function setupHero(movie) {
 }
 
 export async function openMoviePage(movie) {
+    // --- 🔥 ДОДАНО: АНАЛІТИКА ПЕРЕГЛЯДУ ФІЛЬМУ ---
+    if (typeof gtag === 'function') {
+        gtag('event', 'view_item', {
+            'item_id': movie.id,
+            'item_name': movie.title,
+            'content_type': movie.type
+        });
+    }
+
     state.activeMovie = movie;
     addToHistory(movie);
     const modal = document.getElementById('movie_details_modal');
@@ -150,12 +159,12 @@ export async function openMoviePage(movie) {
                 const videoCards = videos.map(v => `
                     <div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')">
                         <div class="trailer-img-box">
-                            <img src="https://img.youtube.com/vi/${v.key}/hqdefault.jpg" loading="lazy">
+                            <img src="http://googleusercontent.com/youtube.com/vi/${v.key}/hqdefault.jpg" loading="lazy">
                             <div class="trailer-play-icon">
                                 <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
                             </div>
                         </div>
-                        </div>
+                    </div>
                 `).join('');
                 trailersHtml = `<div class="trailer-section"><div class="trailer-title">Трейлери та інше</div><div class="trailer-row">${videoCards}</div></div>`;
             }

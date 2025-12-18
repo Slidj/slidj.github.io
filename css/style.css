@@ -8,47 +8,81 @@
 @import 'components.css';
 @import 'modals.css';
 
-/* ... (існуючі стилі skeleton та trailers) ... */
-
+/* --- SKELETON LOADING --- */
 .skeleton { background-color: #1f1f1f; position: relative; overflow: hidden; border-radius: 4px; aspect-ratio: 2/3; cursor: default; }
 .skeleton::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0)); animation: skeleton-move 1.5s infinite; }
 @keyframes skeleton-move { 100% { transform: translateX(100%); } }
 
-/* --- СТИЛІ БІЧНОГО МЕНЮ --- */
+/* --- 🔥 ВИПРАВЛЕНО: ТРЕЙЛЕРИ ТЕПЕР КОМПАКТНІ --- */
+.trailer-section {
+    margin-top: 20px;
+    padding-left: 16px;
+}
+.trailer-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #fff;
+}
+.trailer-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding-bottom: 10px;
+    padding-right: 16px;
+    scrollbar-width: none; 
+}
+.trailer-row::-webkit-scrollbar { display: none; }
+
+.trailer-card {
+    flex: 0 0 160px; /* Зменшено з 220px */
+    cursor: pointer;
+}
+.trailer-img-box {
+    position: relative;
+    width: 100%;
+    height: 90px; /* Зменшено з 125px (співвідношення 16:9) */
+    border-radius: 6px;
+    overflow: hidden;
+    background: #222;
+}
+.trailer-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+.trailer-card:active .trailer-img-box img {
+    transform: scale(0.96);
+    opacity: 0.8;
+}
+.trailer-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 50%;
+    border: 1.5px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* --- БІЧНЕ МЕНЮ (ПОВНІСТЮ ПРИХОВАНО) --- */
 .side-menu { position: fixed; top: 0; right: -320px; width: 260px; height: 100%; background: #141414; z-index: 100000; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px; padding-top: calc(30px + var(--safe-top)); box-shadow: -10px 0 30px rgba(0,0,0,0.9); display: flex; flex-direction: column; }
 .side-menu.active { right: 0; }
 .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; z-index: 99999; }
-.menu-item { color: white; padding: 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; background: #222; margin-bottom: 10px; font-size: 14px; transition: background 0.2s; }
+.menu-item { color: white; padding: 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; background: #222; margin-bottom: 10px; font-size: 14px; }
 .menu-item:active { background: #333; }
 .admin-only-item { border: 1px solid #e50914; }
-.menu-stats-box { background: #1f1f1f; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; color: #aaa; line-height: 1.5; }
-.menu-stats-box b { color: #fff; }
+.menu-stats-box { background: #1f1f1f; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; color: #aaa; }
 .user-avatar-rounded { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #333; object-fit: cover; }
 
-/* 🔥 НОВЕ: СТИЛЬ СПОВІЩЕННЯ (NOTIF BAR) */
-#notification_bar {
-    position: fixed;
-    top: -100px; /* Сховано за замовчуванням */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 400px;
-    background: #e50914; /* Червоний Netflix */
-    color: white;
-    padding: 15px;
-    border-radius: 12px;
-    z-index: 200000;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-#notification_bar.active {
-    top: calc(20px + var(--safe-top));
-}
-
-.notif-icon { font-size: 20px; }
+/* --- СПОВІЩЕННЯ --- */
+#notification_bar { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #e50914; color: white; padding: 15px; border-radius: 12px; z-index: 200000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; font-size: 14px; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+#notification_bar.active { top: calc(20px + var(--safe-top)); }
 .notif-close { margin-left: auto; font-size: 20px; opacity: 0.7; cursor: pointer; }

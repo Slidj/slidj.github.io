@@ -44,12 +44,18 @@ export async function initAdminSystem() {
         }
     });
 
-    // 2. 🔥 Слухаємо сповіщення від адміна
+    // 2. 🔥 ОНОВЛЕНО: Розумне прослуховування сповіщень
     db.ref('broadcast').on('value', (snapshot) => {
         const data = snapshot.val();
-        if (data && data.text) {
-            // Показуємо сповіщення всім
-            showNotification(data.text);
+        if (data && data.text && data.timestamp) {
+            const lastSeenTs = localStorage.getItem('last_notification_ts');
+            
+            // Показуємо лише якщо це НОВЕ повідомлення (час відрізняється)
+            if (data.timestamp.toString() !== lastSeenTs) {
+                showNotification(data.text);
+                // Зберігаємо позначку часу, щоб не показувати знову при перезавантаженні
+                localStorage.setItem('last_notification_ts', data.timestamp.toString());
+            }
         }
     });
 
@@ -60,41 +66,33 @@ export async function initAdminSystem() {
     });
 }
 
-// --- СИСТЕМА СПОВІЩЕНЬ ---
-
 function showNotification(text) {
     const bar = document.getElementById('notification_bar');
     const txt = document.getElementById('notif_text');
     if (!bar || !txt) return;
-
     txt.innerText = text;
     bar.classList.add('active');
-
-    // Автоматично ховаємо через 7 секунд
     setTimeout(() => { window.closeNotification(); }, 7000);
 }
 
-window.closeNotification = function() {
-    document.getElementById('notification_bar').classList.remove('active');
-};
+window.closeNotification = function() { document.getElementById('notification_bar').classList.remove('active'); };
 
 window.sendBroadcastNotification = function() {
     const input = document.getElementById('notif_input');
     const text = input.value.trim();
     if (!text) return;
-
-    // Оновлюємо текст у базі (це запустить показ у всіх користувачів)
-    db.ref('broadcast').set({
-        text: text,
-        timestamp: Date.now()
+    
+    // 🔥 Додаємо унікальний timestamp при відправці
+    db.ref('broadcast').set({ 
+        text: text, 
+        timestamp: Date.now() 
     }).then(() => {
         input.value = '';
         alert("Сповіщення надіслано!");
     });
 };
 
-// --- РЕШТА ФУНКЦІЙ (БАН, МЕНЮ, СТАТИСТИКА) ---
-
+// --- МЕНЮ ТА СТАТИСТИКА ---
 window.toggleSideMenu = function() {
     const menu = document.getElementById('side_menu');
     const overlay = document.getElementById('menu_overlay');
@@ -110,7 +108,7 @@ async function updateMenuStats() {
     db.ref('users').once('value', (snapshot) => {
         const users = snapshot.val() || {};
         const all = Object.values(users);
-        statsBox.innerHTML = `🚀 Сьогодні: <b>+${all.filter(u => u.created_at === today).length}</b> | 👥 Усього: <b>${all.length}</b>`;
+        if(statsBox) statsBox.innerHTML = `🚀 Сьогодні: <b>+${all.filter(u => u.created_at === today).length}</b> | 👥 Усього: <b>${all.length}</b>`;
     });
 }
 
@@ -128,7 +126,7 @@ async function loadAdminData() {
         ids.reverse().forEach(id => {
             const u = users[id];
             const card = document.createElement('div');
-            card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center;";
+            card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
             card.innerHTML = `<div style="color:white; font-size:12px;"><b>${u.first_name}</b><br><span style="color:#888;">${u.id}</span></div>
             <button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
             listDiv.appendChild(card);

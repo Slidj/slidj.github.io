@@ -13,15 +13,14 @@
    ========================================= */
 
 .skeleton {
-    background-color: #1f1f1f; /* Темно-сірий фон */
+    background-color: #1f1f1f;
     position: relative;
     overflow: hidden;
     border-radius: 4px;
-    aspect-ratio: 2/3; /* Тримаємо пропорцію постера */
+    aspect-ratio: 2/3;
     cursor: default;
 }
 
-/* Ефект відблиску, що рухається */
 .skeleton::after {
     content: "";
     position: absolute;
@@ -30,11 +29,10 @@
     background-image: linear-gradient(
         90deg,
         rgba(255, 255, 255, 0) 0,
-        rgba(255, 255, 255, 0.05) 20%, /* Трохи світліше посередині */
+        rgba(255, 255, 255, 0.05) 20%,
         rgba(255, 255, 255, 0.1) 60%,
         rgba(255, 255, 255, 0)
     );
-    /* 🔥 ВИПРАВЛЕНО: Унікальна назва анімації */
     animation: skeleton-move 1.5s infinite; 
 }
 
@@ -42,7 +40,7 @@
     100% { transform: translateX(100%); }
 }
 
-/* --- TRAILERS SECTION (ОНОВЛЕНО) --- */
+/* --- TRAILERS SECTION --- */
 .trailer-section {
     margin-top: 20px;
     padding-left: 16px;
@@ -61,29 +59,27 @@
     gap: 15px;
     padding-bottom: 10px;
     padding-right: 16px;
-    /* Ховаємо скролбар */
     scrollbar-width: none; 
 }
 .trailer-row::-webkit-scrollbar { display: none; }
 
 .trailer-card {
-    flex: 0 0 220px; /* 🔥 Змінено: Трохи ширше для кращого вигляду */
+    flex: 0 0 220px;
     cursor: pointer;
 }
 
 .trailer-img-box {
     position: relative;
     width: 100%;
-    height: 125px; /* 🔥 Змінено: Жорстка висота для вирівнювання */
+    height: 125px;
     border-radius: 8px;
     overflow: hidden;
-    /* margin-bottom прибрано, бо тексту немає */
 }
 
 .trailer-img-box img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* 🔥 Обрізає чорні смуги */
+    object-fit: cover;
     transition: transform 0.3s;
 }
 
@@ -108,3 +104,67 @@
     color: white;
     font-size: 14px;
 }
+
+/* --- 🔥 НОВІ СТИЛІ БІЧНОГО МЕНЮ --- */
+.side-menu {
+    position: fixed;
+    top: 0;
+    right: -280px; 
+    width: 260px;
+    height: 100%;
+    background: #141414;
+    z-index: 100000;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 20px;
+    padding-top: calc(30px + var(--safe-top));
+    box-shadow: -5px 0 20px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+}
+
+.side-menu.active {
+    right: 0;
+}
+
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    z-index: 99999;
+}
+
+.menu-item {
+    color: white;
+    padding: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #222;
+    margin-bottom: 10px;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.menu-item:active { background: #333; }
+
+.admin-only-item {
+    border: 1px solid #e50914;
+}
+
+.menu-stats-box {
+    background: #1f1f1f;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #aaa;
+    line-height: 1.5;
+}
+
+.menu-stats-box b { color: #fff; }

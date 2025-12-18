@@ -105,11 +105,11 @@
     font-size: 14px;
 }
 
-/* --- 🔥 НОВІ СТИЛІ БІЧНОГО МЕНЮ --- */
+/* --- 🔥 НОВІ СТИЛІ БІЧНОГО МЕНЮ (ВИПРАВЛЕНО) --- */
 .side-menu {
     position: fixed;
     top: 0;
-    right: -280px; 
+    right: -320px; /* Повністю приховано разом із тінню */
     width: 260px;
     height: 100%;
     background: #141414;
@@ -117,7 +117,7 @@
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 20px;
     padding-top: calc(30px + var(--safe-top));
-    box-shadow: -5px 0 20px rgba(0,0,0,0.8);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.9);
     display: flex;
     flex-direction: column;
 }
@@ -168,3 +168,12 @@
 }
 
 .menu-stats-box b { color: #fff; }
+
+/* Стиль квадратної аватарки */
+.user-avatar-rounded {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px; /* Квадратна з закругленими кутами */
+    border: 1px solid #333;
+    object-fit: cover;
+}

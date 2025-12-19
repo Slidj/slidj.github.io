@@ -7,9 +7,10 @@ import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
 import { t, initLanguage } from './i18n.js';
-
-// 🔥 КРОК 3: Імпортуємо адмін-систему
 import { initAdminSystem } from './firebase-logic.js'; 
+
+// 🔥 КРОК 3: Імпортуємо функцію відтворення звуку
+import { playSound } from './sounds.js';
 
 // --- EXPORTS ---
 window.setCategory = setCategory;
@@ -32,9 +33,7 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
     try {
-        // 🔥 КРОК 3: Запускаємо перевірку доступу через Firebase першою
         await initAdminSystem(); 
-
         initLanguage();
 
         if (tg) {
@@ -128,6 +127,9 @@ async function checkDeepLink() {
 
 // --- NAVIGATION ---
 async function switchMode(tab) {
+    // 🔥 КРОК 3: Додаємо звук при перемиканні вкладки
+    playSound('Tap.wav');
+
     if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
     state.currentTab = tab;
@@ -225,6 +227,9 @@ async function switchMode(tab) {
 }
 
 function setCategory(catId) {
+    // 🔥 КРОК 3: Додаємо звук при натисканні на фільтр категорії
+    playSound('Tap.wav');
+
     if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));

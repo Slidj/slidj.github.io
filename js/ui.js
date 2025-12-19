@@ -3,9 +3,9 @@ import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchSimilar } from './api.js';
 import { PLAYER_BASE_URL } from './config.js'; 
 import { t } from './i18n.js';
-// 🔥 КРОК 2: Імпортуємо функцію відтворення звуку
 import { playSound } from './sounds.js';
 
+// --- Скелетони ---
 export function showSkeletons(count = 12, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
@@ -22,21 +22,23 @@ export function removeSkeletons() {
     skeletons.forEach(el => el.remove());
 }
 
-// 🔥 ОНОВЛЕНО: Додано логіку сесійного підсвічування ТОП-3
+// --- Головна сітка (з виправленою логікою підсвітки) ---
 export function renderGrid(items, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
+    
+    // Очищуємо контейнер тільки якщо це НЕ додавання (наприклад, не вкладка "Моє")
     if (!isAppend) container.innerHTML = '';
 
-    // Перевіряємо сесійне сховище: чи вже показували ефект
+    // Перевірка сесії для підсвітки
     const hasShownGlow = sessionStorage.getItem('glow_shown');
-    const isHome = state.currentTab === 'home';
-    const shouldShowGlow = !isAppend && isHome && !hasShownGlow;
+    // Підсвітка тільки на Home, тільки для першої завантаженої пачки і тільки 1 раз
+    const shouldShowGlow = !isAppend && state.currentTab === 'home' && !hasShownGlow;
 
     items.forEach((item, index) => {
         const div = document.createElement('div');
         
-        // Визначаємо, чи додавати підсвітку для цієї конкретної картки
+        // Додаємо підсвітку тільки для перших трьох
         let glowClass = (shouldShowGlow && index < 3) ? ' trending-glow' : '';
         
         div.className = 'movie-poster-card card-anim' + glowClass; 
@@ -46,34 +48,49 @@ export function renderGrid(items, isAppend = false) {
             window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
             openMoviePage(item);
         };
+        
         const badgeHtml = item.type === 'tv' ? `<div class="type-badge">${t.serialBadge}</div>` : '';
         div.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
         container.appendChild(div);
     });
 
-    // Якщо ефект було застосовано, зберігаємо мітку в сесію
     if (shouldShowGlow) {
         sessionStorage.setItem('glow_shown', 'true');
     }
 }
 
-// ... решта функцій без змін (renderHistorySection, setupHero, openMoviePage тощо) ...
-
-export async function renderHistorySection(items) {
+// --- Секція історії ---
+export function renderHistorySection(items) {
     const section = document.createElement('div');
     section.className = 'similar-section'; 
-    section.style.marginTop = '10px'; section.style.marginBottom = '30px'; section.style.gridColumn = '1 / -1'; section.style.width = '100%'; section.style.minWidth = '0'; 
+    section.style.marginTop = '10px'; 
+    section.style.marginBottom = '30px'; 
+    section.style.gridColumn = '1 / -1'; 
+    section.style.width = '100%'; 
+    section.style.minWidth = '0'; 
+    
     const titleText = t.history || 'Watch History'; 
     let html = `<div class="similar-title" style="padding-left:10px;">${titleText}</div><div class="similar-row" style="padding-left:10px;">`;
+    
     items.forEach(m => {
-        html += `<div class="similar-card" onclick="window.ui_openHistory('${m.id}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`;
+        html += `<div class="similar-card" onclick="window.ui_openHistory('${m.id}')">
+                    <img src="${m.img}" loading="lazy">
+                    <div class="similar-rating">${m.rating}</div>
+                 </div>`;
     });
+    
     html += `</div>`;
     section.innerHTML = html;
-    window.ui_openHistory = (id) => { const movie = state.historyItems.find(m => m.id == id); if(movie) openMoviePage(movie); };
+    
+    window.ui_openHistory = (id) => { 
+        const movie = state.historyItems.find(m => m.id == id); 
+        if(movie) openMoviePage(movie); 
+    };
+    
     return section;
 }
 
+// --- Налаштування Hero банера ---
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
@@ -104,24 +121,25 @@ export async function setupHero(movie) {
     }
 }
 
+// --- Відкриття сторінки фільму ---
 export async function openMoviePage(movie) {
     playSound('Pop.wav');
+    
     if (typeof gtag === 'function') {
-        gtag('event', 'view_item', {
-            'item_id': movie.id,
-            'item_name': movie.title,
-            'content_type': movie.type
-        });
+        gtag('event', 'view_item', { 'item_id': movie.id, 'item_name': movie.title, 'content_type': movie.type });
     }
+
     state.activeMovie = movie;
     addToHistory(movie);
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
     if (!modal) return;
+    
     modal.scrollTop = 0;
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
     content.innerHTML = `<div style="height:100vh; display:flex; justify-content:center; align-items:center; color:#555;">${t.loading}</div>`;
+
     if (window.Telegram?.WebApp?.BackButton) {
         window.Telegram.WebApp.BackButton.show();
         window.Telegram.WebApp.BackButton.onClick(() => {
@@ -129,27 +147,27 @@ export async function openMoviePage(movie) {
             closeMoviePage();
         });
     }
+
     let details = { ...movie };
     let logoUrl = null, castHtml = '', trailersHtml = '', techHtml = '';
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
+
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
-        if (data.external_ids?.imdb_id) {
-            state.activeMovie.imdb_id = data.external_ids.imdb_id;
-            details.imdb_id = data.external_ids.imdb_id;
-        }
-        if (data.original_title) {
-            state.activeMovie.original_title = data.original_title;
-        }
+        if (data.external_ids?.imdb_id) state.activeMovie.imdb_id = details.imdb_id = data.external_ids.imdb_id;
+        if (data.original_title) state.activeMovie.original_title = data.original_title;
         details.desc = data.overview || movie.desc;
+        
         if (data.runtime) {
             const hrs = Math.floor(data.runtime/60);
             const mins = data.runtime%60;
             details.runtime = `${hrs}${t.modalHour} ${mins}${t.modalMin}`;
         }
+
         const directors = data.credits?.crew?.filter(c => c.job === 'Director').map(d => d.name).join(', ');
         const writers = data.credits?.crew?.filter(c => c.job === 'Writer' || c.job === 'Screenplay').map(w => w.name).join(', ');
         const genres = data.genres?.map(g => g.name).join(', ');
+
         techHtml = `
             <div class="nf-tech-info">
                 ${directors ? `<div class="tech-item"><span class="tech-label">${t.modalDirector}:</span> ${directors}</div>` : ''}
@@ -157,6 +175,7 @@ export async function openMoviePage(movie) {
                 ${genres ? `<div class="tech-item"><span class="tech-label">${t.modalGenres}:</span> ${genres}</div>` : ''}
             </div>
         `;
+        
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
@@ -170,10 +189,12 @@ export async function openMoviePage(movie) {
                 castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${castCards}</div></div>`;
             }
         }
+
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
+
         if (data.videos?.results?.length > 0) {
             const videos = data.videos.results.filter(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
             if (videos.length > 0) {
@@ -191,9 +212,11 @@ export async function openMoviePage(movie) {
             }
         }
     } catch (e) { console.error(e); }
+
     const similarMovies = await fetchSimilar(movie.id, apiType);
     const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
+
     let similarHtml = '';
     if (similarMovies.length > 0) {
         const cards = similarMovies.map(m => `
@@ -204,13 +227,13 @@ export async function openMoviePage(movie) {
         `).join('');
         similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${cards}</div></div>`;
     }
+
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
                 <div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div>
                 <div class="nf-gradient"></div>
-                <div class="nf-hero-content">
-                    ${titleHtml}
+                <div class="nf-hero-content">${titleHtml}
                     <div class="nf-meta">
                         <span class="nf-match">${matchScore}% ${t.match}</span>
                         <span>${details.year}</span>
@@ -242,7 +265,13 @@ export async function openMoviePage(movie) {
             <div style="height: 50px;"></div>
         </div>
     `;
-    window.ui_openSimilar = (id, type) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); const target = similarMovies.find(m => m.id == id); if (target) openMoviePage(target); };
+
+    window.ui_openSimilar = (id, type) => { 
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); 
+        const target = similarMovies.find(m => m.id == id); 
+        if (target) openMoviePage(target); 
+    };
+    
     window.ui_share = (id) => { 
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); 
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
@@ -253,7 +282,15 @@ export async function openMoviePage(movie) {
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; 
         window.Telegram?.WebApp?.openTelegramLink(shareUrl); 
     };
-    window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
+
+    window.ui_searchActor = (name) => { 
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); 
+        closeMoviePage(); 
+        window.switchMode('search'); 
+        const input = document.getElementById('search_input'); 
+        if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } 
+    };
+    
     window.ui_openTrailer = (key) => {
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         const modal = document.getElementById('player_modal');
@@ -280,26 +317,16 @@ export function openPremiumPlayer(tmdbId, btn) {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
     const originalText = span ? span.innerText : t.watch;
-    if (!PLAYER_BASE_URL) {
-        alert("🚨 ПОМИЛКА: Немає PLAYER_BASE_URL");
-        return;
-    }
+    if (!PLAYER_BASE_URL) { alert("🚨 ПОМИЛКА: Немає PLAYER_BASE_URL"); return; }
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.savedItems.find(m => m.id == tmdbId) || state.historyItems.find(m => m.id == tmdbId) || state.currentHeroMovie;
     if (!movie) { alert("Помилка: Фільм не знайдено"); return; }
     if(btn) { btn.style.opacity = 0.7; if(span) span.innerText = t.checking; }
     let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
-    let params = `?tmdb_id=${movie.id}`;
+    let params = `?tmdb_id=${movie.id}&title=${encodeURIComponent(movie.original_title || movie.title)}&translation=2`;
     if (movie.imdb_id) params += `&imdb_id=${movie.imdb_id}`;
-    params += `&title=${encodeURIComponent(movie.original_title || movie.title)}`;
-    params += `&translation=2`;
     let url = baseUrl + params;
     launchPlayer(url);
-    if(btn) { 
-        setTimeout(() => {
-            btn.style.opacity = 1; 
-            if(span) span.innerText = originalText; 
-        }, 1000);
-    }
+    if(btn) { setTimeout(() => { btn.style.opacity = 1; if(span) span.innerText = originalText; }, 1000); }
 }
 
 function launchPlayer(url) {

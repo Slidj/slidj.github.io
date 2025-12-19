@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MAIN BUNDLE
+   🎨 STYLE.CSS: MAIN BUNDLE (v1.7.2)
    ========================================================== */
 
 @import 'root.css';
@@ -38,18 +38,21 @@
 #notification_bar.active { top: calc(20px + var(--safe-top)); }
 .notif-close { margin-left: auto; font-size: 20px; opacity: 0.7; cursor: pointer; }
 
-/* 🔥 НОВЕ: Індикація статусу в адмінці */
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 8px;
-    display: inline-block;
+/* ІНДИКАЦІЯ СТАТУСУ */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+.status-online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+.status-offline { background-color: #e74c3c; }
+
+/* 🔥 НОВЕ: ЕФЕКТ ПУЛЬСУЮЧОГО ПІДСВІЧУВАННЯ (GLOW) ДЛЯ ТОП-3 */
+@keyframes trending-pulse {
+    0% { box-shadow: 0 0 5px rgba(229, 9, 20, 0.4); border-color: rgba(229, 9, 20, 0.4); }
+    50% { box-shadow: 0 0 20px rgba(229, 9, 20, 0.9); border-color: rgba(229, 9, 20, 1); }
+    100% { box-shadow: 0 0 5px rgba(229, 9, 20, 0.4); border-color: rgba(229, 9, 20, 0.4); }
 }
-.status-online { 
-    background-color: #2ecc71; 
-    box-shadow: 0 0 5px #2ecc71; 
-}
-.status-offline { 
-    background-color: #e74c3c; 
+
+.trending-glow {
+    animation: trending-pulse 2s ease-in-out 3; /* Пульсує рівно 3 рази */
+    border: 1px solid rgba(229, 9, 20, 0.6) !important;
+    position: relative;
+    z-index: 5;
 }

@@ -16,7 +16,12 @@ export const t = {
     saveBtn: "My List", 
     saveBtnActive: "Saved", 
     share: "Share",
+    shareMessage: "Watch",
     loading: "Loading...",
+    emptyList: "List is empty",
+    searching: "Searching...",
+    syncing: "Syncing...",
+    checking: "CHECKING...",
     
     // Адмін-панель та меню
     menuTitle: "Menu",
@@ -31,14 +36,23 @@ export const t = {
     statusDays: "days ago at",
     statusLong: "long ago at",
 
-    // Деталі фільму
+    // Деталі фільму та UI компоненти
     modalRelease: "Release Date",
     modalGenres: "Genres",
     modalRuntime: "Runtime",
     modalRating: "Rating",
     modalActors: "Cast",
     modalTrailers: "Trailers",
-    modalMin: "min"
+    modalMin: "min",
+    modalHour: "h",
+    modalDirector: "Director",
+    modalWriters: "Writers",
+    descMissing: "No description available.",
+    moreLikeThis: "More Like This",
+    match: "Match",
+    serialBadge: "SERIES",
+    heroTrending: "🔥 Trending",
+    history: "Watch History"
 };
 
 const dictionaries = {
@@ -55,7 +69,12 @@ const dictionaries = {
         saveBtn: "Моє",
         saveBtnActive: "Збережено",
         share: "Поділитись",
+        shareMessage: "Дивись",
         loading: "Завантаження...",
+        emptyList: "Список порожній",
+        searching: "Пошук...",
+        syncing: "Синхронізація...",
+        checking: "ПЕРЕВІРКА...",
         
         menuTitle: "Меню",
         menuAdmin: "⚙️ Адмін-панель",
@@ -75,7 +94,16 @@ const dictionaries = {
         modalRating: "Рейтинг",
         modalActors: "Актори",
         modalTrailers: "Трейлери",
-        modalMin: "хв"
+        modalMin: "хв",
+        modalHour: "год",
+        modalDirector: "Режисер",
+        modalWriters: "Сценарій",
+        descMissing: "Опис відсутній.",
+        moreLikeThis: "Схоже на це",
+        match: "збіг",
+        serialBadge: "СЕРІАЛ",
+        heroTrending: "🔥 У тренді",
+        history: "Історія переглядів"
     },
     en: {
         searchPlaceholder: "Search...",
@@ -90,7 +118,12 @@ const dictionaries = {
         saveBtn: "My List",
         saveBtnActive: "Saved",
         share: "Share",
+        shareMessage: "Watch",
         loading: "Loading...",
+        emptyList: "List is empty",
+        searching: "Searching...",
+        syncing: "Syncing...",
+        checking: "CHECKING...",
         
         menuTitle: "Menu",
         menuAdmin: "⚙️ Admin Panel",
@@ -110,7 +143,16 @@ const dictionaries = {
         modalRating: "Rating",
         modalActors: "Cast",
         modalTrailers: "Trailers",
-        modalMin: "min"
+        modalMin: "min",
+        modalHour: "h",
+        modalDirector: "Director",
+        modalWriters: "Writers",
+        descMissing: "No description available.",
+        moreLikeThis: "More Like This",
+        match: "Match",
+        serialBadge: "SERIES",
+        heroTrending: "🔥 Trending",
+        history: "Watch History"
     }
 };
 

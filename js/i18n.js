@@ -3,6 +3,7 @@
 // ============================================================
 
 export const t = {
+    // Основні
     searchPlaceholder: "Search...",
     tabHome: "Home",
     tabSearch: "Search",
@@ -11,23 +12,33 @@ export const t = {
     catMovies: "Movies",
     catSeries: "TV Shows",
     catCartoons: "Cartoons",
-    emptyList: "List is empty",
-    searching: "Searching...",
-    syncing: "Syncing...",
     watch: "WATCH",
-    saved: "Saved",
     saveBtn: "My List", 
     saveBtnActive: "Saved", 
-    match: "Match",
-    serialBadge: "SERIES",
-    heroTrending: "🔥 Trending",
-    descMissing: "No description available.",
+    share: "Share",
     loading: "Loading...",
-    unavailable: "UNAVAILABLE",
-    checking: "CHECKING...",
-    moreLikeThis: "More Like This",
-    history: "Watch History",
-    share: "Share"
+    
+    // Адмін-панель та меню
+    menuTitle: "Menu",
+    menuAdmin: "⚙️ Admin Panel",
+    menuProfile: "👤 Profile",
+    maintTitle: "Maintenance",
+    maintDesc: "We are updating Media Hub. Please come back later!",
+    blockTitle: "Access Denied",
+    blockDesc: "Your account has been blocked.",
+    statusOnline: "today at",
+    statusYesterday: "yesterday at",
+    statusDays: "days ago at",
+    statusLong: "long ago at",
+
+    // Деталі фільму
+    modalRelease: "Release Date",
+    modalGenres: "Genres",
+    modalRuntime: "Runtime",
+    modalRating: "Rating",
+    modalActors: "Cast",
+    modalTrailers: "Trailers",
+    modalMin: "min"
 };
 
 const dictionaries = {
@@ -40,23 +51,31 @@ const dictionaries = {
         catMovies: "Фільми",
         catSeries: "Серіали",
         catCartoons: "Мультики",
-        emptyList: "Список пустий",
-        searching: "Пошук...",
-        syncing: "Синхронізація...",
         watch: "ДИВИТИСЬ",
-        saved: "Збережено",
         saveBtn: "Моє",
         saveBtnActive: "Збережено",
-        match: "Рейтинг",
-        serialBadge: "СЕРІАЛ",
-        heroTrending: "🔥 У тренді",
-        descMissing: "Опис відсутній.",
+        share: "Поділитись",
         loading: "Завантаження...",
-        unavailable: "НЕДОСТУПНО",
-        checking: "ПЕРЕВІРКА...",
-        moreLikeThis: "Схоже",
-        history: "Історія переглядів",
-        share: "Поділитись"
+        
+        menuTitle: "Меню",
+        menuAdmin: "⚙️ Адмін-панель",
+        menuProfile: "👤 Профіль",
+        maintTitle: "Технічне обслуговування",
+        maintDesc: "Ми оновлюємо Media Hub. Поверніться пізніше!",
+        blockTitle: "Доступ обмежено",
+        blockDesc: "Ваш аккаунт заблоковано.",
+        statusOnline: "сьогодні о",
+        statusYesterday: "вчора о",
+        statusDays: "дні назад о",
+        statusLong: "давно був о",
+
+        modalRelease: "Дата виходу",
+        modalGenres: "Жанри",
+        modalRuntime: "Тривалість",
+        modalRating: "Рейтинг",
+        modalActors: "Актори",
+        modalTrailers: "Трейлери",
+        modalMin: "хв"
     },
     en: {
         searchPlaceholder: "Search...",
@@ -67,63 +86,53 @@ const dictionaries = {
         catMovies: "Movies",
         catSeries: "TV Shows",
         catCartoons: "Cartoons",
-        emptyList: "List is empty",
-        searching: "Searching...",
-        syncing: "Syncing...",
         watch: "WATCH",
-        saved: "Saved",
         saveBtn: "My List",
         saveBtnActive: "Saved",
-        match: "Match",
-        serialBadge: "SERIES",
-        heroTrending: "🔥 Trending",
-        descMissing: "No description available.",
+        share: "Share",
         loading: "Loading...",
-        unavailable: "UNAVAILABLE",
-        checking: "CHECKING...",
-        moreLikeThis: "More Like This",
-        history: "Watch History",
-        share: "Share"
+        
+        menuTitle: "Menu",
+        menuAdmin: "⚙️ Admin Panel",
+        menuProfile: "👤 Profile",
+        maintTitle: "Maintenance",
+        maintDesc: "We are updating Media Hub. Please come back later!",
+        blockTitle: "Access Denied",
+        blockDesc: "Your account has been blocked.",
+        statusOnline: "today at",
+        statusYesterday: "yesterday at",
+        statusDays: "days ago at",
+        statusLong: "long ago at",
+
+        modalRelease: "Release Date",
+        modalGenres: "Genres",
+        modalRuntime: "Runtime",
+        modalRating: "Rating",
+        modalActors: "Cast",
+        modalTrailers: "Trailers",
+        modalMin: "min"
     }
 };
 
 export function initLanguage() {
-    // 🔥 БРОНЬОВАНИЙ ЗАХИСТ ВІД ПОМИЛОК
-    // Використовуємо ?. щоб не падало, якщо window.Telegram не існує (в браузері)
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-
-    // Логіка вибору мови:
-    // 1. Якщо це uk, ru або be -> ставимо 'uk'
-    // 2. Якщо userLang взагалі немає (ми в браузері) -> ставимо 'uk' (за замовчуванням)
-    // 3. В усіх інших випадках (англієць, француз тощо) -> ставимо 'en'
     const targetLang = (userLang === 'uk' || userLang === 'ru' || userLang === 'be' || !userLang) ? 'uk' : 'en';
     
-    // Застосовуємо словник
     if (dictionaries[targetLang]) {
         Object.assign(t, dictionaries[targetLang]);
     }
-    
-    console.log(`Language initialized: ${targetLang} (User lang detected: ${userLang})`);
     
     updateStaticInterface();
 }
 
 function updateStaticInterface() {
-    const cats = document.querySelectorAll('.cat-btn');
-    if(cats.length >= 4) {
-        cats[0].innerText = t.catAll;
-        cats[1].innerText = t.catMovies;
-        cats[2].innerText = t.catSeries;
-        cats[3].innerText = t.catCartoons;
-    }
+    // Оновлюємо елементи з data-i18n
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) el.innerText = t[key];
+    });
 
-    const navs = document.querySelectorAll('.nav-item span');
-    if(navs.length >= 3) {
-        navs[0].innerText = t.tabHome;
-        navs[1].innerText = t.tabSearch;
-        navs[2].innerText = t.tabSaved;
-    }
-
+    // Оновлюємо плейсхолдери
     const searchInput = document.getElementById('search_input');
     if(searchInput) searchInput.placeholder = t.searchPlaceholder;
 }

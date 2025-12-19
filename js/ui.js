@@ -127,22 +127,28 @@ export async function openMoviePage(movie) {
         }
 
         details.desc = data.overview || movie.desc;
-        if (data.runtime) details.runtime = `${Math.floor(data.runtime/60)} год ${data.runtime%60} хв`;
+        
+        // 🔥 ПЕРЕКЛАДЕНО: Тривалість
+        if (data.runtime) {
+            const hrs = Math.floor(data.runtime/60);
+            const mins = data.runtime%60;
+            details.runtime = `${hrs}${t.modalHour} ${mins}${t.modalMin}`;
+        }
 
-        // 🔥 НОВЕ: Збір технічної інформації
+        // 🔥 ПЕРЕКЛАДЕНО: Технічна інформація
         const directors = data.credits?.crew?.filter(c => c.job === 'Director').map(d => d.name).join(', ');
         const writers = data.credits?.crew?.filter(c => c.job === 'Writer' || c.job === 'Screenplay').map(w => w.name).join(', ');
         const genres = data.genres?.map(g => g.name).join(', ');
 
         techHtml = `
             <div class="nf-tech-info">
-                ${directors ? `<div class="tech-item"><span class="tech-label">Режисер:</span> ${directors}</div>` : ''}
-                ${writers ? `<div class="tech-item"><span class="tech-label">Сценарій:</span> ${writers}</div>` : ''}
-                ${genres ? `<div class="tech-item"><span class="tech-label">Жанри:</span> ${genres}</div>` : ''}
+                ${directors ? `<div class="tech-item"><span class="tech-label">${t.modalDirector}:</span> ${directors}</div>` : ''}
+                ${writers ? `<div class="tech-item"><span class="tech-label">${t.modalWriters}:</span> ${writers}</div>` : ''}
+                ${genres ? `<div class="tech-item"><span class="tech-label">${t.modalGenres}:</span> ${genres}</div>` : ''}
             </div>
         `;
         
-        // Актори
+        // 🔥 ПЕРЕКЛАДЕНО: Секція акторів
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
@@ -153,7 +159,7 @@ export async function openMoviePage(movie) {
                         <div class="cast-role">${p.character || ''}</div>
                     </div>
                 `).join('');
-                castHtml = `<div class="cast-section"><div class="cast-title">Актори</div><div class="cast-row">${castCards}</div></div>`;
+                castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${castCards}</div></div>`;
             }
         }
 
@@ -163,7 +169,7 @@ export async function openMoviePage(movie) {
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
-        // Трейлери
+        // 🔥 ПЕРЕКЛАДЕНО: Секція трейлерів
         if (data.videos?.results?.length > 0) {
             const videos = data.videos.results.filter(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
             
@@ -178,7 +184,7 @@ export async function openMoviePage(movie) {
                         </div>
                     </div>
                 `).join('');
-                trailersHtml = `<div class="trailer-section"><div class="trailer-title">Трейлери та інше</div><div class="trailer-row">${videoCards}</div></div>`;
+                trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${videoCards}</div></div>`;
             }
         }
 
@@ -245,7 +251,19 @@ export async function openMoviePage(movie) {
     `;
 
     window.ui_openSimilar = (id, type) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); const target = similarMovies.find(m => m.id == id); if (target) openMoviePage(target); };
-    window.ui_share = (id) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); if(!m) return; const startParam = `${m.type}_${m.id}`; const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; const text = `🎬 Дивись "${m.title}" (${m.year}) у MEDIA HUB!`; const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; window.Telegram?.WebApp?.openTelegramLink(shareUrl); };
+    
+    // 🔥 ПЕРЕКЛАДЕНО: Повідомлення для "Поділитись"
+    window.ui_share = (id) => { 
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); 
+        let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
+        if(!m) return; 
+        const startParam = `${m.type}_${m.id}`; 
+        const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
+        const text = `🎬 ${t.shareMessage} "${m.title}" (${m.year}) у MEDIA HUB!`; 
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; 
+        window.Telegram?.WebApp?.openTelegramLink(shareUrl); 
+    };
+
     window.ui_searchActor = (name) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); closeMoviePage(); switchMode('search'); const input = document.getElementById('search_input'); if(input) { input.value = name; if(window.performSearchDelayed) window.performSearchDelayed(); } };
     
     window.ui_openTrailer = (key) => {

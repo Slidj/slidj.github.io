@@ -1,4 +1,6 @@
 import { t } from './i18n.js';
+// 🔥 КРОК 4: Імпортуємо функцію відтворення звуку
+import { playSound } from './sounds.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyClU5qdQSfPbNpcB5LcIniw7Bf4njKcDkg",
@@ -78,7 +80,7 @@ function formatRelativeDate(isoString) {
     const timeStr = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
     if (diffInDays === 0) return `${t.statusOnline} ${timeStr}`;
     if (diffInDays === 1) return `${t.statusYesterday} ${timeStr}`;
-    if (diffInDays < 7) return `${diffInDays} ${t.statusDays} ${timeStr}`;
+    if (diffInDays < 7) return `${t.statusDays} ${timeStr}`;
     return `${t.statusLong} ${timeStr}`;
 }
 
@@ -101,10 +103,15 @@ async function loadAdminData() {
     });
 }
 
+// 🔥 ОНОВЛЕНО: Додано звук сповіщення
 function showNotification(text) {
     const bar = document.getElementById('notification_bar');
     const txt = document.getElementById('notif_text');
     if (!bar || !txt) return;
+
+    // Відтворюємо звук сповіщення
+    playSound('Notification.wav');
+
     txt.innerText = text;
     bar.classList.add('active');
     setTimeout(() => { window.closeNotification(); }, 15000); 

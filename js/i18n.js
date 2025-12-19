@@ -158,7 +158,9 @@ const dictionaries = {
 
 export function initLanguage() {
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-    const targetLang = (userLang === 'uk' || userLang === 'ru' || userLang === 'be' || !userLang) ? 'uk' : 'en';
+    
+    // 🔥 ОНОВЛЕНА ЛОГІКА: Тільки українська для 'uk', все інше — англійська
+    const targetLang = (userLang === 'uk') ? 'uk' : 'en';
     
     if (dictionaries[targetLang]) {
         Object.assign(t, dictionaries[targetLang]);

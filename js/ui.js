@@ -3,6 +3,8 @@ import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchSimilar } from './api.js';
 import { PLAYER_BASE_URL } from './config.js'; 
 import { t } from './i18n.js';
+// 🔥 КРОК 2: Імпортуємо функцію відтворення звуку
+import { playSound } from './sounds.js';
 
 export function showSkeletons(count = 12, isAppend = false) {
     const container = document.getElementById('content_container');
@@ -84,6 +86,9 @@ export async function setupHero(movie) {
 }
 
 export async function openMoviePage(movie) {
+    // 🔥 Звук відкриття картки
+    playSound('Pop.wav');
+
     if (typeof gtag === 'function') {
         gtag('event', 'view_item', {
             'item_id': movie.id,
@@ -128,14 +133,12 @@ export async function openMoviePage(movie) {
 
         details.desc = data.overview || movie.desc;
         
-        // 🔥 ПЕРЕКЛАДЕНО: Тривалість
         if (data.runtime) {
             const hrs = Math.floor(data.runtime/60);
             const mins = data.runtime%60;
             details.runtime = `${hrs}${t.modalHour} ${mins}${t.modalMin}`;
         }
 
-        // 🔥 ПЕРЕКЛАДЕНО: Технічна інформація
         const directors = data.credits?.crew?.filter(c => c.job === 'Director').map(d => d.name).join(', ');
         const writers = data.credits?.crew?.filter(c => c.job === 'Writer' || c.job === 'Screenplay').map(w => w.name).join(', ');
         const genres = data.genres?.map(g => g.name).join(', ');
@@ -148,7 +151,6 @@ export async function openMoviePage(movie) {
             </div>
         `;
         
-        // 🔥 ПЕРЕКЛАДЕНО: Секція акторів
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             if(topCast.length > 0) {
@@ -163,13 +165,11 @@ export async function openMoviePage(movie) {
             }
         }
 
-        // Лого
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
-        // 🔥 ПЕРЕКЛАДЕНО: Секція трейлерів
         if (data.videos?.results?.length > 0) {
             const videos = data.videos.results.filter(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
             
@@ -252,7 +252,6 @@ export async function openMoviePage(movie) {
 
     window.ui_openSimilar = (id, type) => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); const target = similarMovies.find(m => m.id == id); if (target) openMoviePage(target); };
     
-    // 🔥 ПЕРЕКЛАДЕНО: Повідомлення для "Поділитись"
     window.ui_share = (id) => { 
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); 
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
@@ -277,6 +276,9 @@ export async function openMoviePage(movie) {
 }
 
 export function closeMoviePage() {
+    // 🔥 Звук закриття вікна
+    playSound('Bubble.wav');
+
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
     const modal = document.getElementById('movie_details_modal');
     if (modal) modal.style.display = 'none';
@@ -287,6 +289,9 @@ export function closeMoviePage() {
 }
 
 export function openPremiumPlayer(tmdbId, btn) {
+    // 🔥 Звук натискання "Дивитись"
+    playSound('Click.wav');
+
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     const span = btn?.querySelector('span');
     const originalText = span ? span.innerText : t.watch;

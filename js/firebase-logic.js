@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 const firebaseConfig = {
   apiKey: "AIzaSyClU5qdQSfPbNpcB5LcIniw7Bf4njKcDkg",
   authDomain: "mediahub-admin-b4378.firebaseapp.com",
@@ -13,66 +15,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 let currentSettings = null;
 
-// 🔥 НОВЕ: Словник перекладів
-const i18n = {
-    uk: {
-        maint_title: "Технічне обслуговування",
-        maint_desc: "Ми оновлюємо Media Hub для вас. Поверніться за декілька годин!",
-        block_title: "Доступ обмежено",
-        block_desc: "Ваш аккаунт було заблоковано адміністратором.",
-        cat_all: "Усі",
-        cat_movies: "Фільми",
-        cat_series: "Серіали",
-        cat_cartoons: "Мультики",
-        search_placeholder: "Пошук фільмів, серіалів...",
-        btn_watch: "Дивитись",
-        btn_info: "Інфо",
-        nav_home: "Головна",
-        nav_search: "Пошук",
-        nav_my: "Моє",
-        menu_title: "Меню",
-        menu_admin: "⚙️ Адмін-панель",
-        menu_profile: "👤 Мій профіль",
-        status_online: "сьогодні о",
-        status_yesterday: "вчора о",
-        status_days: "дні назад о",
-        status_long: "давно був о"
-    },
-    en: {
-        maint_title: "Maintenance",
-        maint_desc: "We are updating Media Hub for you. Please come back later!",
-        block_title: "Access Denied",
-        block_desc: "Your account has been blocked by the administrator.",
-        cat_all: "All",
-        cat_movies: "Movies",
-        cat_series: "TV Shows",
-        cat_cartoons: "Cartoons",
-        search_placeholder: "Search movies, series...",
-        btn_watch: "Watch",
-        btn_info: "Info",
-        nav_home: "Home",
-        nav_search: "Search",
-        nav_my: "My List",
-        menu_title: "Menu",
-        menu_admin: "⚙️ Admin Panel",
-        menu_profile: "👤 My Profile",
-        status_online: "today at",
-        status_yesterday: "yesterday at",
-        status_days: "days ago at",
-        status_long: "long ago at"
-    }
-};
-
-let currentLang = 'en'; // За замовчуванням англійська
-
 export async function initAdminSystem() {
     const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
     if (!user) return;
-
-    // 🔥 ВИЗНАЧЕННЯ МОВИ
-    const tgLang = user.language_code; // 'uk', 'ru', 'en' тощо
-    currentLang = (tgLang === 'uk') ? 'uk' : 'en'; // Якщо 'uk' - залишаємо, інакше (включаючи 'ru') - 'en'
-    applyLanguage(currentLang);
 
     const userRef = db.ref('users/' + user.id);
     
@@ -127,38 +72,19 @@ export async function initAdminSystem() {
     });
 }
 
-// 🔥 НОВЕ: Функція застосування мови
-function applyLanguage(lang) {
-    const texts = i18n[lang];
-    // Перекладаємо всі елементи з data-i18n
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (texts[key]) el.innerText = texts[key];
-    });
-    // Перекладаємо плейсхолдери
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-        const key = el.getAttribute('data-i18n-placeholder');
-        if (texts[key]) el.placeholder = texts[key];
-    });
-}
-
-// Оновлене форматування дати з урахуванням мови
 function formatRelativeDate(isoString) {
-    if (!isoString) return i18n[currentLang].status_long;
+    if (!isoString) return t.statusLong;
     const date = new Date(isoString);
     const now = new Date();
     const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     const timeStr = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-    const t = i18n[currentLang];
 
-    if (diffInDays === 0) return `${t.status_online} ${timeStr}`;
-    if (diffInDays === 1) return `${t.status_yesterday} ${timeStr}`;
-    if (diffInDays < 7) return `${diffInDays} ${t.status_days} ${timeStr}`;
-    return `${t.status_long} ${timeStr}`;
+    if (diffInDays === 0) return `${t.statusOnline} ${timeStr}`;
+    if (diffInDays === 1) return `${t.statusYesterday} ${timeStr}`;
+    if (diffInDays < 7) return `${diffInDays} ${t.statusDays} ${timeStr}`;
+    return `${t.statusLong} ${timeStr}`;
 }
 
-// Решта функцій (showNotification, loadAdminData тощо) залишаються без змін...
-// Лише в loadAdminData переконайтеся, що викликаєте formatRelativeDate
 async function loadAdminData() {
     const statsDiv = document.getElementById('admin_stats');
     const listDiv = document.getElementById('admin_user_list');
@@ -195,7 +121,9 @@ function showNotification(text) {
     bar.classList.add('active');
     setTimeout(() => { window.closeNotification(); }, 15000); 
 }
+
 window.closeNotification = function() { document.getElementById('notification_bar').classList.remove('active'); };
+
 window.sendBroadcastNotification = function() {
     const input = document.getElementById('notif_input');
     const text = input.value.trim();
@@ -205,13 +133,16 @@ window.sendBroadcastNotification = function() {
         alert("Сповіщення надіслано!");
     });
 };
+
 window.toggleSideMenu = function() {
     const menu = document.getElementById('side_menu');
     const overlay = document.getElementById('menu_overlay');
     menu.classList.toggle('active');
     overlay.style.display = menu.classList.contains('active') ? 'block' : 'none';
 };
+
 window.openAdminFromMenu = function() { window.toggleSideMenu(); window.openAdminPanel(); };
+
 async function updateMenuStats() {
     const statsBox = document.getElementById('admin_stats_preview');
     const today = new Date().toISOString().split('T')[0];
@@ -221,6 +152,7 @@ async function updateMenuStats() {
         if(statsBox) statsBox.innerHTML = `🚀 Сьогодні: <b>+${all.filter(u => u.created_at === today).length}</b> | 👥 Усього: <b>${all.length}</b>`;
     });
 }
+
 window.openAdminPanel = function() { document.getElementById('admin_modal').style.display = 'block'; loadAdminData(); };
 window.closeAdminPanel = function() { document.getElementById('admin_modal').style.display = 'none'; };
 window.toggleMaintenanceMode = function() { db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); };

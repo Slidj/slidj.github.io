@@ -20,8 +20,6 @@ export async function initAdminSystem() {
     if (!user) return;
 
     const userRef = db.ref('users/' + user.id);
-    
-    // Система присутності
     const connectedRef = db.ref('.info/connected');
     connectedRef.on('value', (snap) => {
         if (snap.val() === true) {
@@ -48,8 +46,8 @@ export async function initAdminSystem() {
 
         if (user.id == adminId) {
             window.isAdmin = true;
-            if (document.getElementById('admin_menu_item')) document.getElementById('admin_menu_item').style.display = 'flex';
-            if (document.getElementById('admin_stats_preview')) document.getElementById('admin_stats_preview').style.display = 'block';
+            document.getElementById('admin_menu_item').style.display = 'flex';
+            document.getElementById('admin_stats_preview').style.display = 'block';
             updateMenuStats();
             updateMaintenanceBtnUI(isMaintenance);
         }
@@ -78,7 +76,6 @@ function formatRelativeDate(isoString) {
     const now = new Date();
     const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     const timeStr = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-
     if (diffInDays === 0) return `${t.statusOnline} ${timeStr}`;
     if (diffInDays === 1) return `${t.statusYesterday} ${timeStr}`;
     if (diffInDays < 7) return `${diffInDays} ${t.statusDays} ${timeStr}`;
@@ -91,23 +88,14 @@ async function loadAdminData() {
     db.ref('users').on('value', (snapshot) => {
         const users = snapshot.val() || {};
         const ids = Object.keys(users);
-        if(statsDiv) statsDiv.innerHTML = `👥 Користувачів: <b>${ids.length}</b><br>⚙️ Статус: ${currentSettings?.isMaintenance ? '🚧 Техроботи' : '✅ Ок'}`;
+        if(statsDiv) statsDiv.innerHTML = `👥 Усього користувачів: <b>${ids.length}</b><br>⚙️ Статус: ${currentSettings?.isMaintenance ? '🚧 Техроботи' : '✅ Ок'}`;
         listDiv.innerHTML = '';
         ids.reverse().forEach(id => {
             const u = users[id];
             const isOnline = u.status === 'online';
             const card = document.createElement('div');
             card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
-            card.innerHTML = `
-                <div style="color:white; font-size:12px; display:flex; align-items:center;">
-                    <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span>
-                    <div>
-                        <b>${u.first_name}</b> (@${u.username || '---'})<br>
-                        <span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)}</span>
-                    </div>
-                </div>
-                <button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>
-            `;
+            card.innerHTML = `<div style="color:white; font-size:12px; display:flex; align-items:center;"><span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span><div><b>${u.first_name}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)}</span></div></div><button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
             listDiv.appendChild(card);
         });
     });
@@ -123,26 +111,19 @@ function showNotification(text) {
 }
 
 window.closeNotification = function() { document.getElementById('notification_bar').classList.remove('active'); };
-
 window.sendBroadcastNotification = function() {
     const input = document.getElementById('notif_input');
     const text = input.value.trim();
     if (!text) return;
-    db.ref('broadcast').set({ text: text, timestamp: Date.now() }).then(() => {
-        input.value = '';
-        alert("Сповіщення надіслано!");
-    });
+    db.ref('broadcast').set({ text: text, timestamp: Date.now() }).then(() => { input.value = ''; alert("Надіслано!"); });
 };
-
 window.toggleSideMenu = function() {
     const menu = document.getElementById('side_menu');
     const overlay = document.getElementById('menu_overlay');
     menu.classList.toggle('active');
     overlay.style.display = menu.classList.contains('active') ? 'block' : 'none';
 };
-
 window.openAdminFromMenu = function() { window.toggleSideMenu(); window.openAdminPanel(); };
-
 async function updateMenuStats() {
     const statsBox = document.getElementById('admin_stats_preview');
     const today = new Date().toISOString().split('T')[0];
@@ -152,7 +133,6 @@ async function updateMenuStats() {
         if(statsBox) statsBox.innerHTML = `🚀 Сьогодні: <b>+${all.filter(u => u.created_at === today).length}</b> | 👥 Усього: <b>${all.length}</b>`;
     });
 }
-
 window.openAdminPanel = function() { document.getElementById('admin_modal').style.display = 'block'; loadAdminData(); };
 window.closeAdminPanel = function() { document.getElementById('admin_modal').style.display = 'none'; };
 window.toggleMaintenanceMode = function() { db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); };

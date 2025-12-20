@@ -7,7 +7,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RPM3X3960Y"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-RPM3X3960Y',{'app_name':'MediaHub_TG','send_page_view':true});</script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=180">
+    <link rel="stylesheet" href="css/style.css?v=181">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
@@ -54,8 +54,6 @@
         <button class="cat-btn" onclick="setCategory('16')" data-i18n="catCartoons">Мультики</button>
     </div>
 
-    <div id="search_bar_container" style="display:none;"><input type="text" id="search_input" oninput="performSearchDelayed()"></div>
-
     <div id="main_scroll_area">
         <div id="hero_section" class="hero-banner" style="display:none;">
             <div class="hero-overlay"></div>
@@ -81,11 +79,16 @@
     <div id="menu_overlay" class="menu-overlay" onclick="window.toggleSideMenu()"></div>
     <div id="side_menu" class="side-menu">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;"><h3 style="color: white; margin:0;" data-i18n="menuTitle">Меню</h3><span onclick="window.toggleSideMenu()" style="color:#666; font-size:24px; cursor:pointer;">&times;</span></div>
+        
         <div id="admin_stats_preview" class="menu-stats-box" style="display:none;"></div>
-        <div id="admin_menu_item" class="menu-item admin-only-item" style="display:none;" onclick="window.openAdminFromMenu()"><span data-i18n="menuAdmin">⚙️ Адмін-панель</span></div>
+        
+        <div id="admin_menu_item" class="menu-item admin-only-item" style="display:none;" onclick="window.openAdminFromMenu()">
+            <span data-i18n="menuAdmin">⚙️ Адмін-панель</span>
+        </div>
+        
         <div class="menu-item donate-item" onclick="window.openDonateMenu()"><span data-i18n="menuDonate">⭐ Підтримати проект</span></div>
         <div class="menu-item" onclick="window.toggleSideMenu()"><span data-i18n="menuProfile">👤 Мій профіль</span></div>
-        <div style="margin-top: auto; padding-bottom: 20px; text-align: center; color: #444; font-size: 11px;">MEDIA HUB v1.8.0</div>
+        <div style="margin-top: auto; padding-bottom: 20px; text-align: center; color: #444; font-size: 11px;">MEDIA HUB v1.8.1</div>
     </div>
 
     <div id="admin_modal" class="modal-fullscreen" style="display:none; background: #141414; z-index: 100001;">
@@ -94,16 +97,13 @@
                 <h2 style="color:white; margin:0;">Адмін-панель</h2>
                 <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">&times;</button>
             </div>
-            
             <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
                 <h3 style="color:white; font-size:14px; margin-top:0;">📣 Надіслати сповіщення</h3>
                 <input type="text" id="notif_input" placeholder="Текст сповіщення..." style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; margin-bottom:10px;">
                 <button onclick="window.sendBroadcastNotification()" style="width:100%; padding:10px; background:#e50914; color:white; border:none; border-radius:5px; font-weight:bold;">ВІДПРАВИТИ ВСІМ</button>
             </div>
-
             <div id="admin_stats" style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; color:#aaa; font-size:13px;"></div>
             <button id="maint_toggle_btn" onclick="window.toggleMaintenanceMode()" style="width:100%; padding:12px; border-radius:5px; border:none; font-weight:bold; margin-bottom:20px;"></button>
-            
             <h3 style="color:white; font-size:16px;">Користувачі:</h3>
             <div id="admin_user_list" style="display:flex; flex-direction:column; gap:10px;"></div>
         </div>
@@ -112,6 +112,6 @@
     <div id="player_modal"><div class="close-player-btn" onclick="closePlayer()">&times;</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
     <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="closeMoviePage()">&times;</button><div id="movie_details_content"></div></div>
 
-    <script type="module" src="js/app.js?v=190"></script>
+    <script type="module" src="js/app.js?v=181"></script>
 </body>
 </html>

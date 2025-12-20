@@ -6,7 +6,7 @@ export const API_KEY = '4f06fae67ddcf28e2e5b3f91193cb555';
 
 // 🔥 НОВЕ: Назва вашого бота (без символу @)
 // Коли зміните бота, просто впишіть сюди нове ім'я користувача
-export const BOT_USERNAME = 'younews_app_bot';
+export const BOT_USERNAME = 'my_mediahub_bot';
 
 // 🔥 ГОЛОВНЕ: Посилання на новий плеєр (VideoCDN)
 export const PLAYER_BASE_URL = 'https://68865.svetacdn.in/lQRlkhufNdas';

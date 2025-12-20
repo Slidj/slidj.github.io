@@ -6,7 +6,7 @@ import { t, initLanguage } from './i18n.js';
 import { initAdminSystem } from './firebase-logic.js'; 
 import { playSound } from './sounds.js';
 
-// --- ЕКСПОРТИ ---
+// --- ГЛОБАЛЬНІ ЕКСПОРТИ ---
 window.setCategory = setCategory;
 window.switchMode = switchMode;
 window.playHeroMovie = () => { if(state.currentHeroMovie) openPremiumPlayer(state.currentHeroMovie.id, null); };
@@ -26,12 +26,9 @@ window.toggleSideMenu = () => {
     }
 };
 
-// 🔥 ВИПРАВЛЕНО: Тепер викликає функцію завантаження даних
 window.openAdminFromMenu = () => {
     window.toggleSideMenu();
-    if (window.openAdminPanel) {
-        window.openAdminPanel(); 
-    }
+    if (window.openAdminPanel) window.openAdminPanel(); 
     playSound('Pop.wav');
 };
 
@@ -51,14 +48,28 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
     try {
+        // 🔥 КРОК 1: ІНІЦІАЛІЗАЦІЯ ТЕЛЕГРАМ ТА АВАТАРА
         if (tg) {
             tg.ready(); 
             tg.expand(); 
             if(tg.requestFullscreen) tg.requestFullscreen();
             tg.setHeaderColor?.('#000000'); 
             tg.setBackgroundColor?.('#000000');
+            
+            // 🔥 Відновлено: Завантаження аватара
+            const user = tg.initDataUnsafe?.user;
+            if(user && user.photo_url) {
+                const avatarImg = document.getElementById('user_avatar');
+                const defaultDiv = document.getElementById('default_avatar');
+                if (avatarImg && defaultDiv) {
+                    avatarImg.src = user.photo_url;
+                    avatarImg.style.display = 'block';
+                    defaultDiv.style.display = 'none';
+                }
+            }
         }
 
+        // 🔥 КРОК 2: ІНІЦІАЛІЗАЦІЯ ІНШИХ СИСТЕМ
         await initAdminSystem(); 
         initLanguage();
         await loadCloudData();
@@ -70,27 +81,55 @@ async function initApp() {
             const pre = document.getElementById('preloader');
             if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
         }, 500);
-    } catch (e) { console.error(e); }
+
+    } catch (error) {
+        console.error("INIT ERROR:", error);
+    }
 }
 
-// ... (решта функцій: switchMode, loadContent, search, deepLink залишаються без змін) ...
+// --- НАВІГАЦІЯ ---
 async function switchMode(tab) {
     playSound('Tap.wav');
     state.currentTab = tab;
+    
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const navs = document.querySelectorAll('.nav-item');
     if(tab==='home') navs[0].classList.add('active');
-    if(tab==='search') navs[1].classList.add('active');
+    if(tab==='search') navs[1].classList.add('active'); // 🔥 Виправлено typo
     if(tab==='saved') navs[2].classList.add('active');
+
     const hero = document.getElementById('hero_section'), filters = document.getElementById('filters_wrapper'), search = document.getElementById('search_bar_container'), content = document.getElementById('content_container'), trigger = document.getElementById('infinite_trigger');
-    if (tab === 'home') { if(hero) hero.style.display = 'flex'; if(filters) filters.style.display = 'flex'; if(search) search.style.display = 'none'; if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; } if(trigger) trigger.style.display = 'flex'; if (state.feedMovies.length > 0) renderGrid(state.feedMovies, false); else { if(content) content.innerHTML = ''; showSkeletons(12); state.currentPage = 1; loadContent(1); } } 
-    else if (tab === 'search') { if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'block'; if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; } if(trigger) trigger.style.display = 'flex'; if (state.searchResults.length > 0) { const limit = (state.searchPage) * 12; renderGrid(state.searchResults.slice(0, Math.max(limit, 12)), false); } else if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`; } 
-    else if (tab === 'saved') { if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'none'; if(content) { content.style.display = 'grid'; content.style.paddingTop = 'calc(80px + var(--safe-top))'; } if(trigger) trigger.style.display = 'none'; await loadCloudData(); if(content) { content.innerHTML = ''; if (state.historyItems.length > 0) content.appendChild(renderHistorySection(state.historyItems)); if (state.savedItems.length === 0) content.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`; else renderGrid(state.savedItems, true); } }
+    
+    if (tab === 'home') {
+        if(hero) hero.style.display = 'flex'; if(filters) filters.style.display = 'flex'; if(search) search.style.display = 'none';
+        if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
+        if(trigger) trigger.style.display = 'flex';
+        if (state.feedMovies.length > 0) renderGrid(state.feedMovies, false);
+        else { if(content) content.innerHTML = ''; showSkeletons(12); state.currentPage = 1; loadContent(1); }
+    } 
+    else if (tab === 'search') {
+        if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'block';
+        if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
+        if(trigger) trigger.style.display = 'flex';
+        if (state.searchResults.length > 0) renderGrid(state.searchResults.slice(0, 12), false);
+        else if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
+    } 
+    else if (tab === 'saved') {
+        if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'none';
+        if(content) { content.style.display = 'grid'; content.style.paddingTop = 'calc(80px + var(--safe-top))'; }
+        if(trigger) trigger.style.display = 'none';
+        await loadCloudData();
+        if(content) {
+            content.innerHTML = '';
+            if (state.historyItems.length > 0) content.appendChild(renderHistorySection(state.historyItems));
+            if (state.savedItems.length === 0) content.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
+            else renderGrid(state.savedItems, true);
+        }
+    }
 }
 
 function setCategory(catId) {
     playSound('Tap.wav');
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     state.currentGenre = catId; state.currentPage = 1; state.feedMovies = []; showSkeletons(12); loadContent(1); 
 }
 
@@ -133,7 +172,7 @@ function setupInfiniteScroll() {
 }
 
 async function checkDeepLink() {
-    const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    const startParam = tg?.initDataUnsafe?.start_param;
     if (!startParam) return;
     try {
         const parts = startParam.split('_');

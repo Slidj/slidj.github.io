@@ -53,6 +53,7 @@ export function renderGrid(items, isAppend = false) {
     items.forEach((item, index) => {
         const div = document.createElement('div');
         let glowClass = (shouldShowGlow && index < 3) ? ' trending-glow' : '';
+        // 🔥 movie-poster-card ОБОВ'ЯЗКОВО для правильного розміру
         div.className = 'movie-poster-card card-anim' + glowClass; 
         div.style.animationDelay = `${index * 0.05}s`;
         div.onclick = () => {
@@ -128,19 +129,16 @@ export async function openMoviePage(movie) {
         if (data.original_title) state.activeMovie.original_title = data.original_title;
         details.desc = data.overview || movie.desc;
         
-        // Відновлюємо логіку ЛОГОТИПІВ
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
-        // Відновлюємо АКТОРИ
         if (data.credits?.cast?.length > 0) {
             const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
             castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${topCast.map(p => `<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
         }
 
-        // Відновлюємо ТРЕЙЛЕРИ
         if (data.videos?.results?.length > 0) {
             const trailers = data.videos.results.filter(v => v.type === 'Trailer').slice(0, 3);
             trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${trailers.map(v => `<div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')"><div class="trailer-img-box"><img src="https://img.youtube.com/vi/${v.key}/hqdefault.jpg"><div class="trailer-play-icon">▶</div></div></div>`).join('')}</div></div>`;
@@ -246,11 +244,18 @@ export function closePlayer() {
     document.getElementById('movie_details_modal').style.display = 'block';
 }
 
+// 🔥 ВИПРАВЛЕНО: Рендер історії з гортанням
 export function renderHistorySection(items) {
     const section = document.createElement('div');
     section.className = 'similar-section'; 
     let html = `<div class="similar-title" style="padding-left:10px;">${t.history}</div><div class="similar-row" style="padding-left:10px;">`;
-    items.forEach(m => { html += `<div class="similar-card" onclick="window.ui_openHistory('${m.id}')"><img src="${m.img}"></div>`; });
+    items.forEach(m => { 
+        html += `
+            <div class="similar-card" onclick="window.ui_openHistory('${m.id}')">
+                <img src="${m.img}" loading="lazy">
+                <div class="similar-rating">${m.rating}</div>
+            </div>`; 
+    });
     html += `</div>`;
     section.innerHTML = html;
     window.ui_openHistory = (id) => { const movie = items.find(m => m.id == id); if(movie) openMoviePage(movie); };

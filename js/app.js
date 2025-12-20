@@ -1,7 +1,3 @@
-// ============================================================
-// 🎬 MEDIA HUB: MAIN CONTROLLER (v1.7.9)
-// ============================================================
-
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
@@ -10,7 +6,7 @@ import { t, initLanguage } from './i18n.js';
 import { initAdminSystem } from './firebase-logic.js'; 
 import { playSound } from './sounds.js';
 
-// --- 🔥 ЕКСПОРТИ ДЛЯ КНОПОК У HTML ---
+// --- ЕКСПОРТИ ---
 window.setCategory = setCategory;
 window.switchMode = switchMode;
 window.playHeroMovie = () => { if(state.currentHeroMovie) openPremiumPlayer(state.currentHeroMovie.id, null); };
@@ -20,7 +16,6 @@ window.closePlayer = closePlayer;
 window.performSearchDelayed = performSearchDelayed;
 window.openPremiumPlayer = openPremiumPlayer;
 
-// 🔥 Функції керування боковим меню
 window.toggleSideMenu = () => {
     const menu = document.getElementById('side_menu');
     const overlay = document.getElementById('menu_overlay');
@@ -31,11 +26,12 @@ window.toggleSideMenu = () => {
     }
 };
 
-// 🔥 Функції відкриття/закриття адмін-панелі
+// 🔥 ВИПРАВЛЕНО: Тепер викликає функцію завантаження даних
 window.openAdminFromMenu = () => {
     window.toggleSideMenu();
-    const modal = document.getElementById('admin_modal');
-    if (modal) modal.style.display = 'block';
+    if (window.openAdminPanel) {
+        window.openAdminPanel(); 
+    }
     playSound('Pop.wav');
 };
 
@@ -51,65 +47,41 @@ window.ui_toggleSave = (id, btn) => {
 };
 
 const tg = window.Telegram?.WebApp;
-
-// --- ІНІЦІАЛІЗАЦІЯ ---
 document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
     try {
-        // 🔥 КРОК 1: Спершу кажемо Telegram, що ми готові та розгортаємось
         if (tg) {
             tg.ready(); 
-            tg.expand(); // Це прибирає чорну смужку
+            tg.expand(); 
             if(tg.requestFullscreen) tg.requestFullscreen();
             tg.setHeaderColor?.('#000000'); 
             tg.setBackgroundColor?.('#000000');
-            
-            // Налаштування аватара
-            if(tg.initDataUnsafe?.user?.photo_url) {
-                const avatar = document.getElementById('user_avatar');
-                const defAvatar = document.getElementById('default_avatar');
-                if (avatar && defAvatar) {
-                    avatar.src = tg.initDataUnsafe.user.photo_url;
-                    avatar.style.display = 'block';
-                    defAvatar.style.display = 'none';
-                }
-            }
         }
 
-        // 🔥 КРОК 2: Тепер, коли Telegram готовий і ID доступний, ініціалізуємо адмінку
         await initAdminSystem(); 
         initLanguage();
-
         await loadCloudData();
         setupInfiniteScroll(); 
-
         switchMode('home');
         checkDeepLink();
 
-        // Ховаємо прелоадер
         setTimeout(() => {
             const pre = document.getElementById('preloader');
             if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
         }, 500);
-
-    } catch (error) {
-        console.error("INIT ERROR:", error);
-    }
+    } catch (e) { console.error(e); }
 }
 
-// ... (решта функцій: switchMode, loadContent, search без змін) ...
-// (Код ідентичний вашому останньому робочому app.js)
-
+// ... (решта функцій: switchMode, loadContent, search, deepLink залишаються без змін) ...
 async function switchMode(tab) {
     playSound('Tap.wav');
     state.currentTab = tab;
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const navs = document.querySelectorAll('.nav-item');
     if(tab==='home') navs[0].classList.add('active');
-    if(tab==='search') navs[TabSearch] = navs[1].classList.add('active');
+    if(tab==='search') navs[1].classList.add('active');
     if(tab==='saved') navs[2].classList.add('active');
-    
     const hero = document.getElementById('hero_section'), filters = document.getElementById('filters_wrapper'), search = document.getElementById('search_bar_container'), content = document.getElementById('content_container'), trigger = document.getElementById('infinite_trigger');
     if (tab === 'home') { if(hero) hero.style.display = 'flex'; if(filters) filters.style.display = 'flex'; if(search) search.style.display = 'none'; if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; } if(trigger) trigger.style.display = 'flex'; if (state.feedMovies.length > 0) renderGrid(state.feedMovies, false); else { if(content) content.innerHTML = ''; showSkeletons(12); state.currentPage = 1; loadContent(1); } } 
     else if (tab === 'search') { if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'block'; if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; } if(trigger) trigger.style.display = 'flex'; if (state.searchResults.length > 0) { const limit = (state.searchPage) * 12; renderGrid(state.searchResults.slice(0, Math.max(limit, 12)), false); } else if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`; } 

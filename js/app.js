@@ -56,7 +56,11 @@ async function initApp() {
             if(user && user.photo_url) {
                 const avatarImg = document.getElementById('user_avatar');
                 const defaultDiv = document.getElementById('default_avatar');
-                if (avatarImg && defaultDiv) { avatarImg.src = user.photo_url; avatarImg.style.display = 'block'; defaultDiv.style.display = 'none'; }
+                if (avatarImg && defaultDiv) {
+                    avatarImg.src = user.photo_url;
+                    avatarImg.style.display = 'block';
+                    defaultDiv.style.display = 'none';
+                }
             }
         }
         await initAdminSystem(); 
@@ -72,7 +76,6 @@ async function initApp() {
     } catch (error) { console.error("INIT ERROR:", error); }
 }
 
-// --- НАВІГАЦІЯ ---
 async function switchMode(tab) {
     playSound('Tap.wav');
     state.currentTab = tab;
@@ -92,7 +95,8 @@ async function switchMode(tab) {
         else { if(content) content.innerHTML = ''; showSkeletons(12); state.currentPage = 1; loadContent(1); }
     } 
     else if (tab === 'search') {
-        if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'block';
+        if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; 
+        if(search) search.style.display = 'block'; // 🔥 ВІДНОВЛЕНО
         if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
         if(trigger) trigger.style.display = 'flex';
         if (state.searchResults.length > 0) renderGrid(state.searchResults.slice(0, 12), false);
@@ -100,29 +104,15 @@ async function switchMode(tab) {
     } 
     else if (tab === 'saved') {
         if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'none';
-        if(content) { 
-            content.style.display = 'grid'; 
-            content.style.paddingTop = 'calc(80px + var(--safe-top))';
-            content.innerHTML = ''; // Очистка перед рендером розділу "Моє"
-        }
+        if(content) { content.style.display = 'grid'; content.style.paddingTop = 'calc(80px + var(--safe-top))'; content.innerHTML = ''; }
         if(trigger) trigger.style.display = 'none';
-        
         await loadCloudData();
         if(content) {
-            // 1. Історія (Гортання вбік)
-            if (state.historyItems && state.historyItems.length > 0) {
-                content.appendChild(renderHistorySection(state.historyItems));
-            }
-            // 2. Список збережених (Сітка 3x3)
-            if (state.savedItems && state.savedItems.length > 0) {
-                const title = document.createElement('div');
-                title.className = 'similar-title'; title.style.gridColumn = '1/-1';
-                title.innerText = t.tabSaved || 'My List';
-                content.appendChild(title);
-                renderGrid(state.savedItems, true); // Додаємо до існуючого вмісту
-            } else if (!state.historyItems || state.historyItems.length === 0) {
-                content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
-            }
+            if (state.historyItems.length > 0) content.appendChild(renderHistorySection(state.historyItems));
+            if (state.savedItems.length > 0) {
+                const title = document.createElement('div'); title.className = 'similar-title'; title.style.gridColumn = '1/-1'; title.innerText = t.tabSaved; content.appendChild(title);
+                renderGrid(state.savedItems, true);
+            } else if (!state.historyItems.length) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
         }
     }
 }
@@ -144,20 +134,14 @@ async function loadContent(page, isAppend = false) {
 
 function performSearchDelayed() {
     clearTimeout(state.searchTimeout);
-    const query = document.getElementById('search_input').value;
+    const query = document.getElementById('search_input')?.value;
     if (!query || query.length < 2) return;
     state.searchTimeout = setTimeout(async () => {
         showSkeletons(6); const results = await searchMovies(query);
         state.searchResults = results; state.searchPage = 0; removeSkeletons();
         const container = document.getElementById('content_container');
-        if (container) { container.innerHTML = ''; if (results.length === 0) container.innerHTML = `<div style=\"grid-column:1/-1; text-align:center; color:#555; padding:40px;\">Нічого не знайдено</div>`; else loadNextSearchBatch(); }
+        if (container) { container.innerHTML = ''; if (results.length === 0) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`; else renderGrid(results.slice(0, 12), true); }
     }, 600);
-}
-
-function loadNextSearchBatch() {
-    const start = state.searchPage * 12;
-    const chunk = state.searchResults.slice(start, start + 12);
-    if (chunk.length > 0) { renderGrid(chunk, true); state.searchPage++; }
 }
 
 function setupInfiniteScroll() {
@@ -165,7 +149,6 @@ function setupInfiniteScroll() {
         if (state.isLoading) return;
         if (document.documentElement.scrollHeight - window.scrollY - window.innerHeight < 300) {
             if (state.currentTab === 'home') { state.currentPage++; loadContent(state.currentPage, true); } 
-            else if (state.currentTab === 'search') loadNextSearchBatch();
         }
     });
 }
@@ -176,7 +159,7 @@ async function checkDeepLink() {
     try {
         const parts = startParam.split('_');
         const data = await fetchMovieDetails(parts[1], parts[0]);
-        const movieObj = { id: data.id, title: data.title || data.name, img: `https://image.tmdb.org/t/p/w500${data.poster_path}`, backdrop: `https://image.tmdb.org/t/p/w1280${data.backdrop_path}`, rating: data.vote_average?.toFixed(1) || 'N/A', year: (data.release_date || data.first_air_date || '').split('-')[0], type: parts[0], desc: data.overview, imdb_id: data.external_ids?.imdb_id, original_title: data.original_title };
-        openMoviePage(movieObj);
+        const m = { id: data.id, title: data.title || data.name, img: `https://image.tmdb.org/t/p/w500${data.poster_path}`, backdrop: `https://image.tmdb.org/t/p/w1280${data.backdrop_path}`, rating: data.vote_average?.toFixed(1) || 'N/A', year: (data.release_date || data.first_air_date || '').split('-')[0], type: parts[0], desc: data.overview, imdb_id: data.external_ids?.imdb_id, original_title: data.original_title };
+        openMoviePage(m);
     } catch (e) { }
 }

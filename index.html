@@ -15,7 +15,7 @@
     <div id="notification_bar">
         <span style="font-size:20px;">🔔</span>
         <div id="notif_text" style="flex: 1; font-weight: 500;"></div>
-        <span class="notif-close" onclick="window.closeNotification()">×</span>
+        <span class="notif-close" onclick="window.closeNotification()">&times;</span>
     </div>
 
     <div id="donate_modal" class="modal-fullscreen" style="display:none; background: rgba(0,0,0,0.95); z-index: 100002; backdrop-filter: blur(10px); flex-direction:column;">
@@ -75,13 +75,13 @@
 
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="switchMode('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span data-i18n="tabHome">Головна</span></div>
-        <div class="nav-item" onclick="switchMode('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span data-i18n="tabSearch">Пошук</span></div>
+        <div class="nav-item" onclick="switchMode('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" cy="21" x2="16.65" y2="16.65"></line></svg><span data-i18n="tabSearch">Пошук</span></div>
         <div class="nav-item" onclick="switchMode('saved')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg><span data-i18n="tabSaved">Моє</span></div>
     </nav>
 
     <div id="menu_overlay" class="menu-overlay" onclick="window.toggleSideMenu()"></div>
     <div id="side_menu" class="side-menu">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;"><h3 style="color: white; margin:0;" data-i18n="menuTitle">Меню</h3><span onclick="window.toggleSideMenu()" style="color:#666; font-size:24px; cursor:pointer;">×</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;"><h3 style="color: white; margin:0;" data-i18n="menuTitle">Меню</h3><span onclick="window.toggleSideMenu()" style="color:#666; font-size:24px; cursor:pointer;">&times;</span></div>
         <div id="admin_stats_preview" class="menu-stats-box" style="display:none;"></div>
         <div id="admin_menu_item" class="menu-item admin-only-item" style="display:none;" onclick="window.openAdminFromMenu()"><span data-i18n="menuAdmin">⚙️ Адмін-панель</span></div>
         <div class="menu-item donate-item" onclick="window.openDonateMenu()"><span data-i18n="menuDonate">⭐ Підтримати проект</span></div>
@@ -93,25 +93,22 @@
         <div style="padding: 20px; padding-top: calc(20px + var(--safe-top)); overflow-y: auto; height: 100%;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                 <h2 style="color:white; margin:0;">Адмін-панель</h2>
-                <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">×</button>
+                <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">&times;</button>
             </div>
-            
             <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
                 <h3 style="color:white; font-size:14px; margin-top:0;">📣 Надіслати сповіщення</h3>
                 <input type="text" id="notif_input" placeholder="Текст сповіщення..." style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; margin-bottom:10px;">
                 <button onclick="window.sendBroadcastNotification()" style="width:100%; padding:10px; background:#e50914; color:white; border:none; border-radius:5px; font-weight:bold;">ВІДПРАВИТИ ВСІМ</button>
             </div>
-
             <div id="admin_stats" style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; color:#aaa; font-size:13px;"></div>
-            <button id="maint_toggle_btn" onclick="window.toggleMaintenanceMode()" style="width:100%; padding:12px; border-radius:5px; border:none; font-weight:bold; margin-bottom:20px;"></button>
-            
+            <button id="maint_toggle_btn" onclick="window.toggleMaintenanceMode()" style="width:100%; padding:12px; border-radius:5px; border:none; font-weight:bold; margin-bottom:20px; cursor:pointer;"></button>
             <h3 style="color:white; font-size:16px;">Користувачі:</h3>
             <div id="admin_user_list"></div>
         </div>
     </div>
 
-    <div id="player_modal"><div class="close-player-btn" onclick="closePlayer()">×</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
-    <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="closeMoviePage()">×</button><div id="movie_details_content"></div></div>
+    <div id="player_modal"><div class="close-player-btn" onclick="window.closePlayer()">&times;</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
+    <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="window.closeMoviePage()">&times;</button><div id="movie_details_content"></div></div>
 
     <script type="module" src="js/app.js?v=186"></script>
 </body>

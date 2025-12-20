@@ -4,14 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MEDIA HUB</title>
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RPM3X3960Y"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-RPM3X3960Y',{'app_name':'MediaHub_TG','send_page_view':true});</script>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=255">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css?v=255">
+
+    <style>
+        /* Глобальний темний фон (Netflix Style) */
+        body {
+            background-color: #000000 !important; /* Глибокий чорний */
+            color: #ffffff;
+        }
+
+        /* --- СТИЛІ ДЛЯ ЗАСТАВКИ (INTRO) --- */
+        #intro-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            z-index: 999999; /* Поверх усього */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 0.8s ease-out;
+        }
+
+        .intro-logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: zoomInPulse 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        /* Логотип MH */
+        .mh-big-text {
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            font-size: 120px;
+            line-height: 1;
+            color: #E50914; /* Netflix Red */
+            letter-spacing: -5px;
+            position: relative;
+            text-shadow: 0 0 30px rgba(229, 9, 20, 0.4);
+        }
+        
+        /* Трикутник Play всередині (імітація) */
+        .mh-play-icon {
+            display: inline-block;
+            width: 0; 
+            height: 0; 
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            border-left: 35px solid #ffffff;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.7));
+        }
+
+        /* Напис знизу */
+        .mh-sub-text {
+            font-family: 'Arial', sans-serif;
+            font-size: 18px;
+            color: #ffffff;
+            letter-spacing: 8px;
+            margin-top: 15px;
+            text-transform: uppercase;
+            font-weight: bold;
+            opacity: 0;
+            animation: fadeInText 1s ease-out 0.5s forwards;
+        }
+
+        /* Анімація збільшення */
+        @keyframes zoomInPulse {
+            0% { transform: scale(0.6); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(10); opacity: 0; } /* Ефект "вльоту" в екран в кінці */
+        }
+
+        @keyframes fadeInText {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Стиль хедеру під Netflix */
+        .netflix-header {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            background-color: transparent;
+        }
+        .logo {
+            color: #E50914 !important; /* Червоний логотип в шапці */
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+    </style>
 </head>
 <body>
+
+    <div id="intro-loader">
+        <div class="intro-logo-container">
+            <div class="mh-big-text">
+                MH
+                <div class="mh-play-icon"></div>
+            </div>
+            <div class="mh-sub-text">MEDIA-HUB</div>
+        </div>
+    </div>
+
     <div id="notification_bar">
         <span style="font-size:20px;">🔔</span>
         <div id="notif_text" style="flex: 1; font-weight: 500;"></div>
@@ -121,6 +229,37 @@
 
     <div id="player_modal"><div class="close-player-btn" onclick="window.closePlayer()">×</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
     <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="window.closeMoviePage()">×</button><div id="movie_details_content"></div></div>
+
+    <script>
+        // 1. Логіка мови: Якщо не UA -> перемикаємо на EN
+        try {
+            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            if (tgUser && tgUser.language_code) {
+                const userLang = tgUser.language_code.toLowerCase();
+                // Якщо мова не 'uk' (українська), примусово ставимо 'en'
+                if (userLang !== 'uk') {
+                    localStorage.setItem('mediaHubLang', 'en');
+                } else {
+                    localStorage.setItem('mediaHubLang', 'uk');
+                }
+            }
+        } catch (e) {
+            console.log('Lang check skipped');
+        }
+
+        // 2. Логіка зникнення заставки
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('intro-loader');
+            
+            // Затримка 3.5 секунди
+            setTimeout(() => {
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                }, 800);
+            }, 3000);
+        });
+    </script>
 
     <script type="module" src="js/app.js?v=245"></script>
 </body>

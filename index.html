@@ -7,7 +7,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RPM3X3960Y"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-RPM3X3960Y',{'app_name':'MediaHub_TG','send_page_view':true});</script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=900">
+    <link rel="stylesheet" href="css/style.css?v=189">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
@@ -15,7 +15,7 @@
     <div id="notification_bar">
         <span style="font-size:20px;">🔔</span>
         <div id="notif_text" style="flex: 1; font-weight: 500;"></div>
-        <span class="notif-close" onclick="window.closeNotification()">&times;</span>
+        <span class="notif-close" onclick="window.closeNotification()">×</span>
     </div>
 
     <div id="donate_modal" class="modal-fullscreen" style="display:none; background: rgba(0,0,0,0.95); z-index: 100002; backdrop-filter: blur(10px); flex-direction:column;">
@@ -74,9 +74,21 @@
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchMode('home')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span data-i18n="tabHome">Головна</span></div>
-        <div class="nav-item" onclick="switchMode('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" cy="21" x2="16.65" y2="16.65"></line></svg><span data-i18n="tabSearch">Пошук</span></div>
-        <div class="nav-item" onclick="switchMode('saved')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg><span data-i18n="tabSaved">Моє</span></div>
+        <div class="nav-item active" onclick="switchMode('home')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span data-i18n="tabHome">Головна</span>
+        </div>
+        <div class="nav-item" onclick="switchMode('search')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span data-i18n="tabSearch">Пошук</span>
+        </div>
+        <div class="nav-item" onclick="switchMode('saved')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            <span data-i18n="tabSaved">Моє</span>
+        </div>
     </nav>
 
     <div id="menu_overlay" class="menu-overlay" onclick="window.toggleSideMenu()"></div>
@@ -86,7 +98,7 @@
         <div id="admin_menu_item" class="menu-item admin-only-item" style="display:none;" onclick="window.openAdminFromMenu()"><span data-i18n="menuAdmin">⚙️ Адмін-панель</span></div>
         <div class="menu-item donate-item" onclick="window.openDonateMenu()"><span data-i18n="menuDonate">⭐ Підтримати проект</span></div>
         <div class="menu-item" onclick="window.toggleSideMenu()"><span data-i18n="menuProfile">👤 Мій профіль</span></div>
-        <div style="margin-top: auto; padding-bottom: 20px; text-align: center; color: #444; font-size: 11px;">MEDIA HUB v1.8.8</div>
+        <div style="margin-top: auto; padding-bottom: 20px; text-align: center; color: #444; font-size: 11px;">MEDIA HUB v1.8.9</div>
     </div>
 
     <div id="admin_modal" class="modal-fullscreen" style="display:none; background: #141414; z-index: 100001;">
@@ -108,8 +120,8 @@
     </div>
 
     <div id="player_modal"><div class="close-player-btn" onclick="window.closePlayer()">×</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
-    <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="closeMoviePage()">×</button><div id="movie_details_content"></div></div>
+    <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="window.closeMoviePage()">×</button><div id="movie_details_content"></div></div>
 
-    <script type="module" src="js/app.js?v=900"></script>
+    <script type="module" src="js/app.js?v=189"></script>
 </body>
 </html>

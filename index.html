@@ -15,10 +15,10 @@
     <link rel="stylesheet" href="css/style.css?v=255">
 
     <style>
-        /* Глобальний темний фон (Netflix Style) */
-        body {
-            background-color: #000000 !important; /* Глибокий чорний */
-            color: #ffffff;
+        /* Глобальний глибокий чорний фон */
+        body, html {
+            background-color: #000000 !important;
+            height: 100%;
         }
 
         /* --- СТИЛІ ДЛЯ ЗАСТАВКИ (INTRO) --- */
@@ -27,73 +27,56 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: 100dvh; /* Використовуємо динамічну висоту для мобільних */
             background-color: #000000;
             z-index: 999999; /* Поверх усього */
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             opacity: 1;
-            transition: opacity 0.8s ease-out;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
         }
 
-        .intro-logo-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            animation: zoomInPulse 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-        }
-
-        /* Логотип MH */
-        .mh-big-text {
-            font-family: 'Impact', 'Arial Black', sans-serif;
-            font-size: 120px;
-            line-height: 1;
+        /* Стиль тексту MEDIA-HUB */
+        .netflix-title-splash {
+            margin: 0;
+            padding: 0;
+            /* Використовуємо жирний, вузький шрифт, схожий на кінематографічний */
+            font-family: 'Impact', 'Arial Black', 'Helvetica Neue', sans-serif;
+            /* Адаптивний розмір шрифту, залежить від ширини екрану */
+            font-size: 15vw; 
             color: #E50914; /* Netflix Red */
-            letter-spacing: -5px;
-            position: relative;
-            text-shadow: 0 0 30px rgba(229, 9, 20, 0.4);
-        }
-        
-        /* Трикутник Play всередині (імітація) */
-        .mh-play-icon {
-            display: inline-block;
-            width: 0; 
-            height: 0; 
-            border-top: 20px solid transparent;
-            border-bottom: 20px solid transparent;
-            border-left: 35px solid #ffffff;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.7));
-        }
-
-        /* Напис знизу */
-        .mh-sub-text {
-            font-family: 'Arial', sans-serif;
-            font-size: 18px;
-            color: #ffffff;
-            letter-spacing: 8px;
-            margin-top: 15px;
             text-transform: uppercase;
-            font-weight: bold;
-            opacity: 0;
-            animation: fadeInText 1s ease-out 0.5s forwards;
+            letter-spacing: 2px;
+            text-align: center;
+            line-height: 1;
+            /* Легка тінь для об'єму */
+            text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
+            /* Застосовуємо м'яку анімацію пульсації */
+            animation: gentlePulse 2.5s ease-in-out infinite;
+            /* Початковий стан */
+            transform: scale(1);
+            opacity: 0.95;
         }
 
-        /* Анімація збільшення */
-        @keyframes zoomInPulse {
-            0% { transform: scale(0.6); opacity: 0; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(10); opacity: 0; } /* Ефект "вльоту" в екран в кінці */
-        }
-
-        @keyframes fadeInText {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Анімація м'якої пульсації (дихання) */
+        @keyframes gentlePulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.95;
+                text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
+            }
+            50% {
+                transform: scale(1.05); /* Ледь помітне збільшення */
+                opacity: 1;
+                /* Трохи посилюємо світіння на піку */
+                text-shadow: 0 0 25px rgba(229, 9, 20, 0.4);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0.95;
+                text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
+            }
         }
 
         /* Стиль хедеру під Netflix */
@@ -111,13 +94,7 @@
 <body>
 
     <div id="intro-loader">
-        <div class="intro-logo-container">
-            <div class="mh-big-text">
-                MH
-                <div class="mh-play-icon"></div>
-            </div>
-            <div class="mh-sub-text">MEDIA-HUB</div>
-        </div>
+        <h1 class="netflix-title-splash">MEDIA-HUB</h1>
     </div>
 
     <div id="notification_bar">
@@ -251,13 +228,15 @@
         window.addEventListener('load', () => {
             const preloader = document.getElementById('intro-loader');
             
-            // Затримка 3.5 секунди
+            // Затримка 3.5 секунди перед початком зникнення
             setTimeout(() => {
                 preloader.style.opacity = '0';
+                // Після завершення анімації зникнення (0.8с) прибираємо елемент повністю
                 setTimeout(() => {
                     preloader.style.display = 'none';
+                    preloader.style.visibility = 'hidden';
                 }, 800);
-            }, 3000);
+            }, 3500);
         });
     </script>
 

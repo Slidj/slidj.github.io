@@ -5,7 +5,7 @@
 export const API_KEY = '4f06fae67ddcf28e2e5b3f91193cb555';
 
 // 🔥 Назва вашого бота (без @)
-export const BOT_USERNAME = 'younews_app_bot';
+export const BOT_USERNAME = 'my_mediahub_bot';
 
 // 🔥 ГОЛОВНЕ: Посилання на плеєр
 export const PLAYER_BASE_URL = 'https://68865.svetacdn.in/lQRlkhufNdas';

@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MAIN BUNDLE (v1.9.5)
+   🎨 STYLE.CSS: MAIN BUNDLE (v1.9.6)
    ========================================================== */
 
 @import 'root.css';
@@ -12,29 +12,31 @@
 .skeleton::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0)); animation: skeleton-move 1.5s infinite; }
 @keyframes skeleton-move { 100% { transform: translateX(100%); } }
 
-/* 🔥 ПОШУКОВИЙ КОНТЕЙНЕР (Жорстка фіксація) */
+/* 🔥 ПОШУКОВИЙ КОНТЕЙНЕР (ВИПРАВЛЕНО ЦЕНТРУВАННЯ ТА ВИСОТУ) */
 #search_bar_container {
-    display: none; /* JS перемикає це на block */
-    margin-top: 110px; /* Відступ від верху */
-    width: 90%;
-    max-width: 600px;
-    margin-left: auto; /* Центрування */
-    margin-right: auto; /* Центрування */
+    display: none; /* JS вмикає це як block */
+    margin-top: 100px; /* Відступ зверху */
+    width: 80%; /* Вужче поле (було 100%) */
+    max-width: 500px; /* Обмеження ширини на планшетах */
+    margin-left: auto;
+    margin-right: auto;
     position: relative;
-    z-index: 99;
+    z-index: 100;
     box-sizing: border-box;
 }
 
 #search_input {
     width: 100%;
-    padding: 12px 16px;
-    border-radius: 12px;
+    height: 40px; /* Фіксована висота (тонше) */
+    padding: 0 15px; /* Текст рівно по центру вертикально */
+    border-radius: 20px; /* Більш округлі краї */
     border: none;
     background: #222;
     color: white;
-    font-size: 16px;
+    font-size: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     outline: none;
+    box-sizing: border-box;
 }
 
 /* ФІЛЬТРИ */
@@ -90,7 +92,7 @@
 .donate-stars { color: #f1c40f; font-size: 14px; font-weight: bold; }
 .donate-btn-close { margin-top: 10px; width: 100%; padding: 12px; color: white; background: #333; border: 1px solid #444; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
-/* СПОВІЩЕННЯ (Приховане) */
+/* СПОВІЩЕННЯ */
 #notification_bar { position: fixed; top: -150px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #e50914; color: white; padding: 15px; border-radius: 12px; z-index: 200000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; font-size: 14px; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s; opacity: 0; visibility: hidden; pointer-events: none; }
 #notification_bar.active { top: calc(20px + var(--safe-top)); opacity: 1; visibility: visible; pointer-events: auto; }
 .notif-close { margin-left: auto; font-size: 20px; opacity: 0.7; cursor: pointer; }

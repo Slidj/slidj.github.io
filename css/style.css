@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MAIN BUNDLE (v1.7.3)
+   🎨 STYLE.CSS: MAIN BUNDLE (v1.7.4)
    ========================================================== */
 
 @import 'root.css';
@@ -43,8 +43,35 @@
     box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
     transition: transform 0.2s !important;
 }
-.donate-item:active { transform: scale(0.95); }
 .donate-item span { color: #000 !important; }
+
+/* 🔥 СТИЛІ МОДАЛЬНОГО ВІКНА ДОНАТУ */
+.donate-modal-content {
+    padding: 30px 20px;
+    text-align: center;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+.donate-option-card {
+    width: 100%;
+    background: #222;
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #333;
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: pointer;
+}
+.donate-option-card:active { transform: scale(0.98); border-color: #f1c40f; }
+.donate-info { text-align: left; }
+.donate-name { font-weight: 700; font-size: 16px; display: block; }
+.donate-stars { color: #f1c40f; font-size: 14px; font-weight: bold; }
+.donate-btn-close { margin-top: 10px; color: #888; background: none; border: none; font-size: 14px; text-decoration: underline; }
 
 /* СПОВІЩЕННЯ */
 #notification_bar { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #e50914; color: white; padding: 15px; border-radius: 12px; z-index: 200000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; font-size: 14px; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -62,19 +89,11 @@
     50% { box-shadow: 0 0 20px rgba(229, 9, 20, 0.9); border-color: rgba(229, 9, 20, 1); }
     100% { box-shadow: 0 0 5px rgba(229, 9, 20, 0.4); border-color: rgba(229, 9, 20, 0.4); }
 }
-.trending-glow {
-    animation: trending-pulse 2s ease-in-out 3; 
-    border: 1px solid rgba(229, 9, 20, 0.6) !important;
-    position: relative;
-    z-index: 5;
-}
+.trending-glow { animation: trending-pulse 2s ease-in-out 3; border: 1px solid rgba(229, 9, 20, 0.6) !important; position: relative; z-index: 5; }
 
 /* 🔥 Анімація закриття модального вікна */
 @keyframes modal-fade-out {
     from { opacity: 1; transform: translateY(0) scale(1); }
     to { opacity: 0; transform: translateY(25px) scale(0.96); }
 }
-.modal-closing-anim {
-    animation: modal-fade-out 0.3s forwards cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-}
+.modal-closing-anim { animation: modal-fade-out 0.3s forwards cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; }

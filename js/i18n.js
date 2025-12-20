@@ -21,6 +21,7 @@ export const t = {
     menuTitle: "Menu",
     menuAdmin: "⚙️ Admin Panel",
     menuProfile: "👤 Profile",
+    menuDonate: "⭐ Support Project", // Додано
     maintTitle: "Maintenance",
     maintDesc: "We are updating Media Hub. Please come back later!",
     blockTitle: "Access Denied",
@@ -71,6 +72,7 @@ const dictionaries = {
         menuTitle: "Меню",
         menuAdmin: "⚙️ Адмін-панель",
         menuProfile: "👤 Профіль",
+        menuDonate: "⭐ Підтримати проект", // Додано
         maintTitle: "Технічне обслуговування",
         maintDesc: "Ми оновлюємо Media Hub. Поверніться пізніше!",
         blockTitle: "Доступ обмежено",
@@ -100,7 +102,7 @@ const dictionaries = {
 
 export function initLanguage() {
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-    const targetLang = (userLang === 'uk') ? 'uk' : 'en'; // Тільки UK, все інше EN
+    const targetLang = (userLang === 'uk') ? 'uk' : 'en'; 
     
     if (dictionaries[targetLang]) {
         Object.assign(t, dictionaries[targetLang]);

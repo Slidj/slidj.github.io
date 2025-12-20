@@ -6,7 +6,7 @@ import { t, initLanguage } from './i18n.js';
 import { initAdminSystem } from './firebase-logic.js'; 
 import { playSound } from './sounds.js';
 
-// --- ГЛОБАЛЬНІ ЕКСПОРТИ ---
+// --- ЕКСПОРТИ ---
 window.setCategory = setCategory;
 window.switchMode = switchMode;
 window.playHeroMovie = () => { if(state.currentHeroMovie) openPremiumPlayer(state.currentHeroMovie.id, null); };
@@ -26,22 +26,9 @@ window.toggleSideMenu = () => {
     }
 };
 
-window.openAdminFromMenu = () => {
-    window.toggleSideMenu();
-    if (window.openAdminPanel) window.openAdminPanel(); 
-    playSound('Pop.wav');
-};
-
-window.closeAdminPanel = () => {
-    const modal = document.getElementById('admin_modal');
-    if (modal) modal.style.display = 'none';
-    playSound('Bubble.wav');
-};
-
-window.ui_toggleSave = (id, btn) => {
-    toggleSave(id, btn);
-    if (state.currentTab === 'saved') switchMode('saved');
-};
+window.openAdminFromMenu = () => { window.toggleSideMenu(); if (window.openAdminPanel) window.openAdminPanel(); playSound('Pop.wav'); };
+window.closeAdminPanel = () => { document.getElementById('admin_modal').style.display = 'none'; playSound('Bubble.wav'); };
+window.ui_toggleSave = (id, btn) => { toggleSave(id, btn); if (state.currentTab === 'saved') switchMode('saved'); };
 
 const tg = window.Telegram?.WebApp;
 document.addEventListener('DOMContentLoaded', initApp);
@@ -56,11 +43,7 @@ async function initApp() {
             if(user && user.photo_url) {
                 const avatarImg = document.getElementById('user_avatar');
                 const defaultDiv = document.getElementById('default_avatar');
-                if (avatarImg && defaultDiv) {
-                    avatarImg.src = user.photo_url;
-                    avatarImg.style.display = 'block';
-                    defaultDiv.style.display = 'none';
-                }
+                if (avatarImg && defaultDiv) { avatarImg.src = user.photo_url; avatarImg.style.display = 'block'; defaultDiv.style.display = 'none'; }
             }
         }
         await initAdminSystem(); 
@@ -69,11 +52,8 @@ async function initApp() {
         setupInfiniteScroll(); 
         switchMode('home');
         checkDeepLink();
-        setTimeout(() => {
-            const pre = document.getElementById('preloader');
-            if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
-        }, 500);
-    } catch (error) { console.error("INIT ERROR:", error); }
+        setTimeout(() => { const pre = document.getElementById('preloader'); if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); } }, 500);
+    } catch (e) { console.error(e); }
 }
 
 async function switchMode(tab) {
@@ -96,7 +76,7 @@ async function switchMode(tab) {
     } 
     else if (tab === 'search') {
         if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; 
-        if(search) search.style.display = 'block'; // 🔥 ВІДНОВЛЕНО
+        if(search) search.style.display = 'block'; 
         if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
         if(trigger) trigger.style.display = 'flex';
         if (state.searchResults.length > 0) renderGrid(state.searchResults.slice(0, 12), false);
@@ -117,9 +97,20 @@ async function switchMode(tab) {
     }
 }
 
-function setCategory(catId) {
+// 🔥 ВИПРАВЛЕНО: Функція тепер перемикає клас active
+function setCategory(catId, btnElement) {
     playSound('Tap.wav');
-    state.currentGenre = catId; state.currentPage = 1; state.feedMovies = []; showSkeletons(12); loadContent(1); 
+    // Візуальна зміна
+    if (btnElement) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+    
+    state.currentGenre = catId; 
+    state.currentPage = 1; 
+    state.feedMovies = []; 
+    showSkeletons(12); 
+    loadContent(1); 
 }
 
 async function loadContent(page, isAppend = false) {
@@ -140,7 +131,7 @@ function performSearchDelayed() {
         showSkeletons(6); const results = await searchMovies(query);
         state.searchResults = results; state.searchPage = 0; removeSkeletons();
         const container = document.getElementById('content_container');
-        if (container) { container.innerHTML = ''; if (results.length === 0) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`; else renderGrid(results.slice(0, 12), true); }
+        if (container) { container.innerHTML = ''; if (!results.length) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`; else renderGrid(results.slice(0, 12), true); }
     }, 600);
 }
 

@@ -20,6 +20,7 @@ window.closePlayer = closePlayer;
 window.performSearchDelayed = performSearchDelayed;
 window.openPremiumPlayer = openPremiumPlayer;
 
+// Функції бокового меню та адмінки
 window.toggleSideMenu = () => {
     const menu = document.getElementById('side_menu');
     const overlay = document.getElementById('menu_overlay');
@@ -55,25 +56,15 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
     try {
-        // 🔥 СПОЧАТКУ ТЕЛЕГРАМ НАЛАШТУВАННЯ (для повного екрану)
+        // 🔥 КРОК 1: Налаштування Telegram (повний екран та кольори)
         if (tg) {
             tg.ready(); 
-            tg.expand(); // Розгорнути
-            
-            // Запит на повноекранний режим (прибирає назву бота зверху)
-            if (tg.requestFullscreen) {
-                tg.requestFullscreen();
-            }
-            
-            // Вимкнення вертикальних свайпів
-            if (tg.disableVerticalSwipes) {
-                tg.disableVerticalSwipes();
-            }
-
-            // Кольори для безшовного вигляду
+            tg.expand(); 
+            if(tg.requestFullscreen) tg.requestFullscreen();
+            if(tg.disableVerticalSwipes) tg.disableVerticalSwipes();
             tg.setHeaderColor?.('#000000'); 
             tg.setBackgroundColor?.('#000000');
-
+            
             if(tg.initDataUnsafe?.user?.photo_url) {
                 const avatar = document.getElementById('user_avatar');
                 const defAvatar = document.getElementById('default_avatar');
@@ -85,12 +76,13 @@ async function initApp() {
             }
         }
 
-        // Далі логіка адмінки та мови
+        // 🔥 КРОК 2: Тільки після Telegram ініціалізуємо адмінку
         await initAdminSystem(); 
         initLanguage();
 
         await loadCloudData();
         setupInfiniteScroll(); 
+
         switchMode('home');
         checkDeepLink();
 
@@ -100,21 +92,21 @@ async function initApp() {
         }, 500);
 
     } catch (error) {
-        console.error("INIT ERROR:", error);
+        console.error("CRITICAL INIT ERROR:", error);
     }
 }
 
-// ... (решта логіки: switchMode, loadContent, performSearch без змін) ...
+// ... решта функцій (switchMode, setCategory, loadContent, search) залишаються без змін ...
 
 async function switchMode(tab) {
     playSound('Tap.wav');
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     state.currentTab = tab;
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const navs = document.querySelectorAll('.nav-item');
     if(tab==='home') navs[0].classList.add('active');
     if(tab==='search') navs[1].classList.add('active');
     if(tab==='saved') navs[2].classList.add('active');
-    
     const hero = document.getElementById('hero_section'), filters = document.getElementById('filters_wrapper'), search = document.getElementById('search_bar_container'), content = document.getElementById('content_container'), trigger = document.getElementById('infinite_trigger');
     if (tab === 'home') { if(hero) hero.style.display = 'flex'; if(filters) filters.style.display = 'flex'; if(search) search.style.display = 'none'; if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; } if(trigger) trigger.style.display = 'flex'; if (state.feedMovies.length > 0) renderGrid(state.feedMovies, false); else { if(content) content.innerHTML = ''; showSkeletons(12); state.currentPage = 1; loadContent(1); } } 
     else if (tab === 'search') { if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'block'; if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; } if(trigger) trigger.style.display = 'flex'; if (state.searchResults.length > 0) { const limit = (state.searchPage) * 12; renderGrid(state.searchResults.slice(0, Math.max(limit, 12)), false); } else if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`; } 
@@ -123,6 +115,7 @@ async function switchMode(tab) {
 
 function setCategory(catId) {
     playSound('Tap.wav');
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     state.currentGenre = catId; state.currentPage = 1; state.feedMovies = []; showSkeletons(12); loadContent(1); 
 }
 

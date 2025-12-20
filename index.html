@@ -27,9 +27,9 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100dvh; /* Використовуємо динамічну висоту для мобільних */
+            height: 100dvh;
             background-color: #000000;
-            z-index: 999999; /* Поверх усього */
+            z-index: 999999;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -41,25 +41,28 @@
         .netflix-title-splash {
             margin: 0;
             padding: 0;
-            /* Використовуємо жирний, вузький шрифт, схожий на кінематографічний */
-            font-family: 'Impact', 'Arial Black', 'Helvetica Neue', sans-serif;
-            /* Адаптивний розмір шрифту, залежить від ширини екрану */
-            font-size: 15vw; 
+            /* Використовуємо Arial Black для більш "квадратного", не розтягнутого вигляду */
+            font-family: 'Arial Black', 'Helvetica Neue', sans-serif;
+            font-weight: 900;
+            /* Зменшили розмір з 15vw до 10vw */
+            font-size: 10vw; 
             color: #E50914; /* Netflix Red */
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0px; /* Прибрали зайві відступи між літерами */
             text-align: center;
-            line-height: 1;
-            /* Легка тінь для об'єму */
+            line-height: 1.2;
+            max-width: 90%; /* Обмеження ширини */
+            
+            /* Легка тінь */
             text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
-            /* Застосовуємо м'яку анімацію пульсації */
+            
+            /* Анімація */
             animation: gentlePulse 2.5s ease-in-out infinite;
-            /* Початковий стан */
             transform: scale(1);
             opacity: 0.95;
         }
 
-        /* Анімація м'якої пульсації (дихання) */
+        /* Анімація м'якої пульсації */
         @keyframes gentlePulse {
             0% {
                 transform: scale(1);
@@ -67,9 +70,8 @@
                 text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
             }
             50% {
-                transform: scale(1.05); /* Ледь помітне збільшення */
+                transform: scale(1.05);
                 opacity: 1;
-                /* Трохи посилюємо світіння на піку */
                 text-shadow: 0 0 25px rgba(229, 9, 20, 0.4);
             }
             100% {
@@ -85,7 +87,7 @@
             background-color: transparent;
         }
         .logo {
-            color: #E50914 !important; /* Червоний логотип в шапці */
+            color: #E50914 !important;
             font-weight: 800;
             letter-spacing: 1px;
         }
@@ -213,7 +215,6 @@
             const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
             if (tgUser && tgUser.language_code) {
                 const userLang = tgUser.language_code.toLowerCase();
-                // Якщо мова не 'uk' (українська), примусово ставимо 'en'
                 if (userLang !== 'uk') {
                     localStorage.setItem('mediaHubLang', 'en');
                 } else {
@@ -228,10 +229,8 @@
         window.addEventListener('load', () => {
             const preloader = document.getElementById('intro-loader');
             
-            // Затримка 3.5 секунди перед початком зникнення
             setTimeout(() => {
                 preloader.style.opacity = '0';
-                // Після завершення анімації зникнення (0.8с) прибираємо елемент повністю
                 setTimeout(() => {
                     preloader.style.display = 'none';
                     preloader.style.visibility = 'hidden';

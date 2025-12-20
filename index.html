@@ -7,7 +7,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RPM3X3960Y"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-RPM3X3960Y',{'app_name':'MediaHub_TG','send_page_view':true});</script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=500">
+    <link rel="stylesheet" href="css/style.css?v=186">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
@@ -15,14 +15,13 @@
     <div id="notification_bar">
         <span style="font-size:20px;">🔔</span>
         <div id="notif_text" style="flex: 1; font-weight: 500;"></div>
-        <span class="notif-close" onclick="window.closeNotification()">&times;</span>
+        <span class="notif-close" onclick="window.closeNotification()">×</span>
     </div>
 
     <div id="donate_modal" class="modal-fullscreen" style="display:none; background: rgba(0,0,0,0.95); z-index: 100002; backdrop-filter: blur(10px); flex-direction:column;">
         <div class="donate-modal-content">
             <div style="font-size: 60px;">💎</div>
-            <h2 data-i18n="donateTitle" style="margin:0;">Підтримка MEDIA HUB</h2>
-            <p data-i18n="donateDesc" style="color:#aaa; font-size:14px; margin-bottom:10px;">Ваші донати допомагають нам оплачувати сервери та додавати нові фільми.</p>
+            <h2 data-i18n="donateTitle">Підтримка MEDIA HUB</h2>
             <div class="donate-option-card" onclick="window.selectDonateLevel(5)">
                 <div class="donate-info"><span class="donate-name" data-i18n="donateLvl1">☕ Чашка кави</span><span class="donate-stars">5 Stars</span></div>
                 <div style="font-size:24px;">⭐</div>
@@ -54,6 +53,10 @@
         <button class="cat-btn" onclick="setCategory('16')" data-i18n="catCartoons">Мультики</button>
     </div>
 
+    <div id="search_bar_container" style="display:none; padding: 10px 16px;">
+        <input type="text" id="search_input" oninput="performSearchDelayed()" style="width:100%; padding:12px; border-radius:8px; border:none; background:#222; color:white; font-size:16px;" placeholder="Пошук...">
+    </div>
+
     <div id="main_scroll_area">
         <div id="hero_section" class="hero-banner" style="display:none;">
             <div class="hero-overlay"></div>
@@ -67,7 +70,7 @@
             </div>
         </div>
         <div id="content_container" class="netflix-grid"></div>
-        <div id="infinite_trigger" style="height: 60px; display: flex; justify-content: center; align-items: center; width: 100%;"><div class="netflix-loader" style="width: 30px; height: 30px; border-width: 3px; display: none;" id="scroll_loader"></div></div>
+        <div id="infinite_trigger" style="height: 60px; display: flex; justify-content: center; align-items: center; width: 100%;"><div class="netflix-loader" id="scroll_loader" style="display:none;"></div></div>
     </div>
 
     <nav class="bottom-nav">
@@ -78,28 +81,38 @@
 
     <div id="menu_overlay" class="menu-overlay" onclick="window.toggleSideMenu()"></div>
     <div id="side_menu" class="side-menu">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;"><h3 style="color: white; margin:0;" data-i18n="menuTitle">Меню</h3><span onclick="window.toggleSideMenu()" style="color:#666; font-size:24px; cursor:pointer;">&times;</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;"><h3 style="color: white; margin:0;" data-i18n="menuTitle">Меню</h3><span onclick="window.toggleSideMenu()" style="color:#666; font-size:24px; cursor:pointer;">×</span></div>
         <div id="admin_stats_preview" class="menu-stats-box" style="display:none;"></div>
         <div id="admin_menu_item" class="menu-item admin-only-item" style="display:none;" onclick="window.openAdminFromMenu()"><span data-i18n="menuAdmin">⚙️ Адмін-панель</span></div>
         <div class="menu-item donate-item" onclick="window.openDonateMenu()"><span data-i18n="menuDonate">⭐ Підтримати проект</span></div>
         <div class="menu-item" onclick="window.toggleSideMenu()"><span data-i18n="menuProfile">👤 Мій профіль</span></div>
-        <div style="margin-top: auto; padding-bottom: 20px; text-align: center; color: #444; font-size: 11px;">MEDIA HUB v1.8.5</div>
+        <div style="margin-top: auto; padding-bottom: 20px; text-align: center; color: #444; font-size: 11px;">MEDIA HUB v1.8.6</div>
     </div>
 
     <div id="admin_modal" class="modal-fullscreen" style="display:none; background: #141414; z-index: 100001;">
         <div style="padding: 20px; padding-top: calc(20px + var(--safe-top)); overflow-y: auto; height: 100%;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                 <h2 style="color:white; margin:0;">Адмін-панель</h2>
-                <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">&times;</button>
+                <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">×</button>
             </div>
-            <div id="admin_stats"></div>
-            <div id="admin_user_list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            
+            <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
+                <h3 style="color:white; font-size:14px; margin-top:0;">📣 Надіслати сповіщення</h3>
+                <input type="text" id="notif_input" placeholder="Текст сповіщення..." style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; margin-bottom:10px;">
+                <button onclick="window.sendBroadcastNotification()" style="width:100%; padding:10px; background:#e50914; color:white; border:none; border-radius:5px; font-weight:bold;">ВІДПРАВИТИ ВСІМ</button>
+            </div>
+
+            <div id="admin_stats" style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; color:#aaa; font-size:13px;"></div>
+            <button id="maint_toggle_btn" onclick="window.toggleMaintenanceMode()" style="width:100%; padding:12px; border-radius:5px; border:none; font-weight:bold; margin-bottom:20px;"></button>
+            
+            <h3 style="color:white; font-size:16px;">Користувачі:</h3>
+            <div id="admin_user_list"></div>
         </div>
     </div>
 
-    <div id="player_modal"><div class="close-player-btn" onclick="closePlayer()">&times;</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
-    <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="closeMoviePage()">&times;</button><div id="movie_details_content"></div></div>
+    <div id="player_modal"><div class="close-player-btn" onclick="closePlayer()">×</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
+    <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="closeMoviePage()">×</button><div id="movie_details_content"></div></div>
 
-    <script type="module" src="js/app.js?v=500"></script>
+    <script type="module" src="js/app.js?v=186"></script>
 </body>
 </html>

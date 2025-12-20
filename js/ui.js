@@ -53,7 +53,6 @@ export function renderGrid(items, isAppend = false) {
     items.forEach((item, index) => {
         const div = document.createElement('div');
         let glowClass = (shouldShowGlow && index < 3) ? ' trending-glow' : '';
-        // 🔥 movie-poster-card ОБОВ'ЯЗКОВО для правильного розміру
         div.className = 'movie-poster-card card-anim' + glowClass; 
         div.style.animationDelay = `${index * 0.05}s`;
         div.onclick = () => {
@@ -115,8 +114,8 @@ export async function openMoviePage(movie) {
     content.innerHTML = `<div style="height:100vh; display:flex; justify-content:center; align-items:center; color:#555;">${t.loading}</div>`;
 
     if (window.Telegram?.WebApp?.BackButton) {
-        window.Telegram.WebApp.BackButton.show();
-        window.Telegram.WebApp.BackButton.onClick(() => closeMoviePage());
+        window.Telegram.BackButton.show();
+        window.Telegram.BackButton.onClick(() => closeMoviePage());
     }
 
     let details = { ...movie };
@@ -129,6 +128,14 @@ export async function openMoviePage(movie) {
         if (data.original_title) state.activeMovie.original_title = data.original_title;
         details.desc = data.overview || movie.desc;
         
+        // 🔥 ВІДНОВЛЕНО: Розрахунок тривалості
+        const rt = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : null);
+        if (rt) {
+            const hrs = Math.floor(rt / 60);
+            const mins = rt % 60;
+            details.runtime = hrs > 0 ? `${hrs}${t.modalHour} ${mins}${t.modalMin}` : `${mins}${t.modalMin}`;
+        }
+
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
@@ -162,6 +169,8 @@ export async function openMoviePage(movie) {
                     <div class="nf-meta">
                         <span class="nf-match">${matchScore}% ${t.match}</span>
                         <span>${details.year}</span>
+                        <span class="nf-age">16+</span>
+                        <span>${details.runtime || ''}</span>
                         <span class="nf-badge">HD</span>
                     </div>
                 </div>
@@ -194,13 +203,6 @@ export async function openMoviePage(movie) {
         document.getElementById('movie_details_modal').style.display = 'none';
         iframe.src = `https://www.youtube.com/embed/${key}?autoplay=1`;
         modal.style.display = 'flex';
-    };
-    window.ui_share = (id) => { 
-        let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
-        if(!m) return; 
-        const botLink = `https://t.me/${BOT_USERNAME}/app?startapp=${m.type}_${m.id}`;
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(t.shareMessage)}`; 
-        window.Telegram?.WebApp?.openTelegramLink(shareUrl); 
     };
 }
 
@@ -244,17 +246,12 @@ export function closePlayer() {
     document.getElementById('movie_details_modal').style.display = 'block';
 }
 
-// 🔥 ВИПРАВЛЕНО: Рендер історії з гортанням
 export function renderHistorySection(items) {
     const section = document.createElement('div');
     section.className = 'similar-section'; 
     let html = `<div class="similar-title" style="padding-left:10px;">${t.history}</div><div class="similar-row" style="padding-left:10px;">`;
     items.forEach(m => { 
-        html += `
-            <div class="similar-card" onclick="window.ui_openHistory('${m.id}')">
-                <img src="${m.img}" loading="lazy">
-                <div class="similar-rating">${m.rating}</div>
-            </div>`; 
+        html += `<div class="similar-card" onclick="window.ui_openHistory('${m.id}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`; 
     });
     html += `</div>`;
     section.innerHTML = html;

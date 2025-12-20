@@ -43,16 +43,34 @@ async function initApp() {
             if(user && user.photo_url) {
                 const avatarImg = document.getElementById('user_avatar');
                 const defaultDiv = document.getElementById('default_avatar');
-                if (avatarImg && defaultDiv) { avatarImg.src = user.photo_url; avatarImg.style.display = 'block'; defaultDiv.style.display = 'none'; }
+                if (avatarImg && defaultDiv) {
+                    avatarImg.src = user.photo_url;
+                    avatarImg.style.display = 'block';
+                    defaultDiv.style.display = 'none';
+                }
             }
+
+            // 🔥 СЛУХАЧ ОПЛАТИ (ДЛЯ МАЙБУТНЬОГО РЕАЛЬНОГО БОТА)
+            tg.onEvent('invoiceClosed', (object) => {
+                if (object.status === 'paid') {
+                    // Оплата пройшла успішно через Telegram!
+                    const stars = parseInt(sessionStorage.getItem('pending_donation')) || 0;
+                    if(stars > 0) window.processSuccessfulDonation(stars);
+                }
+            });
         }
+
         await initAdminSystem(); 
         initLanguage();
         await loadCloudData();
         setupInfiniteScroll(); 
         switchMode('home');
         checkDeepLink();
-        setTimeout(() => { const pre = document.getElementById('preloader'); if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); } }, 500);
+
+        setTimeout(() => {
+            const pre = document.getElementById('preloader');
+            if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
+        }, 500);
     } catch (e) { console.error(e); }
 }
 
@@ -97,20 +115,13 @@ async function switchMode(tab) {
     }
 }
 
-// 🔥 ВИПРАВЛЕНО: Функція тепер перемикає клас active
 function setCategory(catId, btnElement) {
     playSound('Tap.wav');
-    // Візуальна зміна
     if (btnElement) {
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         btnElement.classList.add('active');
     }
-    
-    state.currentGenre = catId; 
-    state.currentPage = 1; 
-    state.feedMovies = []; 
-    showSkeletons(12); 
-    loadContent(1); 
+    state.currentGenre = catId; state.currentPage = 1; state.feedMovies = []; showSkeletons(12); loadContent(1); 
 }
 
 async function loadContent(page, isAppend = false) {

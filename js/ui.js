@@ -5,6 +5,16 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
+// --- Обробник донату ---
+window.openDonateMenu = () => {
+    window.toggleSideMenu();
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+    const msg = (t.menuDonate.includes('⭐')) 
+        ? "Дякуємо за бажання підтримати! Можливість донатів Telegram Stars з'явиться зовсім скоро." 
+        : "Thanks for your support! Telegram Stars donations are coming very soon.";
+    window.Telegram?.WebApp?.showAlert(msg);
+};
+
 // --- Скелетони ---
 export function showSkeletons(count = 12, isAppend = false) {
     const container = document.getElementById('content_container');
@@ -22,7 +32,7 @@ export function removeSkeletons() {
     skeletons.forEach(el => el.remove());
 }
 
-// --- Головна сітка ---
+// --- Головна сітка з підсвіткою ТОП-3 ---
 export function renderGrid(items, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
@@ -107,7 +117,6 @@ export async function openMoviePage(movie) {
     const content = document.getElementById('movie_details_content');
     if (!modal) return;
     
-    // При відкритті переконуємось, що старий клас анімації видалено
     content.classList.remove('modal-closing-anim');
     
     modal.scrollTop = 0;
@@ -121,7 +130,6 @@ export async function openMoviePage(movie) {
     }
 
     let details = { ...movie };
-    let logoUrl = null, castHtml = '', trailersHtml = '', techHtml = '';
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
 
     try {
@@ -134,51 +142,22 @@ export async function openMoviePage(movie) {
             const mins = data.runtime%60;
             details.runtime = `${hrs}${t.modalHour} ${mins}${t.modalMin}`;
         }
-        const directors = data.credits?.crew?.filter(c => c.job === 'Director').map(d => d.name).join(', ');
-        const writers = data.credits?.crew?.filter(c => c.job === 'Writer' || c.job === 'Screenplay').map(w => w.name).join(', ');
-        const genres = data.genres?.map(g => g.name).join(', ');
-        techHtml = `<div class="nf-tech-info">${directors ? `<div class="tech-item"><span class="tech-label">${t.modalDirector}:</span> ${directors}</div>` : ''}${writers ? `<div class="tech-item"><span class="tech-label">${t.modalWriters}:</span> ${writers}</div>` : ''}${genres ? `<div class="tech-item"><span class="tech-label">${t.modalGenres}:</span> ${genres}</div>` : ''}</div>`;
-        
-        if (data.credits?.cast?.length > 0) {
-            const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
-            if(topCast.length > 0) {
-                const castCards = topCast.map(p => `<div class="cast-card" onclick="window.ui_searchActor('${p.name.replace(/'/g, "\\'")}')"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img" loading="lazy"><div class="cast-name">${p.name}</div><div class="cast-role">${p.character || ''}</div></div>`).join('');
-                castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${castCards}</div></div>`;
-            }
-        }
-        if (data.images?.logos?.length > 0) {
-            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
-            logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
-        }
-        if (data.videos?.results?.length > 0) {
-            const videos = data.videos.results.filter(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
-            if (videos.length > 0) {
-                const videoCards = videos.map(v => `<div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')"><div class="trailer-img-box"><img src="https://img.youtube.com/vi/${v.key}/hqdefault.jpg" loading="lazy"><div class="trailer-play-icon"><svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M8 5v14l11-7z"/></svg></div></div></div>`).join('');
-                trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${videoCards}</div></div>`;
-            }
-        }
-    } catch (e) { console.error(e); }
+    } catch (e) { }
 
     const similarMovies = await fetchSimilar(movie.id, apiType);
-    const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
-
-    let similarHtml = '';
-    if (similarMovies.length > 0) {
-        const cards = similarMovies.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}', '${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('');
-        similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${cards}</div></div>`;
-    }
 
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
                 <div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div>
                 <div class="nf-gradient"></div>
-                <div class="nf-hero-content">${titleHtml}
+                <div class="nf-hero-content">
+                    <div class="nf-title-text">${details.title}</div>
                     <div class="nf-meta">
                         <span class="nf-match">${matchScore}% ${t.match}</span>
                         <span>${details.year}</span>
-                        <span class="nf-age">${details.type === 'tv' ? '16+' : '13+'}</span>
+                        <span class="nf-age">13+</span>
                         <span>${details.runtime || ''}</span>
                         <span class="nf-badge">HD</span>
                     </div>
@@ -200,36 +179,30 @@ export async function openMoviePage(movie) {
                 </div>
             </div>
             <div class="nf-description">${details.desc || t.descMissing}</div>
-            ${techHtml}${trailersHtml}${castHtml}${similarHtml}
             <div style="height: 50px;"></div>
         </div>
     `;
 
-    window.ui_openSimilar = (id, type) => { const target = similarMovies.find(m => m.id == id); if (target) openMoviePage(target); };
     window.ui_share = (id) => { 
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
         if(!m) return; 
         const botLink = `https://t.me/${BOT_USERNAME}/app?startapp=${m.type}_${m.id}`;
-        const text = `🎬 ${t.shareMessage} "${m.title}" (${m.year}) у MEDIA HUB!`; 
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; 
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(t.shareMessage)}`; 
         window.Telegram?.WebApp?.openTelegramLink(shareUrl); 
     };
 }
 
-// 🔥 ОНОВЛЕНО: Функція плавного закриття сторінки
+// 🔥 ОНОВЛЕНО: Плавне закриття з затримкою 300мс
 export function closeMoviePage() {
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
-    
     if (!modal || modal.style.display === 'none') return;
 
     playSound('Bubble.wav');
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
 
-    // 1. Додаємо клас анімації закриття до контейнера
     content.classList.add('modal-closing-anim');
 
-    // 2. Чекаємо 300мс (тривалість анімації в CSS), потім приховуємо
     setTimeout(() => {
         modal.style.display = 'none';
         content.classList.remove('modal-closing-anim');
@@ -244,10 +217,8 @@ export function openPremiumPlayer(tmdbId, btn) {
     playSound('Click.wav');
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     if (!PLAYER_BASE_URL) return;
-    let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.savedItems.find(m => m.id == tmdbId) || state.historyItems.find(m => m.id == tmdbId) || state.currentHeroMovie;
-    if (!movie) return;
-    let url = PLAYER_BASE_URL.replace(/\/$/, '') + `?tmdb_id=${movie.id}&title=${encodeURIComponent(movie.original_title || movie.title)}&translation=2`;
-    if (movie.imdb_id) url += `&imdb_id=${movie.imdb_id}`;
+    let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId);
+    let url = PLAYER_BASE_URL.replace(/\/$/, '') + `?tmdb_id=${movie.id}&title=${encodeURIComponent(movie.title)}`;
     launchPlayer(url);
 }
 
@@ -260,9 +231,7 @@ function launchPlayer(url) {
 }
 
 export function closePlayer() {
-    const modal = document.getElementById('player_modal');
-    const iframe = document.getElementById('video_frame');
-    modal.style.display = 'none';
-    iframe.src = '';
+    document.getElementById('player_modal').style.display = 'none';
+    document.getElementById('video_frame').src = '';
     document.getElementById('movie_details_modal').style.display = 'block';
 }

@@ -1,7 +1,8 @@
 import { state } from './state.js';
 import { isSaved, toggleSave, addToHistory } from './storage.js';
 import { fetchMovieDetails, fetchSimilar } from './api.js';
-import { PLAYER_BASE_URL } from './config.js'; 
+// 🔥 ОНОВЛЕНО: Імпортуємо BOT_USERNAME для універсальних посилань
+import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
@@ -22,23 +23,21 @@ export function removeSkeletons() {
     skeletons.forEach(el => el.remove());
 }
 
-// --- Головна сітка (з виправленою логікою підсвітки) ---
+// --- Головна сітка (з логікою підсвітки ТОП-3) ---
 export function renderGrid(items, isAppend = false) {
     const container = document.getElementById('content_container');
     if (!container) return;
     
-    // Очищуємо контейнер тільки якщо це НЕ додавання (наприклад, не вкладка "Моє")
     if (!isAppend) container.innerHTML = '';
 
-    // Перевірка сесії для підсвітки
     const hasShownGlow = sessionStorage.getItem('glow_shown');
-    // Підсвітка тільки на Home, тільки для першої завантаженої пачки і тільки 1 раз
-    const shouldShowGlow = !isAppend && state.currentTab === 'home' && !hasShownGlow;
+    const isHome = state.currentTab === 'home';
+    const shouldShowGlow = !isAppend && isHome && !hasShownGlow;
 
     items.forEach((item, index) => {
         const div = document.createElement('div');
         
-        // Додаємо підсвітку тільки для перших трьох
+        // Підсвітка тільки для перших трьох карток на головній
         let glowClass = (shouldShowGlow && index < 3) ? ' trending-glow' : '';
         
         div.className = 'movie-poster-card card-anim' + glowClass; 
@@ -272,12 +271,13 @@ export async function openMoviePage(movie) {
         if (target) openMoviePage(target); 
     };
     
+    // 🔥 ОНОВЛЕНО: Тепер використовує BOT_USERNAME з config.js
     window.ui_share = (id) => { 
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); 
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
         if(!m) return; 
         const startParam = `${m.type}_${m.id}`; 
-        const botLink = `https://t.me/younews_app_bot/app?startapp=${startParam}`; 
+        const botLink = `https://t.me/${BOT_USERNAME}/app?startapp=${startParam}`;
         const text = `🎬 ${t.shareMessage} "${m.title}" (${m.year}) у MEDIA HUB!`; 
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`; 
         window.Telegram?.WebApp?.openTelegramLink(shareUrl); 

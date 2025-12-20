@@ -7,7 +7,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RPM3X3960Y"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-RPM3X3960Y',{'app_name':'MediaHub_TG','send_page_view':true});</script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=175">
+    <link rel="stylesheet" href="css/style.css?v=177">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
@@ -23,42 +23,21 @@
             <div style="font-size: 60px;">💎</div>
             <h2 data-i18n="donateTitle" style="margin:0;">Підтримка MEDIA HUB</h2>
             <p data-i18n="donateDesc" style="color:#aaa; font-size:14px; margin-bottom:10px;">Ваші донати допомагають нам оплачувати сервери та додавати нові фільми.</p>
-            
             <div class="donate-option-card" onclick="window.selectDonateLevel(5)">
-                <div class="donate-info">
-                    <span class="donate-name" data-i18n="donateLvl1">☕ Чашка кави</span>
-                    <span class="donate-stars">5 Stars</span>
-                </div>
+                <div class="donate-info"><span class="donate-name" data-i18n="donateLvl1">☕ Чашка кави</span><span class="donate-stars">5 Stars</span></div>
                 <div style="font-size:24px;">⭐</div>
             </div>
-
             <div class="donate-option-card" onclick="window.selectDonateLevel(20)">
-                <div class="donate-info">
-                    <span class="donate-name" data-i18n="donateLvl2">🍿 Квиток у кіно</span>
-                    <span class="donate-stars">20 Stars</span>
-                </div>
+                <div class="donate-info"><span class="donate-name" data-i18n="donateLvl2">🍿 Квиток у кіно</span><span class="donate-stars">20 Stars</span></div>
                 <div style="font-size:24px;">⭐</div>
             </div>
-
             <div class="donate-option-card" onclick="window.selectDonateLevel(50)">
-                <div class="donate-info">
-                    <span class="donate-name" data-i18n="donateLvl3">👑 Меценат проекту</span>
-                    <span class="donate-stars">50 Stars</span>
-                </div>
+                <div class="donate-info"><span class="donate-name" data-i18n="donateLvl3">👑 Меценат проекту</span><span class="donate-stars">50 Stars</span></div>
                 <div style="font-size:24px;">⭐</div>
             </div>
-
             <button class="donate-btn-close" onclick="window.closeDonateMenu()" data-i18n="donateClose">Можливо пізніше</button>
         </div>
     </div>
-
-    <div id="maintenance_screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:20000; text-align:center; flex-direction:column; justify-content:center; align-items:center; color:white; font-family: sans-serif;">
-        <div style="font-size: 80px; margin-bottom: 20px;">🛠</div>
-        <h2 data-i18n="maintTitle">Технічне обслуговування</h2>
-        <p data-i18n="maintDesc" style="color:#808080; padding:0 40px;">Ми оновлюємо Media Hub для вас. Поверніться пізніше!</p>
-    </div>
-
-    <div id="preloader"><div class="netflix-loader"></div></div>
 
     <header class="netflix-header" style="padding-top: var(--safe-top);">
         <div class="logo">MEDIA HUB</div>
@@ -75,9 +54,7 @@
         <button class="cat-btn" onclick="setCategory('16')" data-i18n="catCartoons">Мультики</button>
     </div>
 
-    <div id="search_bar_container" style="display:none;">
-        <input type="text" id="search_input" oninput="performSearchDelayed()">
-    </div>
+    <div id="search_bar_container" style="display:none;"><input type="text" id="search_input" oninput="performSearchDelayed()"></div>
 
     <div id="main_scroll_area">
         <div id="hero_section" class="hero-banner" style="display:none;">
@@ -108,12 +85,30 @@
         <div id="admin_menu_item" class="menu-item admin-only-item" style="display:none;" onclick="window.openAdminFromMenu()"><span data-i18n="menuAdmin">⚙️ Адмін-панель</span></div>
         <div class="menu-item donate-item" onclick="window.openDonateMenu()"><span data-i18n="menuDonate">⭐ Підтримати проект</span></div>
         <div class="menu-item" onclick="window.toggleSideMenu()"><span data-i18n="menuProfile">👤 Мій профіль</span></div>
-        <div style="margin-top: auto; padding-bottom: 20px; text-align: center; color: #444; font-size: 11px;">MEDIA HUB v1.7.5</div>
+        <div style="margin-top: auto; padding-bottom: 20px; text-align: center; color: #444; font-size: 11px;">MEDIA HUB v1.7.7</div>
+    </div>
+
+    <div id="admin_modal" class="modal-fullscreen" style="display:none; background: #141414; z-index: 100001;">
+        <div style="padding: 20px; padding-top: calc(20px + var(--safe-top)); overflow-y: auto; height: 100%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h2 style="color:white; margin:0;">Адмін-панель</h2>
+                <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">&times;</button>
+            </div>
+            <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
+                <h3 style="color:white; font-size:14px; margin-top:0;">📣 Надіслати сповіщення</h3>
+                <input type="text" id="notif_input" placeholder="Текст сповіщення..." style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; margin-bottom:10px;">
+                <button onclick="window.sendBroadcastNotification()" style="width:100%; padding:10px; background:#e50914; color:white; border:none; border-radius:5px; font-weight:bold;">ВІДПРАВИТИ ВСІМ</button>
+            </div>
+            <div id="admin_stats" style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; color:#aaa; font-size:13px;"></div>
+            <button id="maint_toggle_btn" onclick="window.toggleMaintenanceMode()" style="width:100%; padding:12px; border-radius:5px; border:none; font-weight:bold; margin-bottom:20px;"></button>
+            <h3 style="color:white; font-size:16px;">Користувачі:</h3>
+            <div id="admin_user_list" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
     </div>
 
     <div id="player_modal"><div class="close-player-btn" onclick="closePlayer()">&times;</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
     <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="closeMoviePage()">&times;</button><div id="movie_details_content"></div></div>
 
-    <script type="module" src="js/app.js?v=190"></script>
+    <script type="module" src="js/app.js?v=177"></script>
 </body>
 </html>

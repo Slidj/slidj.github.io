@@ -66,7 +66,7 @@ export function renderGrid(items, isAppend = false) {
     if (shouldShowGlow) sessionStorage.setItem('glow_shown', 'true');
 }
 
-// --- Налаштування Hero ---
+// --- Налаштування Hero банера ---
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section');
@@ -86,6 +86,14 @@ export async function setupHero(movie) {
             const data = await fetchMovieDetails(movie.id, apiType);
             if(data.external_ids?.imdb_id) movie.imdb_id = data.external_ids.imdb_id;
             if (data.original_title) movie.original_title = data.original_title;
+            
+            if (data.images?.logos?.length > 0) {
+                const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
+                if (logo && title) {
+                    const logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
+                    title.innerHTML = `<img src="${logoUrl}" alt="${movie.title}" class="nf-logo" style="max-height: 120px; width: auto; margin-bottom: 10px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));">`;
+                }
+            }
         } catch (e) { }
     }
 }
@@ -110,27 +118,52 @@ export async function openMoviePage(movie) {
         window.Telegram.WebApp.BackButton.onClick(() => closeMoviePage());
     }
 
+    let details = { ...movie };
+    let logoUrl = null, castHtml = '', trailersHtml = '', similarHtml = '';
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
+
     try {
         const data = await fetchMovieDetails(movie.id, apiType);
-        // 🔥 Обов'язково зберігаємо ці дані для плеєра
-        if (data.external_ids?.imdb_id) state.activeMovie.imdb_id = data.external_ids.imdb_id;
+        if (data.external_ids?.imdb_id) state.activeMovie.imdb_id = details.imdb_id = data.external_ids.imdb_id;
         if (data.original_title) state.activeMovie.original_title = data.original_title;
-        movie.desc = data.overview || movie.desc;
+        details.desc = data.overview || movie.desc;
+        
+        // Відновлюємо логіку ЛОГОТИПІВ
+        if (data.images?.logos?.length > 0) {
+            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
+            logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
+        }
+
+        // Відновлюємо АКТОРИ
+        if (data.credits?.cast?.length > 0) {
+            const topCast = data.credits.cast.slice(0, 10).filter(p => p.profile_path); 
+            castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${topCast.map(p => `<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
+        }
+
+        // Відновлюємо ТРЕЙЛЕРИ
+        if (data.videos?.results?.length > 0) {
+            const trailers = data.videos.results.filter(v => v.type === 'Trailer').slice(0, 3);
+            trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${trailers.map(v => `<div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')"><div class="trailer-img-box"><img src="https://img.youtube.com/vi/${v.key}/hqdefault.jpg"><div class="trailer-play-icon">▶</div></div></div>`).join('')}</div></div>`;
+        }
     } catch (e) { }
 
+    const similarMovies = await fetchSimilar(movie.id, apiType);
+    if (similarMovies.length > 0) {
+        similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similarMovies.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}', '${m.type}')"><img src="${m.img}"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
+    }
+
+    const titleHtml = logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`;
     const matchScore = Math.floor(Math.random() * (99 - 95 + 1) + 95);
 
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
-                <div class="nf-backdrop" style="background-image: url('${movie.backdrop || movie.img}');"></div>
+                <div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div>
                 <div class="nf-gradient"></div>
-                <div class="nf-hero-content">
-                    <div class="nf-title-text">${movie.title}</div>
+                <div class="nf-hero-content">${titleHtml}
                     <div class="nf-meta">
                         <span class="nf-match">${matchScore}% ${t.match}</span>
-                        <span>${movie.year}</span>
+                        <span>${details.year}</span>
                         <span class="nf-badge">HD</span>
                     </div>
                 </div>
@@ -150,11 +183,20 @@ export async function openMoviePage(movie) {
                     </button>
                 </div>
             </div>
-            <div class="nf-description">${movie.desc || t.descMissing}</div>
+            <div class="nf-description">${details.desc || t.descMissing}</div>
+            ${trailersHtml} ${castHtml} ${similarHtml}
             <div style="height: 50px;"></div>
         </div>
     `;
 
+    window.ui_openSimilar = (id, type) => { const target = similarMovies.find(m => m.id == id); if (target) openMoviePage(target); };
+    window.ui_openTrailer = (key) => {
+        const modal = document.getElementById('player_modal');
+        const iframe = document.getElementById('video_frame');
+        document.getElementById('movie_details_modal').style.display = 'none';
+        iframe.src = `https://www.youtube.com/embed/${key}?autoplay=1`;
+        modal.style.display = 'flex';
+    };
     window.ui_share = (id) => { 
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
         if(!m) return; 
@@ -182,28 +224,15 @@ export function closeMoviePage() {
     }, 300);
 }
 
-// 🔥 ОНОВЛЕНО: Гнучкий та надійний пошук для плеєра
+// --- Покращена логіка плеєра ---
 export function openPremiumPlayer(tmdbId, btn) {
     playSound('Click.wav');
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
     if (!PLAYER_BASE_URL) return;
-
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.currentHeroMovie;
     if (!movie) return;
-
-    // Складаємо URL з використанням оригінальної назви та IMDb ID
-    let baseUrl = PLAYER_BASE_URL.replace(/\/$/, '');
-    let url = `${baseUrl}?tmdb_id=${movie.id}&title=${encodeURIComponent(movie.original_title || movie.title)}`;
-    
-    // Якщо є IMDb ID, обов'язково додаємо його — це прибирає помилку Not Found у 99% випадків
-    if (movie.imdb_id) {
-        url += `&imdb_id=${movie.imdb_id}`;
-    }
-
-    launchPlayer(url);
-}
-
-function launchPlayer(url) {
+    let url = PLAYER_BASE_URL.replace(/\/$/, '') + `?tmdb_id=${movie.id}&title=${encodeURIComponent(movie.original_title || movie.title)}`;
+    if (movie.imdb_id) url += `&imdb_id=${movie.imdb_id}`;
     const modal = document.getElementById('player_modal');
     const iframe = document.getElementById('video_frame');
     document.getElementById('movie_details_modal').style.display = 'none';
@@ -221,7 +250,7 @@ export function renderHistorySection(items) {
     const section = document.createElement('div');
     section.className = 'similar-section'; 
     let html = `<div class="similar-title" style="padding-left:10px;">${t.history}</div><div class="similar-row" style="padding-left:10px;">`;
-    items.forEach(m => { html += `<div class="similar-card" onclick="window.ui_openHistory('${m.id}')"><img src="${m.img}" loading="lazy"></div>`; });
+    items.forEach(m => { html += `<div class="similar-card" onclick="window.ui_openHistory('${m.id}')"><img src="${m.img}"></div>`; });
     html += `</div>`;
     section.innerHTML = html;
     window.ui_openHistory = (id) => { const movie = items.find(m => m.id == id); if(movie) openMoviePage(movie); };

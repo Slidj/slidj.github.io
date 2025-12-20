@@ -5,7 +5,7 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
-// --- 🔥 ОНОВЛЕНО: КЕРУВАННЯ МЕНЮ ПІДТРИМКИ ---
+// --- КЕРУВАННЯ МЕНЮ ПІДТРИМКИ ---
 window.openDonateMenu = () => {
     window.toggleSideMenu(); // Закриваємо бокове меню
     playSound('Pop.wav'); // Звук відкриття

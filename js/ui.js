@@ -5,14 +5,29 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
-// --- Обробник донату ---
+// --- 🔥 ОНОВЛЕНО: КЕРУВАННЯ МЕНЮ ПІДТРИМКИ ---
 window.openDonateMenu = () => {
-    window.toggleSideMenu();
-    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-    const msg = (t.menuDonate.includes('⭐')) 
-        ? "Дякуємо за бажання підтримати! Можливість донатів Telegram Stars з'явиться зовсім скоро." 
-        : "Thanks for your support! Telegram Stars donations are coming very soon.";
-    window.Telegram?.WebApp?.showAlert(msg);
+    window.toggleSideMenu(); // Закриваємо бокове меню
+    playSound('Pop.wav'); // Звук відкриття
+    const modal = document.getElementById('donate_modal');
+    if (modal) modal.style.display = 'flex'; // Показуємо вікно донату
+};
+
+window.closeDonateMenu = () => {
+    playSound('Bubble.wav'); // Звук закриття
+    const modal = document.getElementById('donate_modal');
+    if (modal) modal.style.display = 'none'; // Ховаємо вікно донату
+};
+
+window.selectDonateLevel = (stars) => {
+    // Вібрація при виборі
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium'); 
+    
+    // Визначаємо назву рівня за ключем перекладу
+    let msgKey = stars === 5 ? 'donateLvl1' : (stars === 20 ? 'donateLvl2' : 'donateLvl3');
+    
+    // Показуємо тизер-повідомлення
+    window.Telegram?.WebApp?.showAlert(`${t[msgKey]}: Можливість оплати ${stars} Stars з'явиться зовсім скоро!`);
 };
 
 // --- Скелетони ---

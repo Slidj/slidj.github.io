@@ -48,54 +48,38 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
     try {
-        // 🔥 КРОК 1: ІНІЦІАЛІЗАЦІЯ ТЕЛЕГРАМ ТА АВАТАРА
         if (tg) {
-            tg.ready(); 
-            tg.expand(); 
+            tg.ready(); tg.expand(); 
             if(tg.requestFullscreen) tg.requestFullscreen();
-            tg.setHeaderColor?.('#000000'); 
-            tg.setBackgroundColor?.('#000000');
-            
-            // 🔥 Відновлено: Завантаження аватара
+            tg.setHeaderColor?.('#000000'); tg.setBackgroundColor?.('#000000');
             const user = tg.initDataUnsafe?.user;
             if(user && user.photo_url) {
                 const avatarImg = document.getElementById('user_avatar');
                 const defaultDiv = document.getElementById('default_avatar');
-                if (avatarImg && defaultDiv) {
-                    avatarImg.src = user.photo_url;
-                    avatarImg.style.display = 'block';
-                    defaultDiv.style.display = 'none';
-                }
+                if (avatarImg && defaultDiv) { avatarImg.src = user.photo_url; avatarImg.style.display = 'block'; defaultDiv.style.display = 'none'; }
             }
         }
-
-        // 🔥 КРОК 2: ІНІЦІАЛІЗАЦІЯ ІНШИХ СИСТЕМ
         await initAdminSystem(); 
         initLanguage();
         await loadCloudData();
         setupInfiniteScroll(); 
         switchMode('home');
         checkDeepLink();
-
         setTimeout(() => {
             const pre = document.getElementById('preloader');
             if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
         }, 500);
-
-    } catch (error) {
-        console.error("INIT ERROR:", error);
-    }
+    } catch (error) { console.error("INIT ERROR:", error); }
 }
 
 // --- НАВІГАЦІЯ ---
 async function switchMode(tab) {
     playSound('Tap.wav');
     state.currentTab = tab;
-    
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const navs = document.querySelectorAll('.nav-item');
     if(tab==='home') navs[0].classList.add('active');
-    if(tab==='search') navs[1].classList.add('active'); // 🔥 Виправлено typo
+    if(tab==='search') navs[1].classList.add('active');
     if(tab==='saved') navs[2].classList.add('active');
 
     const hero = document.getElementById('hero_section'), filters = document.getElementById('filters_wrapper'), search = document.getElementById('search_bar_container'), content = document.getElementById('content_container'), trigger = document.getElementById('infinite_trigger');
@@ -116,14 +100,29 @@ async function switchMode(tab) {
     } 
     else if (tab === 'saved') {
         if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'none';
-        if(content) { content.style.display = 'grid'; content.style.paddingTop = 'calc(80px + var(--safe-top))'; }
+        if(content) { 
+            content.style.display = 'grid'; 
+            content.style.paddingTop = 'calc(80px + var(--safe-top))';
+            content.innerHTML = ''; // Очистка перед рендером розділу "Моє"
+        }
         if(trigger) trigger.style.display = 'none';
+        
         await loadCloudData();
         if(content) {
-            content.innerHTML = '';
-            if (state.historyItems.length > 0) content.appendChild(renderHistorySection(state.historyItems));
-            if (state.savedItems.length === 0) content.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
-            else renderGrid(state.savedItems, true);
+            // 1. Історія (Гортання вбік)
+            if (state.historyItems && state.historyItems.length > 0) {
+                content.appendChild(renderHistorySection(state.historyItems));
+            }
+            // 2. Список збережених (Сітка 3x3)
+            if (state.savedItems && state.savedItems.length > 0) {
+                const title = document.createElement('div');
+                title.className = 'similar-title'; title.style.gridColumn = '1/-1';
+                title.innerText = t.tabSaved || 'My List';
+                content.appendChild(title);
+                renderGrid(state.savedItems, true); // Додаємо до існуючого вмісту
+            } else if (!state.historyItems || state.historyItems.length === 0) {
+                content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.emptyList}</div>`;
+            }
         }
     }
 }
@@ -151,7 +150,7 @@ function performSearchDelayed() {
         showSkeletons(6); const results = await searchMovies(query);
         state.searchResults = results; state.searchPage = 0; removeSkeletons();
         const container = document.getElementById('content_container');
-        if (container) { container.innerHTML = ''; if (results.length === 0) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`; else loadNextSearchBatch(); }
+        if (container) { container.innerHTML = ''; if (results.length === 0) container.innerHTML = `<div style=\"grid-column:1/-1; text-align:center; color:#555; padding:40px;\">Нічого не знайдено</div>`; else loadNextSearchBatch(); }
     }, 600);
 }
 

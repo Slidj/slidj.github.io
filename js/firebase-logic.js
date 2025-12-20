@@ -22,7 +22,6 @@ export async function initAdminSystem() {
 
     const userRef = db.ref('users/' + user.id);
     
-    // Відстеження статусу онлайн/офлайн
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
             userRef.child('status').set('online');
@@ -37,38 +36,31 @@ export async function initAdminSystem() {
         userRef.update({ id: user.id, first_name: user.first_name || '', username: user.username || '', last_visit: now });
     });
 
-    // 🔥 ГОЛОВНЕ: Перевірка прав адміністратора
+    // Перевірка прав адміна
     db.ref('settings').on('value', (snapshot) => {
         currentSettings = snapshot.val();
         if (!currentSettings) return;
 
         const { isMaintenance, adminId } = currentSettings;
-
-        // Перевірка техробіт для звичайних користувачів
         const maintScreen = document.getElementById('maintenance_screen');
+        
         if (isMaintenance && String(user.id) !== String(adminId)) {
             if (maintScreen) maintScreen.style.display = 'flex';
         } else {
             if (maintScreen) maintScreen.style.display = 'none';
         }
 
-        // 🔥 ПОРІВНЯННЯ ID ЯК РЯДКІВ (найбільш надійний метод)
         if (String(user.id) === String(adminId)) {
             window.isAdmin = true;
-            
-            // Показуємо елементи адмінки
             const adminBtn = document.getElementById('admin_menu_item');
             const statsBox = document.getElementById('admin_stats_preview');
-            
             if (adminBtn) adminBtn.style.display = 'flex';
             if (statsBox) statsBox.style.display = 'block';
-            
             updateMenuStats();
             updateMaintenanceBtnUI(isMaintenance);
         }
     });
 
-    // Обробка розсилки
     db.ref('broadcast').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.text && data.timestamp) {
@@ -80,7 +72,6 @@ export async function initAdminSystem() {
         }
     });
 
-    // Обробка блокування
     db.ref('users/' + user.id + '/blocked').on('value', (snapshot) => {
         const blockScreen = document.getElementById('blocked_screen');
         if (snapshot.val() === true && blockScreen) blockScreen.style.display = 'flex';
@@ -88,7 +79,7 @@ export async function initAdminSystem() {
     });
 }
 
-// Завантаження даних для адмін-модалки
+// 🔥 ФУНКЦІЯ ЗАВАНТАЖЕННЯ СПИСКУ ЮЗЕРІВ
 async function loadAdminData() {
     const statsDiv = document.getElementById('admin_stats');
     const listDiv = document.getElementById('admin_user_list');
@@ -105,20 +96,11 @@ async function loadAdminData() {
             const isOnline = u.status === 'online';
             const card = document.createElement('div');
             card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
+            // Використовуємо цятку та людську дату
             card.innerHTML = `<div style="color:white; font-size:12px; display:flex; align-items:center;"><span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span><div><b>${u.first_name}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)}</span></div></div><button onclick=\"window.toggleUserBlock('${u.id}', ${u.blocked || false})\" style=\"background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;\">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
             listDiv.appendChild(card);
         });
     });
-}
-
-function showNotification(text) {
-    const bar = document.getElementById('notification_bar');
-    const txt = document.getElementById('notif_text');
-    if (!bar || !txt) return;
-    playSound('Notification.wav');
-    txt.innerText = text;
-    bar.classList.add('active');
-    setTimeout(() => { window.closeNotification(); }, 15000); 
 }
 
 function formatRelativeDate(isoString) {
@@ -133,28 +115,30 @@ function formatRelativeDate(isoString) {
     return `${t.statusLong} ${timeStr}`;
 }
 
-// 🔥 Глобальні функції (використовуються в HTML)
-window.closeNotification = function() { document.getElementById('notification_bar')?.classList.remove('active'); };
+function showNotification(text) {
+    const bar = document.getElementById('notification_bar');
+    const txt = document.getElementById('notif_text');
+    if (bar && txt) {
+        playSound('Notification.wav');
+        txt.innerText = text;
+        bar.classList.add('active');
+        setTimeout(() => { window.closeNotification(); }, 15000); 
+    }
+}
 
-window.sendBroadcastNotification = function() {
+// Глобальні команди
+window.closeNotification = () => document.getElementById('notification_bar')?.classList.remove('active');
+window.sendBroadcastNotification = () => {
     const input = document.getElementById('notif_input');
     const text = input?.value.trim();
-    if (!text) return;
-    db.ref('broadcast').set({ text: text, timestamp: Date.now() }).then(() => { if(input) input.value = ''; alert("Надіслано!"); });
+    if (text) db.ref('broadcast').set({ text: text, timestamp: Date.now() }).then(() => { input.value = ''; alert("Надіслано!"); });
 };
-
-window.openAdminPanel = function() { 
+window.openAdminPanel = () => { 
     const modal = document.getElementById('admin_modal');
-    if (modal) {
-        modal.style.display = 'block'; 
-        loadAdminData(); 
-    }
+    if (modal) { modal.style.display = 'block'; loadAdminData(); }
 };
-
-window.toggleMaintenanceMode = function() { if(currentSettings) db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); };
-
-window.toggleUserBlock = function(userId, status) { if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); };
-
+window.toggleMaintenanceMode = () => { if(currentSettings) db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); };
+window.toggleUserBlock = (userId, status) => { if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); };
 async function updateMenuStats() {
     const statsBox = document.getElementById('admin_stats_preview');
     const today = new Date().toISOString().split('T')[0];
@@ -164,12 +148,4 @@ async function updateMenuStats() {
         if(statsBox) statsBox.innerHTML = `🚀 Сьогодні: <b>+${all.filter(u => u.created_at === today).length}</b> | 👥 Усього: <b>${all.length}</b>`;
     });
 }
-
-function updateMaintenanceBtnUI(m) { 
-    const b = document.getElementById('maint_toggle_btn'); 
-    if(b){ 
-        b.innerText = m ? 'ВИМКНУТИ ТЕХРОБОТИ' : 'УВІМКНУТИ ТЕХРОБОТИ'; 
-        b.style.background = m ? '#e50914' : '#fff'; 
-        b.style.color = m ? '#fff' : '#000'; 
-    } 
-}
+function updateMaintenanceBtnUI(m) { const b = document.getElementById('maint_toggle_btn'); if(b){ b.innerText = m ? 'ВИМКНУТИ ТЕХРОБОТИ' : 'УВІМКНУТИ ТЕХРОБОТИ'; b.style.background = m ? '#e50914' : '#fff'; b.style.color = m ? '#fff' : '#000'; } }

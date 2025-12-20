@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MAIN BUNDLE (v1.9.3)
+   🎨 STYLE.CSS: MAIN BUNDLE (v1.9.4)
    ========================================================== */
 
 @import 'root.css';
@@ -12,28 +12,11 @@
 .skeleton::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0)); animation: skeleton-move 1.5s infinite; }
 @keyframes skeleton-move { 100% { transform: translateX(100%); } }
 
-/* 🔥 ФІЛЬТРИ (КНОПКИ-ПІГУЛКИ) */
+/* ФІЛЬТРИ */
 .netflix-filters { display: flex; gap: 10px; padding: 10px 16px; overflow-x: auto; scrollbar-width: none; }
 .netflix-filters::-webkit-scrollbar { display: none; }
-.cat-btn { 
-    padding: 8px 16px; 
-    border-radius: 20px; 
-    border: 1px solid #555; 
-    background: transparent; 
-    color: white; 
-    font-size: 13px; 
-    font-weight: 500; 
-    white-space: nowrap; 
-    cursor: pointer; 
-    transition: all 0.2s ease;
-}
-/* 🔥 АКТИВНА КНОПКА (БІЛА) */
-.cat-btn.active { 
-    background: white !important; 
-    color: black !important; 
-    border-color: white !important; 
-    font-weight: 700;
-}
+.cat-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #555; background: transparent; color: white; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all 0.2s ease; }
+.cat-btn.active { background: white !important; color: black !important; border-color: white !important; font-weight: 700; }
 
 /* ТРЕЙЛЕРИ */
 .trailer-section { margin-top: 20px; padding-left: 16px; }
@@ -56,6 +39,23 @@
 /* КАРТКИ */
 .movie-poster-card { position: relative; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; background: #1f1f1f; width: 100%; }
 .movie-poster-card img { width: 100%; height: 100%; object-fit: cover; }
+
+/* 🔥 КНОПКИ У МОДАЛЦІ (ВИПРАВЛЕНО РОЗТАШУВАННЯ) */
+.nf-btn-row { 
+    display: flex; 
+    flex-direction: column; /* Кнопки одна під одною */
+    gap: 10px; 
+    margin-bottom: 15px; 
+}
+.nf-actions-group {
+    display: flex; 
+    gap: 10px; 
+    width: 100%;
+}
+.nf-btn.nf-secondary {
+    flex: 1; /* Рівна ширина для "Моє" та "Share" */
+    justify-content: center;
+}
 
 /* МЕНЮ */
 .side-menu { position: fixed; top: 0; right: -320px; width: 260px; height: 100%; background: #141414; z-index: 100000; transition: right 0.3s; padding: 20px; padding-top: calc(30px + var(--safe-top)); box-shadow: -10px 0 30px rgba(0,0,0,0.9); display: flex; flex-direction: column; }

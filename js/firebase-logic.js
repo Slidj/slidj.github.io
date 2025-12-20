@@ -21,7 +21,6 @@ export async function initAdminSystem() {
     if (!user) return;
 
     const userRef = db.ref('users/' + user.id);
-    
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
             userRef.child('status').set('online');
@@ -36,26 +35,22 @@ export async function initAdminSystem() {
         userRef.update({ id: user.id, first_name: user.first_name || '', username: user.username || '', last_visit: now });
     });
 
-    // Перевірка прав адміна
     db.ref('settings').on('value', (snapshot) => {
         currentSettings = snapshot.val();
         if (!currentSettings) return;
-
         const { isMaintenance, adminId } = currentSettings;
-        const maintScreen = document.getElementById('maintenance_screen');
-        
-        if (isMaintenance && String(user.id) !== String(adminId)) {
-            if (maintScreen) maintScreen.style.display = 'flex';
-        } else {
-            if (maintScreen) maintScreen.style.display = 'none';
+
+        if (isMaintenance && user.id != adminId) {
+            const screen = document.getElementById('maintenance_screen');
+            if(screen) screen.style.display = 'flex';
         }
 
-        if (String(user.id) === String(adminId)) {
+        if (user.id == adminId) {
             window.isAdmin = true;
-            const adminBtn = document.getElementById('admin_menu_item');
-            const statsBox = document.getElementById('admin_stats_preview');
-            if (adminBtn) adminBtn.style.display = 'flex';
-            if (statsBox) statsBox.style.display = 'block';
+            const btn = document.getElementById('admin_menu_item');
+            const preview = document.getElementById('admin_stats_preview');
+            if(btn) btn.style.display = 'flex';
+            if(preview) preview.style.display = 'block';
             updateMenuStats();
             updateMaintenanceBtnUI(isMaintenance);
         }
@@ -73,35 +68,35 @@ export async function initAdminSystem() {
     });
 
     db.ref('users/' + user.id + '/blocked').on('value', (snapshot) => {
-        const blockScreen = document.getElementById('blocked_screen');
-        if (snapshot.val() === true && blockScreen) blockScreen.style.display = 'flex';
-        else if (blockScreen) blockScreen.style.display = 'none';
+        const screen = document.getElementById('blocked_screen');
+        if (snapshot.val() === true && screen) screen.style.display = 'flex';
     });
 }
 
-// 🔥 ФУНКЦІЯ ЗАВАНТАЖЕННЯ СПИСКУ ЮЗЕРІВ
-async function loadAdminData() {
-    const statsDiv = document.getElementById('admin_stats');
-    const listDiv = document.getElementById('admin_user_list');
-    if (!statsDiv || !listDiv) return;
-
-    db.ref('users').on('value', (snapshot) => {
-        const users = snapshot.val() || {};
-        const ids = Object.keys(users);
-        statsDiv.innerHTML = `👥 Усього користувачів: <b>${ids.length}</b><br>⚙️ Статус: ${currentSettings?.isMaintenance ? '🚧 Техроботи' : '✅ Ок'}`;
-        
-        listDiv.innerHTML = '';
-        ids.reverse().forEach(id => {
-            const u = users[id];
-            const isOnline = u.status === 'online';
-            const card = document.createElement('div');
-            card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
-            // Використовуємо цятку та людську дату
-            card.innerHTML = `<div style="color:white; font-size:12px; display:flex; align-items:center;"><span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span><div><b>${u.first_name}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)}</span></div></div><button onclick=\"window.toggleUserBlock('${u.id}', ${u.blocked || false})\" style=\"background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;\">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
-            listDiv.appendChild(card);
-        });
+// 🔥 НОВА ФУНКЦІЯ: Збереження донату
+window.saveDonation = function(stars) {
+    const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if(!user) return;
+    
+    const userRef = db.ref('users/' + user.id);
+    
+    // 1. Додаємо запис в історію донатів
+    userRef.child('donations').push({
+        amount: stars,
+        date: new Date().toISOString(),
+        type: 'stars'
     });
-}
+
+    // 2. Оновлюємо загальну суму
+    userRef.child('total_donated').transaction((current) => {
+        return (current || 0) + stars;
+    });
+
+    // 3. Якщо сума велика, даємо статус "Patron"
+    if (stars >= 50) {
+        userRef.update({ is_patron: true });
+    }
+};
 
 function formatRelativeDate(isoString) {
     if (!isoString) return t.statusLong;
@@ -111,8 +106,31 @@ function formatRelativeDate(isoString) {
     const timeStr = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
     if (diffInDays === 0) return `${t.statusOnline} ${timeStr}`;
     if (diffInDays === 1) return `${t.statusYesterday} ${timeStr}`;
-    if (diffInDays < 7) return `${t.statusDays} ${timeStr}`;
-    return `${t.statusLong} ${timeStr}`;
+    return `${t.statusDays} ${timeStr}`;
+}
+
+async function loadAdminData() {
+    const statsDiv = document.getElementById('admin_stats');
+    const listDiv = document.getElementById('admin_user_list');
+    db.ref('users').on('value', (snapshot) => {
+        const users = snapshot.val() || {};
+        const ids = Object.keys(users);
+        if(statsDiv) statsDiv.innerHTML = `👥 Усього користувачів: <b>${ids.length}</b><br>⚙️ Статус: ${currentSettings?.isMaintenance ? '🚧 Техроботи' : '✅ Ок'}`;
+        if(listDiv) {
+            listDiv.innerHTML = '';
+            ids.reverse().forEach(id => {
+                const u = users[id];
+                const isOnline = u.status === 'online';
+                // Відображаємо зірочку, якщо донатив
+                const patronBadge = u.total_donated > 0 ? '⭐' : '';
+                
+                const card = document.createElement('div');
+                card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
+                card.innerHTML = `<div style="color:white; font-size:12px; display:flex; align-items:center;"><span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span><div><b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)}</span></div></div><button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
+                listDiv.appendChild(card);
+            });
+        }
+    });
 }
 
 function showNotification(text) {
@@ -122,23 +140,19 @@ function showNotification(text) {
         playSound('Notification.wav');
         txt.innerText = text;
         bar.classList.add('active');
-        setTimeout(() => { window.closeNotification(); }, 15000); 
+        setTimeout(() => { bar.classList.remove('active'); }, 15000); 
     }
 }
 
-// Глобальні команди
-window.closeNotification = () => document.getElementById('notification_bar')?.classList.remove('active');
-window.sendBroadcastNotification = () => {
+window.closeNotification = function() { document.getElementById('notification_bar')?.classList.remove('active'); };
+
+window.sendBroadcastNotification = function() {
     const input = document.getElementById('notif_input');
     const text = input?.value.trim();
-    if (text) db.ref('broadcast').set({ text: text, timestamp: Date.now() }).then(() => { input.value = ''; alert("Надіслано!"); });
+    if (!text) return;
+    db.ref('broadcast').set({ text: text, timestamp: Date.now() }).then(() => { if(input) input.value = ''; alert("Надіслано!"); });
 };
-window.openAdminPanel = () => { 
-    const modal = document.getElementById('admin_modal');
-    if (modal) { modal.style.display = 'block'; loadAdminData(); }
-};
-window.toggleMaintenanceMode = () => { if(currentSettings) db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); };
-window.toggleUserBlock = (userId, status) => { if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); };
+
 async function updateMenuStats() {
     const statsBox = document.getElementById('admin_stats_preview');
     const today = new Date().toISOString().split('T')[0];
@@ -148,4 +162,25 @@ async function updateMenuStats() {
         if(statsBox) statsBox.innerHTML = `🚀 Сьогодні: <b>+${all.filter(u => u.created_at === today).length}</b> | 👥 Усього: <b>${all.length}</b>`;
     });
 }
-function updateMaintenanceBtnUI(m) { const b = document.getElementById('maint_toggle_btn'); if(b){ b.innerText = m ? 'ВИМКНУТИ ТЕХРОБОТИ' : 'УВІМКНУТИ ТЕХРОБОТИ'; b.style.background = m ? '#e50914' : '#fff'; b.style.color = m ? '#fff' : '#000'; } }
+
+window.openAdminPanel = function() { 
+    const modal = document.getElementById('admin_modal');
+    if (modal) { modal.style.display = 'block'; loadAdminData(); }
+};
+
+window.toggleMaintenanceMode = function() { 
+    if(currentSettings) db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); 
+};
+
+window.toggleUserBlock = function(userId, status) { 
+    if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); 
+};
+
+function updateMaintenanceBtnUI(m) { 
+    const b = document.getElementById('maint_toggle_btn'); 
+    if(b){ 
+        b.innerText = m ? 'ВИМКНУТИ ТЕХРОБОТИ' : 'УВІМКНУТИ ТЕХРОБОТИ'; 
+        b.style.background = m ? '#e50914' : '#fff'; 
+        b.style.color = m ? '#fff' : '#000'; 
+    } 
+}

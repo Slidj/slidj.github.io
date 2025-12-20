@@ -21,6 +21,31 @@ window.closeMoviePage = closeMoviePage;
 window.closePlayer = closePlayer;
 window.performSearchDelayed = performSearchDelayed;
 window.openPremiumPlayer = openPremiumPlayer;
+
+// 🔥 НОВЕ: Відновлено функції навігації та адмінки
+window.toggleSideMenu = () => {
+    const menu = document.getElementById('side_menu');
+    const overlay = document.getElementById('menu_overlay');
+    if (menu && overlay) {
+        const isActive = menu.classList.toggle('active');
+        overlay.style.display = isActive ? 'block' : 'none';
+        if (isActive) playSound('Tap.wav');
+    }
+};
+
+window.openAdminFromMenu = () => {
+    window.toggleSideMenu(); // Закриваємо меню
+    const modal = document.getElementById('admin_modal');
+    if (modal) modal.style.display = 'block'; // Відкриваємо адмінку
+    playSound('Pop.wav');
+};
+
+window.closeAdminPanel = () => {
+    const modal = document.getElementById('admin_modal');
+    if (modal) modal.style.display = 'none';
+    playSound('Bubble.wav');
+};
+
 window.ui_toggleSave = (id, btn) => {
     toggleSave(id, btn);
     if (state.currentTab === 'saved') switchMode('saved');
@@ -127,11 +152,8 @@ async function checkDeepLink() {
 
 // --- NAVIGATION ---
 async function switchMode(tab) {
-    // 🔥 КРОК 3: Додаємо звук при перемиканні вкладки
     playSound('Tap.wav');
-
     if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
     state.currentTab = tab;
     
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -194,7 +216,6 @@ async function switchMode(tab) {
         
         if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.syncing}</div>`;
         await loadCloudData();
-
         if(content) content.innerHTML = ''; 
 
         if (state.historyItems.length > 0) {
@@ -227,11 +248,8 @@ async function switchMode(tab) {
 }
 
 function setCategory(catId) {
-    // 🔥 КРОК 3: Додаємо звук при натисканні на фільтр категорії
     playSound('Tap.wav');
-
     if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     const btns = document.querySelectorAll('.cat-btn');
     for(let btn of btns) {
@@ -246,24 +264,17 @@ function setCategory(catId) {
 
 async function loadContent(page, isAppend = false) {
     state.isLoading = true;
-    
-    if (isAppend) {
-        showSkeletons(3, true); 
-    }
-
+    if (isAppend) showSkeletons(3, true); 
     try {
         const category = state.currentGenre || 'all';
         const items = await fetchHomeContent(page, category);
-        
         state.feedMovies = [...state.feedMovies, ...items];
-
         if (page === 1 && !isAppend && items.length > 0) {
             const rand = Math.floor(Math.random() * Math.min(5, items.length));
             setupHero(items[rand]);
             const hero = document.getElementById('hero_section');
             if(hero) hero.style.display = 'flex';
         }
-        
         removeSkeletons();
         renderGrid(items, isAppend);
     } catch(e) {
@@ -278,7 +289,6 @@ function performSearchDelayed() {
     clearTimeout(state.searchTimeout);
     const query = document.getElementById('search_input').value;
     if (!query || query.length < 2) return;
-
     state.searchTimeout = setTimeout(async () => {
         showSkeletons(6); 
         const results = await searchMovies(query);
@@ -287,7 +297,6 @@ function performSearchDelayed() {
         removeSkeletons(); 
         const container = document.getElementById('content_container');
         if (container) container.innerHTML = '';
-
         if (results.length === 0) {
             if(container) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`;
         } else {

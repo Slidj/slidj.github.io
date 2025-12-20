@@ -21,7 +21,13 @@ export const t = {
     menuTitle: "Menu",
     menuAdmin: "⚙️ Admin Panel",
     menuProfile: "👤 Profile",
-    menuDonate: "⭐ Support Project", // Додано
+    menuDonate: "⭐ Support Project",
+    donateTitle: "Support MEDIA HUB",
+    donateDesc: "Your support helps us pay for servers and add new movies.",
+    donateLvl1: "☕ Cup of Coffee",
+    donateLvl2: "🍿 Movie Ticket",
+    donateLvl3: "👑 Project Patron",
+    donateClose: "Maybe Later",
     maintTitle: "Maintenance",
     maintDesc: "We are updating Media Hub. Please come back later!",
     blockTitle: "Access Denied",
@@ -72,7 +78,13 @@ const dictionaries = {
         menuTitle: "Меню",
         menuAdmin: "⚙️ Адмін-панель",
         menuProfile: "👤 Профіль",
-        menuDonate: "⭐ Підтримати проект", // Додано
+        menuDonate: "⭐ Підтримати проект",
+        donateTitle: "Підтримка MEDIA HUB",
+        donateDesc: "Ваші донати допомагають нам оплачувати сервери та додавати нові фільми.",
+        donateLvl1: "☕ Чашка кави",
+        donateLvl2: "🍿 Квиток у кіно",
+        donateLvl3: "👑 Меценат проекту",
+        donateClose: "Можливо пізніше",
         maintTitle: "Технічне обслуговування",
         maintDesc: "Ми оновлюємо Media Hub. Поверніться пізніше!",
         blockTitle: "Доступ обмежено",
@@ -103,10 +115,7 @@ const dictionaries = {
 export function initLanguage() {
     const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
     const targetLang = (userLang === 'uk') ? 'uk' : 'en'; 
-    
-    if (dictionaries[targetLang]) {
-        Object.assign(t, dictionaries[targetLang]);
-    }
+    if (dictionaries[targetLang]) Object.assign(t, dictionaries[targetLang]);
     updateStaticInterface();
 }
 

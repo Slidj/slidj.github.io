@@ -33,6 +33,19 @@
 .menu-stats-box { background: #1f1f1f; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; color: #aaa; }
 .user-avatar-rounded { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #333; object-fit: cover; }
 
+/* 🔥 Кнопка підтримки (Donate) */
+.donate-item {
+    background: linear-gradient(90deg, #f1c40f, #f39c12) !important;
+    color: #000 !important;
+    font-weight: 800 !important;
+    margin-top: 15px !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+    transition: transform 0.2s !important;
+}
+.donate-item:active { transform: scale(0.95); }
+.donate-item span { color: #000 !important; }
+
 /* СПОВІЩЕННЯ */
 #notification_bar { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #e50914; color: white; padding: 15px; border-radius: 12px; z-index: 200000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; font-size: 14px; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 #notification_bar.active { top: calc(20px + var(--safe-top)); }
@@ -43,13 +56,12 @@
 .status-online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
 .status-offline { background-color: #e74c3c; }
 
-/* 🔥 ЕФЕКТ ПУЛЬСУЮЧОГО ПІДСВІЧУВАННЯ (GLOW) ДЛЯ ТОП-3 */
+/* 🔥 ЕФЕКТ ПУЛЬСУЮЧОГО ПІДСВІЧУВАННЯ ДЛЯ ТОП-3 */
 @keyframes trending-pulse {
     0% { box-shadow: 0 0 5px rgba(229, 9, 20, 0.4); border-color: rgba(229, 9, 20, 0.4); }
     50% { box-shadow: 0 0 20px rgba(229, 9, 20, 0.9); border-color: rgba(229, 9, 20, 1); }
     100% { box-shadow: 0 0 5px rgba(229, 9, 20, 0.4); border-color: rgba(229, 9, 20, 0.4); }
 }
-
 .trending-glow {
     animation: trending-pulse 2s ease-in-out 3; 
     border: 1px solid rgba(229, 9, 20, 0.6) !important;
@@ -57,13 +69,12 @@
     z-index: 5;
 }
 
-/* 🔥 НОВЕ: Анімація закриття модального вікна */
+/* 🔥 Анімація закриття модального вікна */
 @keyframes modal-fade-out {
     from { opacity: 1; transform: translateY(0) scale(1); }
     to { opacity: 0; transform: translateY(25px) scale(0.96); }
 }
-
 .modal-closing-anim {
     animation: modal-fade-out 0.3s forwards cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none; /* Щоб користувач не міг натиснути нічого під час анімації */
+    pointer-events: none;
 }

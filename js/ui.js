@@ -5,8 +5,6 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
-// ⚠️ CSS БЛОК ВИДАЛЕНО (ПЕРЕНЕСЕНО В MODALS.CSS)
-
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
 
@@ -309,7 +307,6 @@ export function initHolidayIconListener() {
         if (filename && filename !== "") {
             iconEl.src = `images/holidays/${filename}`;
             iconEl.style.display = 'block';
-            // Додаємо клас анімації, щоб іконка красиво "вистрибувала"
             iconEl.classList.add('logo-anim');
         } else {
             iconEl.style.display = 'none';

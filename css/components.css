@@ -45,27 +45,30 @@
 #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
 .netflix-loader { width: 50px; height: 50px; border: 4px solid #E50914; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; }
 
-/* 🔥 НОВЕ: Бейдж TOP 10 */
+/* 🔥 НОВЕ: Бейдж TOP 10 (ЗНИЗУ ПРАВОРУЧ) */
 .top10-badge {
     position: absolute;
-    top: -5px;
-    right: 10px;
-    background: #e50914;
+    bottom: 6px;    /* Відступ знизу */
+    right: 6px;     /* Відступ справа */
+    
+    background: #e50914; /* Червоний Netflix */
     color: white;
     font-weight: 900;
     font-size: 11px;
-    padding: 12px 6px 6px 6px; /* Витягнута форма */
-    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 50% 85%, 0% 100%); /* Форма прапорця */
+    padding: 4px 6px;
+    
+    border-radius: 4px; /* Акуратний прямокутник */
     z-index: 5;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.8); /* Тінь для контрасту */
+    
     font-family: var(--font-title);
-    letter-spacing: 1px;
     text-align: center;
     line-height: 1;
 }
+
 .top10-badge span {
     display: block;
     font-size: 8px;
-    opacity: 0.8;
+    opacity: 0.9;
     margin-bottom: 2px;
 }

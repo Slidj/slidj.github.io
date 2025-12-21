@@ -10,10 +10,8 @@ window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.get
 
 // 🔥 ОНОВЛЕНА ЛОГІКА ОПЛАТИ (TELEGRAM STARS)
 window.selectDonateLevel = (stars) => {
-    // Вібрація при натисканні
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
 
-    // 👇 ТВОЇ ПОСИЛАННЯ
     const links = {
         5:  "https://t.me/$dg8POh3jOErKFgAAXydTAL3IV5g",
         20: "https://t.me/$IGZ5qh3jOErLFgAAdaeivliYG7k",
@@ -27,10 +25,8 @@ window.selectDonateLevel = (stars) => {
         return;
     }
 
-    // Запам'ятовуємо суму для нарахування бонусів після успіху
     sessionStorage.setItem('pending_donation', stars);
 
-    // Відкриваємо нативне вікно оплати Telegram
     if (window.Telegram?.WebApp?.openInvoice) {
         window.Telegram.WebApp.openInvoice(invoiceUrl, (status) => {
             if (status === 'paid') {
@@ -42,20 +38,14 @@ window.selectDonateLevel = (stars) => {
             }
         });
     } else {
-        // Для тестування у звичайному браузері (не в Telegram)
         window.open(invoiceUrl, '_blank');
     }
 };
 
-// Функція обробки успішного донату
 window.processSuccessfulDonation = (stars) => {
     window.closeDonateMenu();
-    playSound('Notification.wav'); // Звук успіху
-    
-    // Зберігаємо в базу Firebase
+    playSound('Notification.wav');
     if(window.saveDonation) window.saveDonation(stars);
-
-    // Показуємо повідомлення
     const notif = document.getElementById('notification_bar');
     const txt = document.getElementById('notif_text');
     if(notif && txt) {
@@ -103,70 +93,150 @@ export async function setupHero(movie) {
     }
 }
 
+// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ ВІДКРИТТЯ СТОРІНКИ ФІЛЬМУ
 export async function openMoviePage(movie) {
     playSound('Pop.wav');
-    state.activeMovie = movie; addToHistory(movie);
-    const modal = document.getElementById('movie_details_modal'), content = document.getElementById('movie_details_content');
+    state.activeMovie = movie; 
+    addToHistory(movie);
+    
+    const modal = document.getElementById('movie_details_modal');
+    const content = document.getElementById('movie_details_content');
     if (!modal || !content) return;
-    content.classList.remove('modal-closing-anim');
-    modal.style.display = 'block';
-    content.innerHTML = `<div style="height:100vh; display:flex; justify-content:center; align-items:center;">${t.loading}</div>`;
 
-    let details = { ...movie }, logoUrl = null, castHtml = '', trailersHtml = '', similarHtml = '';
+    content.classList.remove('modal-closing-anim');
+    
+    // 1. МИТТЄВИЙ ПОКАЗ (Optimistic UI)
+    // Використовуємо наявні дані, щоб не показувати пустий екран
+    let initialBackdrop = movie.backdrop || movie.img;
+    // Пробуємо покращити якість картинки одразу, якщо це TMDB
+    if(initialBackdrop && initialBackdrop.includes('/w500/')) {
+        initialBackdrop = initialBackdrop.replace('/w500/', '/w1280/'); 
+    }
+
+    // Малюємо "скелет" інтерфейсу одразу
+    content.innerHTML = `
+        <div class="nf-container">
+            <div class="nf-hero">
+                <div class="nf-backdrop" style="background-image: url('${initialBackdrop}');"></div>
+                <div class="nf-gradient"></div>
+                <div class="nf-hero-content">
+                    <div class="nf-title-text">${movie.title}</div>
+                    <div class="nf-meta"><span>Завантаження...</span></div>
+                </div>
+            </div>
+            <div style="padding: 40px; text-align: center; color: #666;">
+                <div class="netflix-loader"></div>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'block'; // Показуємо вікно миттєво
+
+    // 2. ПАРАЛЕЛЬНЕ ЗАВАНТАЖЕННЯ (Fetching in parallel)
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
+    
     try {
-        const data = await fetchMovieDetails(movie.id, apiType);
+        // Promise.all запускає обидва запити одночасно! Це прискорює в 2 рази.
+        const [data, similar] = await Promise.all([
+            fetchMovieDetails(movie.id, apiType),
+            fetchSimilar(movie.id, apiType)
+        ]);
+
+        // 3. ОБРОБКА ОТРИМАНИХ ДАНИХ
+        let details = { ...movie }; 
+        let logoUrl = null, castHtml = '', trailersHtml = '', similarHtml = '';
+
         if (data.external_ids?.imdb_id) state.activeMovie.imdb_id = details.imdb_id = data.external_ids.imdb_id;
         if (data.original_title) state.activeMovie.original_title = data.original_title;
+        
         details.desc = data.overview || movie.desc;
         const rt = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : null);
         if (rt) details.runtime = rt > 60 ? `${Math.floor(rt/60)}${t.modalHour} ${rt%60}${t.modalMin}` : `${rt}${t.modalMin}`;
         details.age = data.adult ? '18+' : '16+';
+
+        // Логотип
         if (data.images?.logos?.length > 0) {
-            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0];
+            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || 
+                         data.images.logos.find(l => l.iso_639_1 === 'en') || 
+                         data.images.logos[0];
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
-        if (data.credits?.cast) castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${data.credits.cast.slice(0,10).filter(p=>p.profile_path).map(p=>`<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
+
+        // Актори
+        if (data.credits?.cast) {
+            castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${data.credits.cast.slice(0,10).filter(p=>p.profile_path).map(p=>`<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
+        }
+
+        // Трейлери
         if (data.videos?.results) {
             const trailers = data.videos.results.filter(v => v.type === 'Trailer').slice(0,3);
-            trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${trailers.map(v => `<div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')"><div class="trailer-img-box"><img src="https://img.youtube.com/vi/${v.key}/hqdefault.jpg"><div class="trailer-play-icon">▶</div></div></div>`).join('')}</div></div>`;
+            if(trailers.length > 0) {
+                trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${trailers.map(v => `<div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')"><div class="trailer-img-box"><img src="https://img.youtube.com/vi/${v.key}/mqdefault.jpg" loading="lazy"><div class="trailer-play-icon">▶</div></div></div>`).join('')}</div></div>`;
+            }
         }
-    } catch (e) { }
 
-    const similar = await fetchSimilar(movie.id, apiType);
-    if (similar.length > 0) similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
+        // Схожі
+        if (similar && similar.length > 0) {
+            similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
+        }
 
-    content.innerHTML = `
-        <div class="nf-container">
-            <div class="nf-hero">
-                <div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div>
-                <div class="nf-gradient"></div>
-                <div class="nf-hero-content">${logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`}
-                    <div class="nf-meta"><span class="nf-match">98% ${t.match}</span><span>${details.year}</span><span class="nf-age">${details.age}</span><span>${details.runtime || ''}</span><span class="nf-badge">HD</span></div>
+        // 4. ОСТАТОЧНЕ МАЛЮВАННЯ КОНТЕНТУ
+        content.innerHTML = `
+            <div class="nf-container">
+                <div class="nf-hero">
+                    <div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div>
+                    <div class="nf-gradient"></div>
+                    <div class="nf-hero-content">
+                        ${logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`}
+                        <div class="nf-meta">
+                            <span class="nf-match">98% ${t.match}</span>
+                            <span>${details.year}</span>
+                            <span class="nf-age">${details.age}</span>
+                            <span>${details.runtime || ''}</span>
+                            <span class="nf-badge">HD</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="nf-btn-row">
-                <button class="nf-btn nf-play" onclick="window.openPremiumPlayer('${movie.id}', this)"><svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg><span>${t.watch}</span></button>
-                <div class="nf-actions-group">
-                    <button class="nf-btn nf-secondary" onclick="window.ui_toggleSave('${movie.id}', this)"><svg viewBox="0 0 24 24" fill="${isSaved(movie.id)?'white':'none'}" stroke="white" stroke-width="2" width="24" height="24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg><span>${isSaved(movie.id)?t.saveBtnActive:t.saveBtn}</span></button>
-                    <button class="nf-btn nf-secondary" onclick="window.ui_share('${movie.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg><span>${t.share}</span></button>
+                <div class="nf-btn-row">
+                    <button class="nf-btn nf-play" onclick="window.openPremiumPlayer('${movie.id}', this)">
+                        <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg>
+                        <span>${t.watch}</span>
+                    </button>
+                    <div class="nf-actions-group">
+                        <button class="nf-btn nf-secondary" onclick="window.ui_toggleSave('${movie.id}', this)">
+                            <svg viewBox="0 0 24 24" fill="${isSaved(movie.id)?'white':'none'}" stroke="white" stroke-width="2" width="24" height="24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                            <span>${isSaved(movie.id)?t.saveBtnActive:t.saveBtn}</span>
+                        </button>
+                        <button class="nf-btn nf-secondary" onclick="window.ui_share('${movie.id}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            <span>${t.share}</span>
+                        </button>
+                    </div>
                 </div>
+                <div class="nf-description">${details.desc || t.descMissing}</div>
+                ${trailersHtml} 
+                ${castHtml} 
+                ${similarHtml}
+                <div style="height: 50px;"></div>
             </div>
-            <div class="nf-description">${details.desc || t.descMissing}</div>
-            ${trailersHtml} ${castHtml} ${similarHtml}
-            <div style="height: 50px;"></div>
-        </div>
-    `;
+        `;
 
-    window.ui_openSimilar = (id, type) => { const target = similar.find(m => m.id == id); if (target) openMoviePage(target); };
-    window.ui_openTrailer = (key) => { const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'); document.getElementById('movie_details_modal').style.display = 'none'; f.src = `https://www.youtube.com/embed/${key}?autoplay=1`; p.style.display = 'flex'; };
-    window.ui_share = (id) => { 
-        let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
-        if(!m) return; 
-        const botLink = `https://t.me/${BOT_USERNAME}/app?startapp=${m.type}_${m.id}`;
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(t.shareMessage + " " + m.title)}`; 
-        window.Telegram?.WebApp?.openTelegramLink(shareUrl); 
-    };
+        // Відновлюємо функції для динамічних елементів
+        window.ui_openSimilar = (id, type) => { const target = similar.find(m => m.id == id); if (target) openMoviePage(target); };
+        window.ui_openTrailer = (key) => { const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'); document.getElementById('movie_details_modal').style.display = 'none'; f.src = `https://www.youtube.com/embed/${key}?autoplay=1`; p.style.display = 'flex'; };
+        
+        window.ui_share = (id) => { 
+            let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
+            if(!m) return; 
+            const botLink = `https://t.me/${BOT_USERNAME}/app?startapp=${m.type}_${m.id}`;
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(t.shareMessage + " " + m.title)}`; 
+            window.Telegram?.WebApp?.openTelegramLink(shareUrl); 
+        };
+
+    } catch (e) { 
+        console.error("Помилка завантаження деталей:", e);
+        // Якщо помилка, хоча б показуємо опис з кешу
+        content.innerHTML = `<div style="padding:50px; text-align:center;">Помилка завантаження даних.<br>Спробуйте пізніше.</div>`;
+    }
 }
 
 export function closeMoviePage() {

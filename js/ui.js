@@ -5,10 +5,18 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
+// Додаємо стиль анімації для плавного логотипу (вставляємо динамічно)
+const style = document.createElement('style');
+style.innerHTML = `
+    @keyframes fadeLogoIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .logo-anim { animation: fadeLogoIn 0.5s ease-out forwards; }
+`;
+document.head.appendChild(style);
+
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
 
-// 🔥 ОНОВЛЕНА ЛОГІКА ОПЛАТИ (TELEGRAM STARS)
+// 🔥 ОПЛАТА TELEGRAM STARS
 window.selectDonateLevel = (stars) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
 
@@ -93,7 +101,7 @@ export async function setupHero(movie) {
     }
 }
 
-// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ ВІДКРИТТЯ СТОРІНКИ ФІЛЬМУ
+// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ (Без стрибків логотипу)
 export async function openMoviePage(movie) {
     playSound('Pop.wav');
     state.activeMovie = movie; 
@@ -105,22 +113,19 @@ export async function openMoviePage(movie) {
 
     content.classList.remove('modal-closing-anim');
     
-    // 1. МИТТЄВИЙ ПОКАЗ (Optimistic UI)
-    // Використовуємо наявні дані, щоб не показувати пустий екран
+    // 1. МИТТЄВИЙ ПОКАЗ (Текст + Картинка з кешу)
     let initialBackdrop = movie.backdrop || movie.img;
-    // Пробуємо покращити якість картинки одразу, якщо це TMDB
     if(initialBackdrop && initialBackdrop.includes('/w500/')) {
         initialBackdrop = initialBackdrop.replace('/w500/', '/w1280/'); 
     }
 
-    // Малюємо "скелет" інтерфейсу одразу
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
                 <div class="nf-backdrop" style="background-image: url('${initialBackdrop}');"></div>
                 <div class="nf-gradient"></div>
                 <div class="nf-hero-content">
-                    <div class="nf-title-text">${movie.title}</div>
+                    <div class="nf-title-text" id="temp_title_text">${movie.title}</div>
                     <div class="nf-meta"><span>Завантаження...</span></div>
                 </div>
             </div>
@@ -129,19 +134,18 @@ export async function openMoviePage(movie) {
             </div>
         </div>
     `;
-    modal.style.display = 'block'; // Показуємо вікно миттєво
+    modal.style.display = 'block';
 
-    // 2. ПАРАЛЕЛЬНЕ ЗАВАНТАЖЕННЯ (Fetching in parallel)
+    // 2. ПАРАЛЕЛЬНЕ ЗАВАНТАЖЕННЯ ДАНИХ
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
     
     try {
-        // Promise.all запускає обидва запити одночасно! Це прискорює в 2 рази.
         const [data, similar] = await Promise.all([
             fetchMovieDetails(movie.id, apiType),
             fetchSimilar(movie.id, apiType)
         ]);
 
-        // 3. ОБРОБКА ОТРИМАНИХ ДАНИХ
+        // 3. ПІДГОТОВКА ДАНИХ
         let details = { ...movie }; 
         let logoUrl = null, castHtml = '', trailersHtml = '', similarHtml = '';
 
@@ -153,7 +157,7 @@ export async function openMoviePage(movie) {
         if (rt) details.runtime = rt > 60 ? `${Math.floor(rt/60)}${t.modalHour} ${rt%60}${t.modalMin}` : `${rt}${t.modalMin}`;
         details.age = data.adult ? '18+' : '16+';
 
-        // Логотип
+        // Шукаємо логотип
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || 
                          data.images.logos.find(l => l.iso_639_1 === 'en') || 
@@ -161,12 +165,10 @@ export async function openMoviePage(movie) {
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
-        // Актори
         if (data.credits?.cast) {
             castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${data.credits.cast.slice(0,10).filter(p=>p.profile_path).map(p=>`<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
         }
 
-        // Трейлери
         if (data.videos?.results) {
             const trailers = data.videos.results.filter(v => v.type === 'Trailer').slice(0,3);
             if(trailers.length > 0) {
@@ -174,19 +176,19 @@ export async function openMoviePage(movie) {
             }
         }
 
-        // Схожі
         if (similar && similar.length > 0) {
             similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
         }
 
-        // 4. ОСТАТОЧНЕ МАЛЮВАННЯ КОНТЕНТУ
+        // 4. ОНОВЛЕННЯ КОНТЕНТУ
+        // УВАГА: Ми спочатку рендеримо ТЕКСТ (навіть якщо є лого), щоб уникнути миготіння
         content.innerHTML = `
             <div class="nf-container">
                 <div class="nf-hero">
                     <div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div>
                     <div class="nf-gradient"></div>
                     <div class="nf-hero-content">
-                        ${logoUrl ? `<img src="${logoUrl}" class="nf-logo">` : `<div class="nf-title-text">${details.title}</div>`}
+                        <div class="nf-title-text" id="final_title_text">${details.title}</div>
                         <div class="nf-meta">
                             <span class="nf-match">98% ${t.match}</span>
                             <span>${details.year}</span>
@@ -220,7 +222,20 @@ export async function openMoviePage(movie) {
             </div>
         `;
 
-        // Відновлюємо функції для динамічних елементів
+        // 5. ПЛАВНА ЗАМІНА ЛОГОТИПУ (Magic Swap)
+        if (logoUrl) {
+            const img = new Image();
+            img.src = logoUrl;
+            img.onload = () => {
+                // Коли картинка ПОВНІСТЮ завантажилась, шукаємо текст і міняємо
+                const titleEl = document.getElementById('final_title_text');
+                if (titleEl) {
+                    titleEl.outerHTML = `<img src="${logoUrl}" class="nf-logo logo-anim">`;
+                }
+            };
+        }
+
+        // Відновлюємо функції
         window.ui_openSimilar = (id, type) => { const target = similar.find(m => m.id == id); if (target) openMoviePage(target); };
         window.ui_openTrailer = (key) => { const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'); document.getElementById('movie_details_modal').style.display = 'none'; f.src = `https://www.youtube.com/embed/${key}?autoplay=1`; p.style.display = 'flex'; };
         
@@ -234,7 +249,6 @@ export async function openMoviePage(movie) {
 
     } catch (e) { 
         console.error("Помилка завантаження деталей:", e);
-        // Якщо помилка, хоча б показуємо опис з кешу
         content.innerHTML = `<div style="padding:50px; text-align:center;">Помилка завантаження даних.<br>Спробуйте пізніше.</div>`;
     }
 }

@@ -298,3 +298,53 @@ export function renderHistorySection(items) {
     window.ui_openHistory = (id) => { const m = items.find(i => i.id == id); if(m) openMoviePage(m); };
     return section;
 }
+
+// ==========================================
+// 🎄 ЛОГІКА СВЯТКОВОЇ ІКОНКИ (Додано в кінець)
+// ==========================================
+
+// 1. Функція збереження (викликається з Адмінки)
+window.saveHolidayIcon = (filename) => {
+    if (!window.firebase) return;
+    // Зберігаємо в глобальні налаштування Firebase
+    firebase.database().ref('settings/holiday_icon').set(filename)
+        .then(() => {
+            window.Telegram?.WebApp?.showAlert('Іконку змінено!');
+        })
+        .catch(e => console.error(e));
+};
+
+// 2. Слухач змін (Запускаємо це при старті)
+export function initHolidayIconListener() {
+    if (!window.firebase) return;
+    
+    const iconEl = document.getElementById('holiday_icon');
+    const selectEl = document.getElementById('holiday_select');
+
+    // Слухаємо базу даних
+    firebase.database().ref('settings/holiday_icon').on('value', (snapshot) => {
+        const filename = snapshot.val();
+        
+        // Оновлюємо Хедер
+        if (filename && filename !== "") {
+            iconEl.src = `images/holidays/${filename}`;
+            iconEl.style.display = 'block';
+        } else {
+            iconEl.style.display = 'none';
+            iconEl.src = '';
+        }
+
+        // Якщо ми зараз в адмінці - оновлюємо селект
+        if (selectEl) {
+            selectEl.value = filename || "";
+        }
+    });
+}
+
+// Автоматичний запуск слухача, коли файл завантажився
+const checkFirebaseInterval = setInterval(() => {
+    if (window.firebase) {
+        clearInterval(checkFirebaseInterval);
+        initHolidayIconListener();
+    }
+}, 500);

@@ -4,32 +4,26 @@
     background: #000; z-index: 5000; 
     display: none; overflow-y: scroll; -webkit-overflow-scrolling: touch;
     
-    /* Анімація появи */
+    /* Анімація появи вікна */
     animation: slideUpModal 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
     will-change: transform; 
 }
 
-/* --- 🔥 НОВІ ФІКСИ (ПЕРЕНЕСЕНО З JS) --- */
-
-/* 1. Заборона горизонтального скролу (щоб сторінка не їздила вбік) */
+/* 1. Заборона горизонтального скролу */
 #movie_details_modal, .nf-container, .modal-fullscreen {
     overflow-x: hidden !important;
     max-width: 100vw !important;
     width: 100% !important;
 }
 
-/* 2. Плавна поява назви/логотипу */
+/* 2. Анімації для тексту та іконок */
 .title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }
 .title-visible { opacity: 1; }
-
-/* 3. Анімація для святкової іконки (ялинка/гарбуз) */
 .logo-anim { animation: popInIcon 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 @keyframes popInIcon {
     from { opacity: 0; transform: scale(0.5); }
     to { opacity: 1; transform: scale(1); }
 }
-
-/* ------------------------------------- */
 
 .nf-container { background-color: #000; min-height: 100%; padding-bottom: 100px; position: relative; }
 
@@ -41,30 +35,42 @@
 }
 .close-round-btn:active { transform: scale(0.9); }
 
-.nf-hero { position: relative; height: 65vh; width: 100%; }
+/* 🔥 ФІКС ЗУМУ: Контроль висоти блоку */
+.nf-hero { 
+    position: relative; 
+    width: 100%; 
+    height: 55vh; /* Стандартна висота */
+}
 
-/* 🔥 ФІКС ПОСТЕРА: Стабілізація фону */
+/* НА ТЕЛЕФОНАХ: Робимо блок нижчим (40% екрану замість 65%).
+   Це вирішує проблему, коли картинка надто сильно зумиться. */
+@media (max-width: 768px) {
+    .nf-hero { height: 40vh; } 
+}
+
+/* Стилі для фону (backdrop) */
 .nf-backdrop { 
     width: 100%; height: 100%; 
     background-size: cover; 
-    background-position: top center; /* Центрувати по ВЕРХУ */
+    background-position: top center; /* Центруємо по верху, щоб не різало голови */
     background-repeat: no-repeat;
     position: absolute; 
     top: 0; left: 0; z-index: 0;
     transition: opacity 0.5s ease;
 }
 
-.nf-gradient { position: absolute; bottom: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, #000 100%); }
+.nf-gradient { position: absolute; bottom: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0) 20%, #000 100%); }
 .nf-hero-content { position: absolute; bottom: 0; width: 100%; padding: 20px; box-sizing: border-box; text-align: center; }
 
-.nf-title-text { font-family: var(--font-title); font-size: 48px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; line-height: 0.95; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
-.nf-logo { width: 80%; max-width: 300px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
-.nf-meta { display: flex; gap: 12px; justify-content: center; align-items: center; font-size: 13px; color: #bcbcbc; margin-bottom: 25px; font-weight: 500; }
+.nf-title-text { font-family: var(--font-title); font-size: 32px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; line-height: 1.1; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+@media (max-width: 768px) { .nf-title-text { font-size: 28px; } }
+
+.nf-logo { width: 80%; max-width: 250px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
+.nf-meta { display: flex; gap: 12px; justify-content: center; align-items: center; font-size: 13px; color: #bcbcbc; margin-bottom: 20px; font-weight: 500; }
 .nf-match { color: var(--match-color); font-weight: 900; font-family: var(--font-main); }
 .nf-age { background: #333; padding: 1px 5px; border-radius: 2px; color: #fff; }
 .nf-badge { border: 1px solid #777; padding: 0 4px; border-radius: 2px; font-size: 10px; font-weight: bold; color: #fff; }
 
-/* Контейнер для кнопок */
 .nf-btn-row { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
 .nf-actions-group { display: flex; gap: 10px; width: 100%; }
 .nf-actions-group .nf-btn { flex: 1; } 
@@ -79,73 +85,46 @@
     animation: btn-shine 5s infinite linear; 
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); 
 }
-@keyframes btn-shine {
-    0% { background-position: 200% center; }
-    100% { background-position: -200% center; }
-}
+@keyframes btn-shine { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
 
 .nf-secondary { background: #2a2a2a; color: #ffffff; font-weight: 600; }
 .nf-secondary:active { background: #3a3a3a; }
-.nf-btn.error { background: #222 !important; color: #555 !important; cursor: not-allowed; border: 1px solid #333; animation: none !important; box-shadow: none !important; }
 .nf-description { padding: 20px; color: #ffffff; font-size: 14px; line-height: 1.5; font-weight: 400; opacity: 0.9; }
-
-.nf-tech-info { padding: 0 20px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.4; }
-.tech-item { color: #fff; font-weight: 400; }
-.tech-label { color: #808080; margin-right: 4px; }
 
 .nf-trailer { margin: 0 20px 20px; border-radius: 8px; overflow: hidden; position: relative; padding-bottom: 56.25%; background: #111; }
 .nf-trailer iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
 
-/* 🔥 CAST (АКТОРИ) */
 .cast-section { padding: 0 20px; margin-bottom: 25px; }
 .cast-title { color: #fff; font-size: 16px; font-weight: 700; margin-bottom: 12px; font-family: var(--font-main); }
 .cast-row { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
 .cast-row::-webkit-scrollbar { display: none; }
 .cast-card { flex: 0 0 90px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; }
-.cast-card:active { opacity: 0.7; }
 .cast-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; border: 2px solid #333; background: #222; }
 .cast-name { font-size: 11px; color: #fff; font-weight: 600; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.cast-role { font-size: 10px; color: #999; margin-top: 2px; }
 
-/* --- SIMILAR MOVIES --- */
 .similar-section { padding: 0 20px; margin-bottom: 30px; }
 .similar-title { color: #fff; font-size: 16px; font-weight: 700; margin-bottom: 12px; font-family: var(--font-main); }
 .similar-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
 .similar-row::-webkit-scrollbar { display: none; }
 .similar-card { flex: 0 0 100px; aspect-ratio: 2/3; background: #222; border-radius: 4px; overflow: hidden; position: relative; cursor: pointer; }
 .similar-card img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.2s; }
-.similar-card:active img { opacity: 0.7; }
 .similar-rating { position: absolute; top: 2px; right: 2px; background: rgba(229, 9, 20, 0.9); color: #fff; font-size: 10px; font-weight: bold; padding: 1px 3px; border-radius: 2px; }
 
-/* =========================================
-   PLAYER FIX
-   ========================================= */
 #player_modal {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; 
     background-color: #000; z-index: 99999;
     display: none; flex-direction: column; align-items: center; justify-content: center;
     animation: zoomInPlayer 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    padding-top: var(--safe-top); 
-    box-sizing: border-box;
+    padding-top: var(--safe-top); box-sizing: border-box;
 }
-
 #video_frame { width: 100%; height: 100%; border: none; background: #000; }
-
 .close-player-btn {
     position: absolute; top: calc(20px + var(--safe-top)); right: 20px; 
     color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
     background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    transition: transform 0.1s;
 }
-.close-player-btn:active { transform: scale(0.9); }
-
 @media (orientation: landscape) {
     #player_modal { padding: 0 !important; background-color: #000; }
-    #video_frame {
-        aspect-ratio: 16 / 9;
-        max-width: 100vw; max-height: 100vh;
-        width: auto !important; height: auto !important;
-        min-width: 0; min-height: 0; flex-grow: 0; 
-    }
+    #video_frame { aspect-ratio: 16 / 9; max-width: 100vw; max-height: 100vh; width: auto !important; height: auto !important; }
     .close-player-btn { top: 20px; right: 40px; background: rgba(0,0,0,0.5); }
 }

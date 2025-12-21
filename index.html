@@ -64,7 +64,11 @@
     </div>
 
     <header class="netflix-header" style="padding-top: var(--safe-top);">
-        <div class="logo">MEDIA HUB</div>
+        <div class="logo" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            MEDIA HUB 
+            <img id="holiday_icon" src="" style="display:none; height: 24px; width: auto; object-fit: contain;">
+        </div>
+        
         <div class="header-right" onclick="window.toggleSideMenu()" style="cursor: pointer; padding: 5px;">
             <img id="user_avatar" src="" alt="" class="user-avatar-rounded" style="display:none;">
             <div id="default_avatar" style="font-size: 24px; background: #222; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">👤</div>
@@ -132,11 +136,25 @@
                 <h2 style="color:white; margin:0;">Адмін-панель</h2>
                 <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">×</button>
             </div>
+            
             <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
                 <h3 style="color:white; font-size:14px; margin-top:0;">📣 Надіслати сповіщення</h3>
                 <input type="text" id="notif_input" placeholder="Текст сповіщення..." style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; margin-bottom:10px;">
                 <button onclick="window.sendBroadcastNotification()" style="width:100%; padding:10px; background:#e50914; color:white; border:none; border-radius:5px; font-weight:bold;">ВІДПРАВИТИ ВСІМ</button>
             </div>
+
+            <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
+                <h3 style="color:white; font-size:14px; margin-top:0;">🎄 Святкова іконка</h3>
+                <select id="holiday_select" onchange="window.saveHolidayIcon(this.value)" style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; font-size:16px;">
+                    <option value="">🚫 Без іконки</option>
+                    <option value="newyear.png">🎄 Новий Рік (newyear.png)</option>
+                    <option value="halloween.png">🎃 Хелловін (halloween.png)</option>
+                    <option value="ua.png">🇺🇦 Україна (ua.png)</option>
+                    <option value="heart.png">❤️ Сердечко (heart.png)</option>
+                </select>
+                <div style="margin-top:10px; color:#666; font-size:12px;">Файли мають бути в папці images/holidays/</div>
+            </div>
+
             <div id="admin_stats" style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; color:#aaa; font-size:13px;"></div>
             <button id="maint_toggle_btn" onclick="window.toggleMaintenanceMode()" style="width:100%; padding:12px; border-radius:5px; border:none; font-weight:bold; margin-bottom:20px; cursor:pointer;"></button>
             <h3 style="color:white; font-size:16px;">Користувачі:</h3>
@@ -164,6 +182,6 @@
         }
     </script>
 
-    <script type="module" src="js/app.js?v=275"></script>
+    <script type="module" src="js/app.js?v=280"></script>
 </body>
 </html>

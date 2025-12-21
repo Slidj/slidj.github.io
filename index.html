@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
-    <link rel="stylesheet" href="css/style.css?v=290">
+    <link rel="stylesheet" href="css/style.css?v=320">
     <link rel="stylesheet" href="css/intro.css">
 
     <style>
@@ -100,6 +100,10 @@
         </div>
         <div id="content_container" class="netflix-grid"></div>
         <div id="infinite_trigger" style="height: 60px; display: flex; justify-content: center; align-items: center; width: 100%;"><div class="netflix-loader" id="scroll_loader" style="display:none;"></div></div>
+    </div>
+
+    <div id="random_fab" class="random-fab" onclick="window.playRandomMovie()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
     </div>
 
     <nav class="bottom-nav">

@@ -8,26 +8,42 @@ import { playSound } from './sounds.js';
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
 
-// 🔥 ОНОВЛЕНА ЛОГІКА ОПЛАТИ (MONETIZATION)
+// 🔥 ОНОВЛЕНА ЛОГІКА ОПЛАТИ (TELEGRAM STARS)
 window.selectDonateLevel = (stars) => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy');
-    
-    // Зберігаємо суму для обробки після оплати
+    // Вібрація при натисканні
+    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+
+    // 👇 ТВОЇ ПОСИЛАННЯ
+    const links = {
+        5:  "https://t.me/$dg8POh3jOErKFgAAXydTAL3IV5g",
+        20: "https://t.me/$IGZ5qh3jOErLFgAAdaeivliYG7k",
+        50: "https://t.me/$8xXaLh3jOErMFgAA3wPWf_AsLvM"
+    };
+
+    const invoiceUrl = links[stars];
+
+    if (!invoiceUrl) {
+        console.error("Link not found for stars:", stars);
+        return;
+    }
+
+    // Запам'ятовуємо суму для нарахування бонусів після успіху
     sessionStorage.setItem('pending_donation', stars);
 
-    // 🔴 ТУТ МАЄ БУТИ ВАШЕ ПОСИЛАННЯ НА ОПЛАТУ ВІД БОТА
-    // Наприклад: const invoiceUrl = `https://t.me/$...`;
-    
-    // Поки що вмикаємо ТЕСТОВИЙ РЕЖИМ, щоб ви бачили, що база даних оновлюється
-    const isTestMode = true; 
-
-    if (isTestMode) {
-        if(confirm(`[ТЕСТ] Емуляція оплати ${stars} Stars. Зарахувати?`)) {
-            window.processSuccessfulDonation(stars);
-        }
+    // Відкриваємо нативне вікно оплати Telegram
+    if (window.Telegram?.WebApp?.openInvoice) {
+        window.Telegram.WebApp.openInvoice(invoiceUrl, (status) => {
+            if (status === 'paid') {
+                window.processSuccessfulDonation(stars);
+            } else if (status === 'failed') {
+                window.Telegram.WebApp.showAlert('Оплата не пройшла. Спробуйте ще раз.');
+            } else if (status === 'cancelled') {
+                console.log("Оплату скасовано");
+            }
+        });
     } else {
-        // Коли буде реальне посилання, розкоментуйте це:
-        // window.Telegram.WebApp.openInvoice(invoiceUrl);
+        // Для тестування у звичайному браузері (не в Telegram)
+        window.open(invoiceUrl, '_blank');
     }
 };
 
@@ -144,8 +160,6 @@ export async function openMoviePage(movie) {
 
     window.ui_openSimilar = (id, type) => { const target = similar.find(m => m.id == id); if (target) openMoviePage(target); };
     window.ui_openTrailer = (key) => { const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'); document.getElementById('movie_details_modal').style.display = 'none'; f.src = `https://www.youtube.com/embed/${key}?autoplay=1`; p.style.display = 'flex'; };
-    
-    // SHARE FUNCTION
     window.ui_share = (id) => { 
         let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
         if(!m) return; 

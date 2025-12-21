@@ -13,72 +13,13 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
     <link rel="stylesheet" href="css/style.css?v=255">
+    <link rel="stylesheet" href="css/intro.css">
 
     <style>
         /* Глобальний глибокий чорний фон */
         body, html {
             background-color: #000000 !important;
             height: 100%;
-        }
-
-        /* --- СТИЛІ ДЛЯ ЗАСТАВКИ (INTRO) --- */
-        #intro-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100dvh;
-            background-color: #000000;
-            z-index: 999999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 1;
-            transition: opacity 0.8s ease-out, visibility 0.8s;
-        }
-
-        /* Стиль тексту MEDIA-HUB */
-        .netflix-title-splash {
-            margin: 0;
-            padding: 0;
-            /* Використовуємо Arial Black для більш "квадратного", не розтягнутого вигляду */
-            font-family: 'Arial Black', 'Helvetica Neue', sans-serif;
-            font-weight: 900;
-            /* Зменшили розмір з 15vw до 10vw */
-            font-size: 10vw; 
-            color: #E50914; /* Netflix Red */
-            text-transform: uppercase;
-            letter-spacing: 0px; /* Прибрали зайві відступи між літерами */
-            text-align: center;
-            line-height: 1.2;
-            max-width: 90%; /* Обмеження ширини */
-            
-            /* Легка тінь */
-            text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
-            
-            /* Анімація */
-            animation: gentlePulse 2.5s ease-in-out infinite;
-            transform: scale(1);
-            opacity: 0.95;
-        }
-
-        /* Анімація м'якої пульсації */
-        @keyframes gentlePulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.95;
-                text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
-            }
-            50% {
-                transform: scale(1.05);
-                opacity: 1;
-                text-shadow: 0 0 25px rgba(229, 9, 20, 0.4);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 0.95;
-                text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
-            }
         }
 
         /* Стиль хедеру під Netflix */
@@ -94,10 +35,7 @@
     </style>
 </head>
 <body>
-
-    <div id="intro-loader">
-        <h1 class="netflix-title-splash">MEDIA-HUB</h1>
-    </div>
+    <script src="js/intro.js"></script>
 
     <div id="notification_bar">
         <span style="font-size:20px;">🔔</span>
@@ -210,7 +148,7 @@
     <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="window.closeMoviePage()">×</button><div id="movie_details_content"></div></div>
 
     <script>
-        // 1. Логіка мови: Якщо не UA -> перемикаємо на EN
+        // Логіка мови: Якщо не UA -> перемикаємо на EN
         try {
             const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
             if (tgUser && tgUser.language_code) {
@@ -224,19 +162,6 @@
         } catch (e) {
             console.log('Lang check skipped');
         }
-
-        // 2. Логіка зникнення заставки
-        window.addEventListener('load', () => {
-            const preloader = document.getElementById('intro-loader');
-            
-            setTimeout(() => {
-                preloader.style.opacity = '0';
-                setTimeout(() => {
-                    preloader.style.display = 'none';
-                    preloader.style.visibility = 'hidden';
-                }, 800);
-            }, 3500);
-        });
     </script>
 
     <script type="module" src="js/app.js?v=250"></script>

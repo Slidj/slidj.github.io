@@ -3,8 +3,6 @@
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #000; z-index: 5000; 
     display: none; overflow-y: scroll; -webkit-overflow-scrolling: touch;
-    
-    /* Анімація появи вікна */
     animation: slideUpModal 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
     will-change: transform; 
 }
@@ -16,7 +14,7 @@
     width: 100% !important;
 }
 
-/* 2. Анімації для тексту та іконок */
+/* 2. Анімації */
 .title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }
 .title-visible { opacity: 1; }
 .logo-anim { animation: popInIcon 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -35,24 +33,18 @@
 }
 .close-round-btn:active { transform: scale(0.9); }
 
-/* 🔥 ФІКС ЗУМУ: Контроль висоти блоку */
+/* 🔥 ФІКС: ПОВЕРНУЛИ 65% ВИСОТИ */
 .nf-hero { 
     position: relative; 
     width: 100%; 
-    height: 55vh; /* Стандартна висота */
-}
-
-/* НА ТЕЛЕФОНАХ: Робимо блок нижчим (40% екрану замість 65%).
-   Це вирішує проблему, коли картинка надто сильно зумиться. */
-@media (max-width: 768px) {
-    .nf-hero { height: 40vh; } 
+    height: 65vh; /* Високий блок, як просили */
 }
 
 /* Стилі для фону (backdrop) */
 .nf-backdrop { 
     width: 100%; height: 100%; 
-    background-size: cover; 
-    background-position: top center; /* Центруємо по верху, щоб не різало голови */
+    background-size: cover; /* Заповнює весь блок */
+    background-position: top center; /* Центруємо по верху, щоб було видно обличчя */
     background-repeat: no-repeat;
     position: absolute; 
     top: 0; left: 0; z-index: 0;
@@ -62,10 +54,10 @@
 .nf-gradient { position: absolute; bottom: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0) 20%, #000 100%); }
 .nf-hero-content { position: absolute; bottom: 0; width: 100%; padding: 20px; box-sizing: border-box; text-align: center; }
 
-.nf-title-text { font-family: var(--font-title); font-size: 32px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; line-height: 1.1; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+.nf-title-text { font-family: var(--font-title); font-size: 36px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; line-height: 1.1; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
 @media (max-width: 768px) { .nf-title-text { font-size: 28px; } }
 
-.nf-logo { width: 80%; max-width: 250px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
+.nf-logo { width: 80%; max-width: 280px; margin-bottom: 20px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
 .nf-meta { display: flex; gap: 12px; justify-content: center; align-items: center; font-size: 13px; color: #bcbcbc; margin-bottom: 20px; font-weight: 500; }
 .nf-match { color: var(--match-color); font-weight: 900; font-family: var(--font-main); }
 .nf-age { background: #333; padding: 1px 5px; border-radius: 2px; color: #fff; }

@@ -57,13 +57,18 @@
 }
 .top10-badge span { display: block; font-size: 8px; opacity: 0.9; margin-bottom: 2px; }
 
-/* 🔥 НОВА КНОПКА PLAY SOMETHING (Floating Action Button) */
+/* 🔥 ОНОВЛЕНА КНОПКА PLAY SOMETHING (МЕНША І НИЖЧА) */
 .random-fab {
     position: fixed;
-    bottom: calc(75px + var(--safe-top)); /* Трохи вище меню навігації */
+    /* Опустили нижче: було 75px, стало 68px. Це ближче до меню навігації */
+    bottom: calc(68px + var(--safe-top)); 
     right: 20px;
-    width: 56px; height: 56px;
-    background: white; /* Контрастний білий */
+    
+    /* Зменшили розмір: було 56px, стало 48px */
+    width: 48px; 
+    height: 48px;
+    
+    background: white; 
     color: black;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -73,4 +78,6 @@
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .random-fab:active { transform: scale(0.9); }
-.random-fab svg { width: 28px; height: 28px; stroke: #e50914; }
+
+/* Зменшили іконку всередині */
+.random-fab svg { width: 24px; height: 24px; stroke: #e50914; }

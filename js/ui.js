@@ -5,7 +5,7 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
-// Додаємо стиль для плавного фейду
+// Стиль для плавної появи логотипу
 const style = document.createElement('style');
 style.innerHTML = `
     .title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }
@@ -101,7 +101,7 @@ export async function setupHero(movie) {
     }
 }
 
-// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ (Без стрибків логотипу)
+// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ (Центрований лоадер + Плавне лого)
 export async function openMoviePage(movie) {
     playSound('Pop.wav');
     state.activeMovie = movie; 
@@ -119,18 +119,18 @@ export async function openMoviePage(movie) {
         initialBackdrop = initialBackdrop.replace('/w500/', '/w1280/'); 
     }
 
-    // УВАГА: id="dynamic_title_area" спочатку пустий!
+    // 👇 ТУТ Я ВИПРАВИВ ЦЕНТРУВАННЯ (display: flex; justify-content: center;)
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
                 <div class="nf-backdrop" style="background-image: url('${initialBackdrop}');"></div>
                 <div class="nf-gradient"></div>
                 <div class="nf-hero-content">
-                    <div id="dynamic_title_area" class="title-fade-in"></div>
+                    <div id="dynamic_title_area" class="title-fade-in" style="min-height: 50px;"></div>
                     <div class="nf-meta"><span>Завантаження...</span></div>
                 </div>
             </div>
-            <div style="padding: 40px; text-align: center; color: #666;">
+            <div style="padding: 40px; display: flex; justify-content: center; align-items: center; color: #666;">
                 <div class="netflix-loader"></div>
             </div>
         </div>
@@ -226,20 +226,16 @@ export async function openMoviePage(movie) {
         const titleArea = document.getElementById('dynamic_title_area');
         if (titleArea) {
             if (logoUrl) {
-                // Якщо є лого - вантажимо його
                 const img = new Image();
                 img.src = logoUrl;
                 img.className = "nf-logo";
                 img.onload = () => {
                     titleArea.innerHTML = ''; 
                     titleArea.appendChild(img);
-                    // Плавно показуємо
                     requestAnimationFrame(() => titleArea.classList.add('title-visible'));
                 };
             } else {
-                // Якщо лого немає - показуємо текст
                 titleArea.innerHTML = `<div class="nf-title-text">${details.title}</div>`;
-                // Плавно показуємо
                 requestAnimationFrame(() => titleArea.classList.add('title-visible'));
             }
         }

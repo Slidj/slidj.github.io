@@ -5,20 +5,7 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
-// 👇 ДОДАВ ЗАХИСТ ВІД ГОРИЗОНТАЛЬНОГО СКРОЛУ В CSS
-const style = document.createElement('style');
-style.innerHTML = `
-    .title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }
-    .title-visible { opacity: 1; }
-    
-    /* Фікс для телефону: заборона скролу вбік */
-    #movie_details_modal, .nf-container, .modal-fullscreen {
-        overflow-x: hidden !important;
-        max-width: 100vw !important;
-        width: 100% !important;
-    }
-`;
-document.head.appendChild(style);
+// ⚠️ CSS БЛОК ВИДАЛЕНО (ПЕРЕНЕСЕНО В MODALS.CSS)
 
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
@@ -300,48 +287,40 @@ export function renderHistorySection(items) {
 }
 
 // ==========================================
-// 🎄 ЛОГІКА СВЯТКОВОЇ ІКОНКИ (Додано в кінець)
+// 🎄 ЛОГІКА СВЯТКОВОЇ ІКОНКИ
 // ==========================================
 
-// 1. Функція збереження (викликається з Адмінки)
 window.saveHolidayIcon = (filename) => {
     if (!window.firebase) return;
-    // Зберігаємо в глобальні налаштування Firebase
     firebase.database().ref('settings/holiday_icon').set(filename)
-        .then(() => {
-            window.Telegram?.WebApp?.showAlert('Іконку змінено!');
-        })
+        .then(() => { window.Telegram?.WebApp?.showAlert('Іконку змінено!'); })
         .catch(e => console.error(e));
 };
 
-// 2. Слухач змін (Запускаємо це при старті)
 export function initHolidayIconListener() {
     if (!window.firebase) return;
     
     const iconEl = document.getElementById('holiday_icon');
     const selectEl = document.getElementById('holiday_select');
 
-    // Слухаємо базу даних
     firebase.database().ref('settings/holiday_icon').on('value', (snapshot) => {
         const filename = snapshot.val();
         
-        // Оновлюємо Хедер
         if (filename && filename !== "") {
             iconEl.src = `images/holidays/${filename}`;
             iconEl.style.display = 'block';
+            // Додаємо клас анімації, щоб іконка красиво "вистрибувала"
+            iconEl.classList.add('logo-anim');
         } else {
             iconEl.style.display = 'none';
             iconEl.src = '';
+            iconEl.classList.remove('logo-anim');
         }
 
-        // Якщо ми зараз в адмінці - оновлюємо селект
-        if (selectEl) {
-            selectEl.value = filename || "";
-        }
+        if (selectEl) selectEl.value = filename || "";
     });
 }
 
-// Автоматичний запуск слухача, коли файл завантажився
 const checkFirebaseInterval = setInterval(() => {
     if (window.firebase) {
         clearInterval(checkFirebaseInterval);

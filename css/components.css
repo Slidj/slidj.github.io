@@ -45,30 +45,32 @@
 #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
 .netflix-loader { width: 50px; height: 50px; border: 4px solid #E50914; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; }
 
-/* 🔥 НОВЕ: Бейдж TOP 10 (ЗНИЗУ ПРАВОРУЧ) */
+/* Бейдж TOP 10 (ЗНИЗУ ПРАВОРУЧ) */
 .top10-badge {
     position: absolute;
-    bottom: 6px;    /* Відступ знизу */
-    right: 6px;     /* Відступ справа */
-    
-    background: #e50914; /* Червоний Netflix */
-    color: white;
-    font-weight: 900;
-    font-size: 11px;
-    padding: 4px 6px;
-    
-    border-radius: 4px; /* Акуратний прямокутник */
-    z-index: 5;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.8); /* Тінь для контрасту */
-    
-    font-family: var(--font-title);
-    text-align: center;
-    line-height: 1;
+    bottom: 6px; right: 6px;
+    background: #e50914; color: white;
+    font-weight: 900; font-size: 11px; padding: 4px 6px;
+    border-radius: 4px; z-index: 5;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+    font-family: var(--font-title); text-align: center; line-height: 1;
 }
+.top10-badge span { display: block; font-size: 8px; opacity: 0.9; margin-bottom: 2px; }
 
-.top10-badge span {
-    display: block;
-    font-size: 8px;
-    opacity: 0.9;
-    margin-bottom: 2px;
+/* 🔥 НОВА КНОПКА PLAY SOMETHING (Floating Action Button) */
+.random-fab {
+    position: fixed;
+    bottom: calc(75px + var(--safe-top)); /* Трохи вище меню навігації */
+    right: 20px;
+    width: 56px; height: 56px;
+    background: white; /* Контрастний білий */
+    color: black;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    z-index: 900;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+.random-fab:active { transform: scale(0.9); }
+.random-fab svg { width: 28px; height: 28px; stroke: #e50914; }

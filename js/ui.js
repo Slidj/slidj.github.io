@@ -5,11 +5,11 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
-// Додаємо стиль анімації для плавного логотипу (вставляємо динамічно)
+// Додаємо стиль для плавного фейду
 const style = document.createElement('style');
 style.innerHTML = `
-    @keyframes fadeLogoIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    .logo-anim { animation: fadeLogoIn 0.5s ease-out forwards; }
+    .title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }
+    .title-visible { opacity: 1; }
 `;
 document.head.appendChild(style);
 
@@ -113,19 +113,20 @@ export async function openMoviePage(movie) {
 
     content.classList.remove('modal-closing-anim');
     
-    // 1. МИТТЄВИЙ ПОКАЗ (Текст + Картинка з кешу)
+    // 1. МИТТЄВИЙ ПОКАЗ (Тільки фон, без назви)
     let initialBackdrop = movie.backdrop || movie.img;
     if(initialBackdrop && initialBackdrop.includes('/w500/')) {
         initialBackdrop = initialBackdrop.replace('/w500/', '/w1280/'); 
     }
 
+    // УВАГА: id="dynamic_title_area" спочатку пустий!
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
                 <div class="nf-backdrop" style="background-image: url('${initialBackdrop}');"></div>
                 <div class="nf-gradient"></div>
                 <div class="nf-hero-content">
-                    <div class="nf-title-text" id="temp_title_text">${movie.title}</div>
+                    <div id="dynamic_title_area" class="title-fade-in"></div>
                     <div class="nf-meta"><span>Завантаження...</span></div>
                 </div>
             </div>
@@ -136,7 +137,7 @@ export async function openMoviePage(movie) {
     `;
     modal.style.display = 'block';
 
-    // 2. ПАРАЛЕЛЬНЕ ЗАВАНТАЖЕННЯ ДАНИХ
+    // 2. ЗАВАНТАЖЕННЯ ДАНИХ
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
     
     try {
@@ -157,7 +158,7 @@ export async function openMoviePage(movie) {
         if (rt) details.runtime = rt > 60 ? `${Math.floor(rt/60)}${t.modalHour} ${rt%60}${t.modalMin}` : `${rt}${t.modalMin}`;
         details.age = data.adult ? '18+' : '16+';
 
-        // Шукаємо логотип
+        // Логотип
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || 
                          data.images.logos.find(l => l.iso_639_1 === 'en') || 
@@ -165,30 +166,29 @@ export async function openMoviePage(movie) {
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
+        // Актори, Трейлери, Схожі...
         if (data.credits?.cast) {
             castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${data.credits.cast.slice(0,10).filter(p=>p.profile_path).map(p=>`<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
         }
-
         if (data.videos?.results) {
             const trailers = data.videos.results.filter(v => v.type === 'Trailer').slice(0,3);
             if(trailers.length > 0) {
                 trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${trailers.map(v => `<div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')"><div class="trailer-img-box"><img src="https://img.youtube.com/vi/${v.key}/mqdefault.jpg" loading="lazy"><div class="trailer-play-icon">▶</div></div></div>`).join('')}</div></div>`;
             }
         }
-
         if (similar && similar.length > 0) {
             similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
         }
 
         // 4. ОНОВЛЕННЯ КОНТЕНТУ
-        // УВАГА: Ми спочатку рендеримо ТЕКСТ (навіть якщо є лого), щоб уникнути миготіння
         content.innerHTML = `
             <div class="nf-container">
                 <div class="nf-hero">
                     <div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div>
                     <div class="nf-gradient"></div>
                     <div class="nf-hero-content">
-                        <div class="nf-title-text" id="final_title_text">${details.title}</div>
+                        <div id="dynamic_title_area" class="title-fade-in" style="min-height: 50px;"></div>
+                        
                         <div class="nf-meta">
                             <span class="nf-match">98% ${t.match}</span>
                             <span>${details.year}</span>
@@ -222,23 +222,31 @@ export async function openMoviePage(movie) {
             </div>
         `;
 
-        // 5. ПЛАВНА ЗАМІНА ЛОГОТИПУ (Magic Swap)
-        if (logoUrl) {
-            const img = new Image();
-            img.src = logoUrl;
-            img.onload = () => {
-                // Коли картинка ПОВНІСТЮ завантажилась, шукаємо текст і міняємо
-                const titleEl = document.getElementById('final_title_text');
-                if (titleEl) {
-                    titleEl.outerHTML = `<img src="${logoUrl}" class="nf-logo logo-anim">`;
-                }
-            };
+        // 5. ЛОГІКА ПОЯВИ НАЗВИ
+        const titleArea = document.getElementById('dynamic_title_area');
+        if (titleArea) {
+            if (logoUrl) {
+                // Якщо є лого - вантажимо його
+                const img = new Image();
+                img.src = logoUrl;
+                img.className = "nf-logo";
+                img.onload = () => {
+                    titleArea.innerHTML = ''; 
+                    titleArea.appendChild(img);
+                    // Плавно показуємо
+                    requestAnimationFrame(() => titleArea.classList.add('title-visible'));
+                };
+            } else {
+                // Якщо лого немає - показуємо текст
+                titleArea.innerHTML = `<div class="nf-title-text">${details.title}</div>`;
+                // Плавно показуємо
+                requestAnimationFrame(() => titleArea.classList.add('title-visible'));
+            }
         }
 
-        // Відновлюємо функції
+        // Відновлення функцій
         window.ui_openSimilar = (id, type) => { const target = similar.find(m => m.id == id); if (target) openMoviePage(target); };
         window.ui_openTrailer = (key) => { const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'); document.getElementById('movie_details_modal').style.display = 'none'; f.src = `https://www.youtube.com/embed/${key}?autoplay=1`; p.style.display = 'flex'; };
-        
         window.ui_share = (id) => { 
             let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
             if(!m) return; 

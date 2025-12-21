@@ -61,13 +61,31 @@ export function showSkeletons(count = 12, isAppend = false) {
 }
 export function removeSkeletons() { document.querySelectorAll('.temp-skeleton').forEach(el => el.remove()); }
 
+// 🔥 ОНОВЛЕНА ФУНКЦІЯ: ТЕПЕР З TOP 10
 export function renderGrid(items, isAppend = false) {
-    const c = document.getElementById('content_container'); if (!c) return; if (!isAppend) c.innerHTML = '';
+    const c = document.getElementById('content_container'); 
+    if (!c) return; 
+    if (!isAppend) c.innerHTML = '';
+    
     items.forEach((item, index) => {
-        const d = document.createElement('div'); d.className = 'movie-poster-card card-anim'; 
+        const d = document.createElement('div'); 
+        d.className = 'movie-poster-card card-anim'; 
         d.onclick = () => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); openMoviePage(item); };
-        const b = item.type === 'tv' ? `<div class="type-badge">${t.serialBadge}</div>` : '';
-        d.innerHTML = `<img src="${item.img}" loading="lazy">${b}<div class="rating-mini">${item.rating}</div>`;
+        
+        let badgeHtml = '';
+        
+        // 1. Якщо це серіал - додаємо жовтий бейдж
+        if (item.type === 'tv') {
+            badgeHtml += `<div class="type-badge">${t.serialBadge}</div>`;
+        }
+        
+        // 2. 🔥 ЛОГІКА TOP 10
+        // Показуємо тільки на головній (home), для перших 10 елементів (index < 10) і не при довантаженні сторінки
+        if (state.currentTab === 'home' && index < 10 && !isAppend) {
+             badgeHtml += `<div class="top10-badge"><span>TOP</span>${index + 1}</div>`;
+        }
+
+        d.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
         c.appendChild(d);
     });
 }
@@ -93,7 +111,7 @@ export async function setupHero(movie) {
     }
 }
 
-// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ
+// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ ВІДКРИТТЯ
 export async function openMoviePage(movie) {
     playSound('Pop.wav');
     state.activeMovie = movie; 

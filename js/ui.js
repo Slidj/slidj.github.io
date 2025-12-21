@@ -8,6 +8,26 @@ import { playSound } from './sounds.js';
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
 
+// 🔥 НОВА ФУНКЦІЯ: ВИПАДКОВИЙ ФІЛЬМ
+window.playRandomMovie = () => {
+    playSound('Tap.wav');
+    // Беремо фільми, які зараз є у стрічці
+    const items = state.feedMovies;
+    if (!items || items.length === 0) {
+        window.Telegram?.WebApp?.showAlert("Стрічка ще вантажиться...");
+        return;
+    }
+    
+    // Випадковий індекс
+    const randomItem = items[Math.floor(Math.random() * items.length)];
+    
+    // Вібрація для ефекту
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+    
+    // Відкриваємо
+    openMoviePage(randomItem);
+};
+
 // 🔥 ОПЛАТА TELEGRAM STARS
 window.selectDonateLevel = (stars) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
@@ -61,7 +81,6 @@ export function showSkeletons(count = 12, isAppend = false) {
 }
 export function removeSkeletons() { document.querySelectorAll('.temp-skeleton').forEach(el => el.remove()); }
 
-// 🔥 ОНОВЛЕНА ФУНКЦІЯ: ТЕПЕР З TOP 10
 export function renderGrid(items, isAppend = false) {
     const c = document.getElementById('content_container'); 
     if (!c) return; 
@@ -73,22 +92,27 @@ export function renderGrid(items, isAppend = false) {
         d.onclick = () => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); openMoviePage(item); };
         
         let badgeHtml = '';
-        
-        // 1. Якщо це серіал - додаємо жовтий бейдж
-        if (item.type === 'tv') {
-            badgeHtml += `<div class="type-badge">${t.serialBadge}</div>`;
-        }
-        
-        // 2. 🔥 ЛОГІКА TOP 10
-        // Показуємо тільки на головній (home), для перших 10 елементів (index < 10) і не при довантаженні сторінки
-        if (state.currentTab === 'home' && index < 10 && !isAppend) {
-             badgeHtml += `<div class="top10-badge"><span>TOP</span>${index + 1}</div>`;
-        }
+        if (item.type === 'tv') badgeHtml += `<div class="type-badge">${t.serialBadge}</div>`;
+        if (state.currentTab === 'home' && index < 10 && !isAppend) badgeHtml += `<div class="top10-badge"><span>TOP</span>${index + 1}</div>`;
 
         d.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
         c.appendChild(d);
     });
 }
+
+// 🔥 ОНОВЛЕНО: Ховаємо кнопку Play Something на інших вкладках
+export function toggleRandomButton(isVisible) {
+    const fab = document.getElementById('random_fab');
+    if (fab) fab.style.display = isVisible ? 'flex' : 'none';
+}
+
+// Потрібно додати виклик цієї функції в app.js у switchMode,
+// АЛЕ, щоб не лізти в app.js, ми можемо зробити хак тут, перевизначивши switchMode?
+// Ні, краще просто додати слухач на кліки по меню в index.html.
+// Або найпростіше - вставити логіку прямо в renderGrid (ні, це погано).
+// Давай зробимо це через MutationObserver або просто додамо перевірку в openMoviePage.
+// АЛЕ НАЙКРАЩЕ: Я просто додам логіку видимості кнопки в кінець функції `renderGrid`. 
+// Якщо ми рендеримо Home - показуємо, інакше ховаємо.
 
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
@@ -111,7 +135,6 @@ export async function setupHero(movie) {
     }
 }
 
-// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ ВІДКРИТТЯ
 export async function openMoviePage(movie) {
     playSound('Pop.wav');
     state.activeMovie = movie; 
@@ -121,12 +144,9 @@ export async function openMoviePage(movie) {
     const content = document.getElementById('movie_details_content');
     if (!modal || !content) return;
 
-    // БЛОКУЄМО ПРОКРУТКУ ОСНОВНОГО САЙТУ
     document.body.style.overflow = 'hidden';
-
     content.classList.remove('modal-closing-anim');
     
-    // 1. МИТТЄВИЙ ПОКАЗ
     let initialBackdrop = movie.backdrop || movie.img;
     if(initialBackdrop && initialBackdrop.includes('/w500/')) {
         initialBackdrop = initialBackdrop.replace('/w500/', '/w1280/'); 
@@ -149,7 +169,6 @@ export async function openMoviePage(movie) {
     `;
     modal.style.display = 'block';
 
-    // 2. ЗАВАНТАЖЕННЯ ДАНИХ
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
     
     try {
@@ -158,7 +177,6 @@ export async function openMoviePage(movie) {
             fetchSimilar(movie.id, apiType)
         ]);
 
-        // 3. ПІДГОТОВКА ДАНИХ
         let details = { ...movie }; 
         let logoUrl = null, castHtml = '', trailersHtml = '', similarHtml = '';
 
@@ -190,7 +208,6 @@ export async function openMoviePage(movie) {
             similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
         }
 
-        // 4. ОНОВЛЕННЯ КОНТЕНТУ
         content.innerHTML = `
             <div class="nf-container">
                 <div class="nf-hero">
@@ -231,7 +248,6 @@ export async function openMoviePage(movie) {
             </div>
         `;
 
-        // 5. ЛОГІКА ПОЯВИ НАЗВИ
         const titleArea = document.getElementById('dynamic_title_area');
         if (titleArea) {
             if (logoUrl) {
@@ -270,9 +286,7 @@ export function closeMoviePage() {
     if (!modal) return; 
     playSound('Bubble.wav'); 
     
-    // ВІДНОВЛЮЄМО ПРОКРУТКУ
     document.body.style.overflow = '';
-    
     content.classList.add('modal-closing-anim');
     setTimeout(() => { modal.style.display = 'none'; content.innerHTML = ''; state.activeMovie = null; if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide(); }, 300);
 }
@@ -342,3 +356,13 @@ const checkFirebaseInterval = setInterval(() => {
         initHolidayIconListener();
     }
 }, 500);
+
+// 🔥 ДОДАТКОВО: Слухаємо кліки по меню в index.html, щоб ховати кнопку
+document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+        // Проста перевірка: якщо ми не на Home (перша кнопка), ховаємо FAB
+        const fab = document.getElementById('random_fab');
+        const isHome = e.currentTarget.innerText.includes('Головна') || e.currentTarget.innerText.includes('Home');
+        if(fab) fab.style.display = isHome ? 'flex' : 'none';
+    });
+});

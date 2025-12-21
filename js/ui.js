@@ -5,11 +5,18 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
-// Стиль для плавної появи логотипу
+// 👇 ДОДАВ ЗАХИСТ ВІД ГОРИЗОНТАЛЬНОГО СКРОЛУ В CSS
 const style = document.createElement('style');
 style.innerHTML = `
     .title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }
     .title-visible { opacity: 1; }
+    
+    /* Фікс для телефону: заборона скролу вбік */
+    #movie_details_modal, .nf-container, .modal-fullscreen {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+        width: 100% !important;
+    }
 `;
 document.head.appendChild(style);
 
@@ -101,7 +108,7 @@ export async function setupHero(movie) {
     }
 }
 
-// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ (Центрований лоадер + Плавне лого)
+// 🚀 ОПТИМІЗОВАНА ФУНКЦІЯ
 export async function openMoviePage(movie) {
     playSound('Pop.wav');
     state.activeMovie = movie; 
@@ -111,15 +118,17 @@ export async function openMoviePage(movie) {
     const content = document.getElementById('movie_details_content');
     if (!modal || !content) return;
 
+    // БЛОКУЄМО ПРОКРУТКУ ОСНОВНОГО САЙТУ
+    document.body.style.overflow = 'hidden';
+
     content.classList.remove('modal-closing-anim');
     
-    // 1. МИТТЄВИЙ ПОКАЗ (Тільки фон, без назви)
+    // 1. МИТТЄВИЙ ПОКАЗ
     let initialBackdrop = movie.backdrop || movie.img;
     if(initialBackdrop && initialBackdrop.includes('/w500/')) {
         initialBackdrop = initialBackdrop.replace('/w500/', '/w1280/'); 
     }
 
-    // 👇 ТУТ Я ВИПРАВИВ ЦЕНТРУВАННЯ (display: flex; justify-content: center;)
     content.innerHTML = `
         <div class="nf-container">
             <div class="nf-hero">
@@ -158,7 +167,6 @@ export async function openMoviePage(movie) {
         if (rt) details.runtime = rt > 60 ? `${Math.floor(rt/60)}${t.modalHour} ${rt%60}${t.modalMin}` : `${rt}${t.modalMin}`;
         details.age = data.adult ? '18+' : '16+';
 
-        // Логотип
         if (data.images?.logos?.length > 0) {
             const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || 
                          data.images.logos.find(l => l.iso_639_1 === 'en') || 
@@ -166,7 +174,6 @@ export async function openMoviePage(movie) {
             logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         }
 
-        // Актори, Трейлери, Схожі...
         if (data.credits?.cast) {
             castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${data.credits.cast.slice(0,10).filter(p=>p.profile_path).map(p=>`<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
         }
@@ -188,7 +195,6 @@ export async function openMoviePage(movie) {
                     <div class="nf-gradient"></div>
                     <div class="nf-hero-content">
                         <div id="dynamic_title_area" class="title-fade-in" style="min-height: 50px;"></div>
-                        
                         <div class="nf-meta">
                             <span class="nf-match">98% ${t.match}</span>
                             <span>${details.year}</span>
@@ -240,7 +246,6 @@ export async function openMoviePage(movie) {
             }
         }
 
-        // Відновлення функцій
         window.ui_openSimilar = (id, type) => { const target = similar.find(m => m.id == id); if (target) openMoviePage(target); };
         window.ui_openTrailer = (key) => { const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'); document.getElementById('movie_details_modal').style.display = 'none'; f.src = `https://www.youtube.com/embed/${key}?autoplay=1`; p.style.display = 'flex'; };
         window.ui_share = (id) => { 
@@ -259,8 +264,14 @@ export async function openMoviePage(movie) {
 
 export function closeMoviePage() {
     const modal = document.getElementById('movie_details_modal'), content = document.getElementById('movie_details_content');
-    if (!modal) return; playSound('Bubble.wav'); content.classList.add('modal-closing-anim');
-    setTimeout(() => { modal.style.display = 'none'; content.innerHTML = ''; document.body.style.overflow = ''; state.activeMovie = null; if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide(); }, 300);
+    if (!modal) return; 
+    playSound('Bubble.wav'); 
+    
+    // ВІДНОВЛЮЄМО ПРОКРУТКУ
+    document.body.style.overflow = '';
+    
+    content.classList.add('modal-closing-anim');
+    setTimeout(() => { modal.style.display = 'none'; content.innerHTML = ''; state.activeMovie = null; if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide(); }, 300);
 }
 
 export function openPremiumPlayer(tmdbId, btn) {

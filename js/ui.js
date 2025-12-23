@@ -197,8 +197,7 @@ export async function openMoviePage(movie) {
             similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
         }
 
-        // 🔥 РОЗРАХУНОК РЕЙТИНГУ (з TMDB)
-        // Якщо рейтинг 7.8, то покажемо 78%. Якщо рейтингу немає, покажемо 'New' або приховаємо.
+        // Розрахунок рейтингу
         let matchPercent = ''; 
         if (details.rating && details.rating !== 'N/A') {
             const numericRating = parseFloat(details.rating);
@@ -206,8 +205,6 @@ export async function openMoviePage(movie) {
                 matchPercent = Math.round(numericRating * 10) + '%';
             }
         }
-        // Якщо рейтинг 0 або N/A, можна написати 'NEW' або просто '95%' як заглушку. 
-        // Але ти просив реальний збіг, тому якщо рейтингу немає - просто не показуємо відсотки.
         const matchLabel = matchPercent ? `<span class="nf-match">${matchPercent} ${t.match}</span>` : '';
 
         content.innerHTML = `
@@ -293,20 +290,54 @@ export function closeMoviePage() {
     setTimeout(() => { modal.style.display = 'none'; content.innerHTML = ''; state.activeMovie = null; if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide(); }, 300);
 }
 
+// 🔥 ОНОВЛЕНО: ЛОГІКА ПОВНОГО ЕКРАНУ
 export function openPremiumPlayer(tmdbId, btn) {
     playSound('Click.wav');
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.currentHeroMovie;
     if (!movie) return;
+    
+    // Формуємо посилання
     let url = PLAYER_BASE_URL.replace(/\/$/, '') + `?tmdb_id=${movie.id}&title=${encodeURIComponent(movie.original_title || movie.title)}`;
     if (movie.imdb_id) url += `&imdb_id=${movie.imdb_id}`;
-    const p = document.getElementById('player_modal'), f = document.getElementById('video_frame');
-    document.getElementById('movie_details_modal').style.display = 'none';
-    f.src = url; p.style.display = 'flex';
+    
+    const p = document.getElementById('player_modal');
+    const f = document.getElementById('video_frame');
+    
+    // Ховаємо деталі фільму, щоб вони не перекривали плеєр
+    const details = document.getElementById('movie_details_modal');
+    if(details) details.style.display = 'none';
+    
+    // 🔥 1. Змушуємо Telegram розгорнутися на весь екран (якщо це підтримується)
+    if (window.Telegram?.WebApp?.requestFullscreen) {
+        window.Telegram.WebApp.requestFullscreen();
+    }
+    
+    // 🔥 2. Блокуємо орієнтацію та ховаємо хедер (якщо можливо)
+    if (window.Telegram?.WebApp?.expand) {
+        window.Telegram.WebApp.expand();
+    }
+
+    f.src = url; 
+    p.style.display = 'flex';
 }
 
 export function closePlayer() {
-    document.getElementById('player_modal').style.display = 'none'; document.getElementById('video_frame').src = '';
-    if(state.activeMovie) document.getElementById('movie_details_modal').style.display = 'block';
+    const p = document.getElementById('player_modal');
+    const f = document.getElementById('video_frame');
+    
+    p.style.display = 'none'; 
+    f.src = ''; // Зупиняємо відео
+    
+    // 🔥 Виходимо з повноекранного режиму Telegram
+    if (window.Telegram?.WebApp?.exitFullscreen) {
+        window.Telegram.WebApp.exitFullscreen();
+    }
+
+    // Повертаємо вікно з деталями
+    if(state.activeMovie) {
+        const details = document.getElementById('movie_details_modal');
+        if(details) details.style.display = 'block';
+    }
 }
 
 export function renderHistorySection(items) {

@@ -107,7 +107,6 @@
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
     background-color: #000; z-index: 99999;
     display: none; flex-direction: column; align-items: center; justify-content: center;
-    /* Важливо: залишаємо 0, щоб плеєр був на весь екран */
     padding: 0 !important; margin: 0 !important;
     animation: zoomInPlayer 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -120,10 +119,9 @@
     display: block; 
 }
 
+/* 🔥 КНОПКА З ЕФЕКТОМ ЗНИКНЕННЯ */
 .close-player-btn {
     position: absolute; 
-    /* 🔥 КЛЮЧОВИЙ ФІКС: Відступ = 10px + розмір безпечної зони (близько 75px) */
-    /* Це гарантовано опустить кнопку нижче системного меню Telegram */
     top: calc(10px + var(--safe-top)); 
     right: 20px; 
     color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
@@ -131,4 +129,19 @@
     display: flex; align-items: center; justify-content: center;
     text-shadow: 0 2px 5px rgba(0,0,0,0.8);
     backdrop-filter: blur(5px);
+    
+    /* Плавна анімація прозорості */
+    transition: opacity 1s ease, transform 0.2s;
+    opacity: 1; /* По замовчуванню видима */
+}
+
+/* Коли кнопка в "режимі привида" */
+.close-player-btn.faded {
+    opacity: 0.15; /* 15% видимості - ледь помітна */
+}
+
+/* Коли натискаємо - стає яскравою */
+.close-player-btn:active {
+    opacity: 1 !important;
+    transform: scale(0.9);
 }

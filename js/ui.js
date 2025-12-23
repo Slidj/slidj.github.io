@@ -8,26 +8,6 @@ import { playSound } from './sounds.js';
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
 
-// 🔥 НОВА ФУНКЦІЯ: ВИПАДКОВИЙ ФІЛЬМ
-window.playRandomMovie = () => {
-    playSound('Tap.wav');
-    // Беремо фільми, які зараз є у стрічці
-    const items = state.feedMovies;
-    if (!items || items.length === 0) {
-        window.Telegram?.WebApp?.showAlert("Стрічка ще вантажиться...");
-        return;
-    }
-    
-    // Випадковий індекс
-    const randomItem = items[Math.floor(Math.random() * items.length)];
-    
-    // Вібрація для ефекту
-    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-    
-    // Відкриваємо
-    openMoviePage(randomItem);
-};
-
 // 🔥 ОПЛАТА TELEGRAM STARS
 window.selectDonateLevel = (stars) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
@@ -93,26 +73,35 @@ export function renderGrid(items, isAppend = false) {
         
         let badgeHtml = '';
         if (item.type === 'tv') badgeHtml += `<div class="type-badge">${t.serialBadge}</div>`;
-        if (state.currentTab === 'home' && index < 10 && !isAppend) badgeHtml += `<div class="top10-badge"><span>TOP</span>${index + 1}</div>`;
+        
+        // Бейдж TOP-10
+        if (state.currentTab === 'home' && index < 10 && !isAppend) {
+             badgeHtml += `<div class="top10-badge"><span>TOP</span>${index + 1}</div>`;
+        }
 
         d.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
         c.appendChild(d);
     });
 }
 
-// 🔥 ОНОВЛЕНО: Ховаємо кнопку Play Something на інших вкладках
+// 🔥 Кнопка "Play Something" (Рандом)
 export function toggleRandomButton(isVisible) {
     const fab = document.getElementById('random_fab');
     if (fab) fab.style.display = isVisible ? 'flex' : 'none';
 }
 
-// Потрібно додати виклик цієї функції в app.js у switchMode,
-// АЛЕ, щоб не лізти в app.js, ми можемо зробити хак тут, перевизначивши switchMode?
-// Ні, краще просто додати слухач на кліки по меню в index.html.
-// Або найпростіше - вставити логіку прямо в renderGrid (ні, це погано).
-// Давай зробимо це через MutationObserver або просто додамо перевірку в openMoviePage.
-// АЛЕ НАЙКРАЩЕ: Я просто додам логіку видимості кнопки в кінець функції `renderGrid`. 
-// Якщо ми рендеримо Home - показуємо, інакше ховаємо.
+// Рандомний вибір
+window.playRandomMovie = () => {
+    playSound('Tap.wav');
+    const items = state.feedMovies;
+    if (!items || items.length === 0) {
+        window.Telegram?.WebApp?.showAlert("Стрічка ще вантажиться...");
+        return;
+    }
+    const randomItem = items[Math.floor(Math.random() * items.length)];
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+    openMoviePage(randomItem);
+};
 
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
@@ -208,6 +197,19 @@ export async function openMoviePage(movie) {
             similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
         }
 
+        // 🔥 РОЗРАХУНОК РЕЙТИНГУ (з TMDB)
+        // Якщо рейтинг 7.8, то покажемо 78%. Якщо рейтингу немає, покажемо 'New' або приховаємо.
+        let matchPercent = ''; 
+        if (details.rating && details.rating !== 'N/A') {
+            const numericRating = parseFloat(details.rating);
+            if (!isNaN(numericRating) && numericRating > 0) {
+                matchPercent = Math.round(numericRating * 10) + '%';
+            }
+        }
+        // Якщо рейтинг 0 або N/A, можна написати 'NEW' або просто '95%' як заглушку. 
+        // Але ти просив реальний збіг, тому якщо рейтингу немає - просто не показуємо відсотки.
+        const matchLabel = matchPercent ? `<span class="nf-match">${matchPercent} ${t.match}</span>` : '';
+
         content.innerHTML = `
             <div class="nf-container">
                 <div class="nf-hero">
@@ -216,7 +218,7 @@ export async function openMoviePage(movie) {
                     <div class="nf-hero-content">
                         <div id="dynamic_title_area" class="title-fade-in" style="min-height: 50px;"></div>
                         <div class="nf-meta">
-                            <span class="nf-match">98% ${t.match}</span>
+                            ${matchLabel}
                             <span>${details.year}</span>
                             <span class="nf-age">${details.age}</span>
                             <span>${details.runtime || ''}</span>
@@ -357,10 +359,9 @@ const checkFirebaseInterval = setInterval(() => {
     }
 }, 500);
 
-// 🔥 ДОДАТКОВО: Слухаємо кліки по меню в index.html, щоб ховати кнопку
+// 🔥 Слухаємо кліки по меню в index.html, щоб ховати кнопку FAB
 document.querySelectorAll('.nav-item').forEach(el => {
     el.addEventListener('click', (e) => {
-        // Проста перевірка: якщо ми не на Home (перша кнопка), ховаємо FAB
         const fab = document.getElementById('random_fab');
         const isHome = e.currentTarget.innerText.includes('Головна') || e.currentTarget.innerText.includes('Home');
         if(fab) fab.style.display = isHome ? 'flex' : 'none';

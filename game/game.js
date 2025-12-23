@@ -7,9 +7,8 @@ const config = {
     width: window.innerWidth,
     height: window.innerHeight,
     parent: 'game-container',
-    backgroundColor: '#000',
-    // ВАЖЛИВО: Вмикаємо режим піксель-арту для чіткості
-    pixelArt: true,
+    backgroundColor: '#1a1a1a', // Темний фон підкладки
+    pixelArt: true, // ВАЖЛИВО: Робить пікселі чіткими
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: false }
@@ -28,79 +27,67 @@ let speed = 200;
 
 let trees;
 let rocks;
-
 let inventory = { wood: 0, stone: 0 };
 let inventoryText;
 
 function preload() {
-    // Завантаження плагіна джойстика
+    // Тільки плагін джойстика беремо з інтернету (він надійний)
     this.load.plugin('rexvirtualjoystickplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.57/dist/rexvirtualjoystickplugin.min.js', true);
-
-    // --- ЗАВАНТАЖЕННЯ 2D СПРАЙТІВ ---
-    // Використовуємо безкоштовні ассети з відкритого репозиторію
-    const repoUrl = 'https://raw.githubusercontent.com/Slidj/game/main/assets/'; // Приклад (тимчасові посилання)
-
-    // Я використовую надійні публічні посилання на піксель-арт.
-    // Якщо вони не завантажаться, ми побачимо чорні квадрати.
-    
-    // Герой (Лицар)
-    this.load.image('hero', 'https://img.itch.zone/aW1hZ2UvNTg1MTguMC92JTJGejI0ODg2LnBuZw==/original/6O%2B%2F%2Bm.png');
-    // Трава (Тайл)
-    this.load.image('grass', 'https://img.itch.zone/aW1hZ2UvNTg1MTguMC92JTJGTmVnd1lQLnBuZw==/original/sX7S4%2B.png');
-    // Дерево
-    this.load.image('tree', 'https://img.itch.zone/aW1hZ2UvNTg1MTguMC92JTJGcE9xUjVBLnBuZw==/original/P%2FjW8P.png');
-    // Камінь
-    this.load.image('rock', 'https://img.itch.zone/aW1hZ2UvNTg1MTguMC92JTJGbU5tWkxrLnBuZw==/original/%2BVgJkQ.png');
 }
 
 function create() {
-    // 1. СВІТ
-    // Трава (збільшуємо масштаб, бо спрайт маленький)
+    // 1. СТВОРЮЄМО ПІКСЕЛЬ-АРТ (Магія коду)
+    createPixelTextures(this);
+
+    // 2. СВІТ
+    // Трава (Тайл 16x16, збільшений в 4 рази)
     const grass = this.add.tileSprite(0, 0, 2000, 2000, 'grass').setOrigin(0);
-    grass.setScale(3); 
+    grass.setScale(4); 
 
-    this.physics.world.setBounds(0, 0, 2000 * 3, 2000 * 3);
+    this.physics.world.setBounds(0, 0, 2000 * 4, 2000 * 4);
 
-    // 2. РЕСУРСИ
+    // 3. РЕСУРСИ
     trees = this.physics.add.staticGroup();
     rocks = this.physics.add.staticGroup();
 
-    // Розкидаємо дерева
-    for (let i = 0; i < 40; i++) {
-        let tx = Phaser.Math.Between(100, 1800);
-        let ty = Phaser.Math.Between(100, 1800);
-        // Створюємо дерево і збільшуємо його в 3 рази
-        let tree = trees.create(tx, ty, 'tree');
-        tree.setScale(3).refreshBody();
-        // Зсуваємо колізію вниз, щоб герой міг заходити "за" дерево
-        tree.body.setSize(tree.width * 0.5, tree.height * 0.2);
-        tree.body.setOffset(tree.width * 0.25, tree.height * 0.8);
-    }
-    // Розкидаємо каміння
-    for (let i = 0; i < 20; i++) {
-        let rx = Phaser.Math.Between(100, 1800);
-        let ry = Phaser.Math.Between(100, 1800);
-        rocks.create(rx, ry, 'rock').setScale(3).refreshBody();
+    // Садимо дерева
+    for (let i = 0; i < 50; i++) {
+        let x = Phaser.Math.Between(100, 2500);
+        let y = Phaser.Math.Between(100, 2500);
+        let tree = trees.create(x, y, 'tree');
+        tree.setScale(4).refreshBody(); // Збільшуємо пікселі в 4 рази
+        // Робимо так, щоб герой ходив "за" деревом (колізія по пеньку)
+        tree.body.setSize(10, 8);
+        tree.body.setOffset(3, 24);
     }
 
-    // 3. ГРАВЕЦЬ
-    // Використовуємо спрайт героя, збільшуємо в 3 рази
-    player = this.physics.add.sprite(1000, 1000, 'hero').setScale(3);
+    // Розкидаємо каміння
+    for (let i = 0; i < 30; i++) {
+        let x = Phaser.Math.Between(100, 2500);
+        let y = Phaser.Math.Between(100, 2500);
+        let rock = rocks.create(x, y, 'rock');
+        rock.setScale(4).refreshBody();
+        rock.body.setSize(14, 10);
+        rock.body.setOffset(1, 6);
+    }
+
+    // 4. ГРАВЕЦЬ (ЛИЦАР)
+    player = this.physics.add.sprite(500, 500, 'hero');
+    player.setScale(4); // Великий піксельний герой
     player.setCollideWorldBounds(true);
-    // Зменшуємо зону колізії героя до його ніг
-    player.body.setSize(12, 16);
-    player.body.setOffset(2, 16);
-    
+    player.body.setSize(10, 8); // Колізія тільки на ногах
+    player.body.setOffset(3, 24);
+
     // Камера
-    this.cameras.main.setBounds(0, 0, 2000 * 3, 2000 * 3);
+    this.cameras.main.setBounds(0, 0, 8000, 8000);
     this.cameras.main.startFollow(player);
-    this.cameras.main.setZoom(1.2); // Трохи наблизимо камеру
+    this.cameras.main.setZoom(1.0);
 
     // Колізія
     this.physics.add.collider(player, trees);
     this.physics.add.collider(player, rocks);
 
-    // 4. ДЖОЙСТИК
+    // 5. ДЖОЙСТИК
     if (this.plugins.get('rexvirtualjoystickplugin')) {
         joystick = this.plugins.get('rexvirtualjoystickplugin').add(this, {
             x: 100, y: window.innerHeight - 100,
@@ -113,19 +100,19 @@ function create() {
     }
     cursorKeys = this.input.keyboard.createCursorKeys();
 
-    // 5. ІНТЕРФЕЙС
+    // 6. ІНТЕРФЕЙС
     inventoryText = this.add.text(20, 20, 'Wood: 0 | Stone: 0', {
         font: '20px monospace', fill: '#ffffff', backgroundColor: '#000000aa', padding: { x: 10, y: 5 }
     }).setScrollFactor(0).setDepth(100);
 
     // Кнопка дії
     const actionBtn = document.getElementById('action-btn');
-    // Видаляємо старі слухачі, якщо вони були (щоб не дублювалися при перезавантаженні)
-    let newBtn = actionBtn.cloneNode(true);
-    actionBtn.parentNode.replaceChild(newBtn, actionBtn);
-    
-    newBtn.addEventListener('touchstart', (e) => { e.preventDefault(); tryGatherResource(); });
-    newBtn.addEventListener('mousedown', (e) => { e.preventDefault(); tryGatherResource(); });
+    if(actionBtn) {
+        let newBtn = actionBtn.cloneNode(true);
+        actionBtn.parentNode.replaceChild(newBtn, actionBtn);
+        newBtn.addEventListener('touchstart', (e) => { e.preventDefault(); tryGatherResource(); });
+        newBtn.addEventListener('mousedown', (e) => { e.preventDefault(); tryGatherResource(); });
+    }
 }
 
 function update() {
@@ -146,9 +133,9 @@ function update() {
 
     player.body.setVelocity(speedX, speedY);
 
-    // Проста анімація повороту (дзеркальне відображення)
-    if (speedX < 0) player.setFlipX(true); // Йде вліво
-    else if (speedX > 0) player.setFlipX(false); // Йде вправо
+    // Поворот героя
+    if (speedX < 0) player.setFlipX(true);
+    else if (speedX > 0) player.setFlipX(false);
 }
 
 function tryGatherResource() {
@@ -160,7 +147,7 @@ function tryGatherResource() {
         scene.tweens.add({ targets: tree, alpha: 0.5, duration: 100, yoyo: true });
         inventory.wood++;
         updateInventory();
-        tree.disableBody(true, true); 
+        tree.destroy(); 
         hitSomething = true;
         showFloatingText(player.x, player.y, "+1 Wood 🌲");
     });
@@ -171,14 +158,13 @@ function tryGatherResource() {
             scene.tweens.add({ targets: rock, alpha: 0.5, duration: 100, yoyo: true });
             inventory.stone++;
             updateInventory();
-            rock.disableBody(true, true);
+            rock.destroy();
             hitSomething = true;
             showFloatingText(player.x, player.y, "+1 Stone 🪨");
         });
     }
 
     if (!hitSomething) {
-        // Анімація "стрибка" при ударі в повітря
         scene.tweens.add({ targets: player, y: player.y - 10, duration: 100, yoyo: true });
     }
 }
@@ -189,13 +175,124 @@ function updateInventory() {
 
 function showFloatingText(x, y, message) {
     const scene = game.scene.scenes[0];
-    let text = scene.add.text(x, y - 20, message, {
-        font: '18px monospace', fill: '#ffff00', stroke: '#000', strokeThickness: 3
+    let text = scene.add.text(x, y - 40, message, {
+        font: '20px monospace', fill: '#ffff00', stroke: '#000', strokeThickness: 4
     }).setOrigin(0.5).setDepth(101);
 
     scene.tweens.add({
-        targets: text, y: y - 60, alpha: 0, duration: 1000,
+        targets: text, y: y - 100, alpha: 0, duration: 1000,
         onComplete: () => text.destroy()
     });
 }
-// Функцію createAssets видалено, вона більше не потрібна.
+
+// --- ГЕНЕРАТОР ПІКСЕЛЬ-АРТУ ---
+function createPixelTextures(scene) {
+    // Функція малювання з тексту
+    const makeTexture = (key, data, palette) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = data[0].length;
+        canvas.height = data.length;
+        const ctx = canvas.getContext('2d');
+        
+        for (let y = 0; y < data.length; y++) {
+            for (let x = 0; x < data[y].length; x++) {
+                const pixel = data[y][x];
+                if (pixel !== '.' && palette[pixel]) {
+                    ctx.fillStyle = palette[pixel];
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+        scene.textures.addCanvas(key, canvas);
+    };
+
+    // 1. ЛИЦАР (16x16)
+    // s = silver (armor), r = red (plume), f = face, . = empty
+    const heroPalette = { 's': '#C0C0C0', 'd': '#696969', 'r': '#FF0000', 'f': '#FFCCAA', 'b': '#000000' };
+    const heroData = [
+        "......rr........",
+        ".....rrrr.......",
+        "....ssssrr......",
+        "...ssbbfssr.....",
+        "...ssfffsr......",
+        "...ssssss.......",
+        "..ssssssss......",
+        ".ddssssssdd.....",
+        "d.ssssssss.d....",
+        "d.ssssssss.d....",
+        "..ssssssss......",
+        "..ssssssss......",
+        "...dd..dd.......",
+        "...ss..ss.......",
+        "...ss..ss.......",
+        "..dd....dd......"
+    ];
+    makeTexture('hero', heroData, heroPalette);
+
+    // 2. ДЕРЕВО (16x32)
+    // g = green, G = dark green, b = brown
+    const treePalette = { 'g': '#228B22', 'G': '#006400', 'b': '#8B4513' };
+    const treeData = [
+        "......GGG.......",
+        "....GGggGGG.....",
+        "...GggggggGG....",
+        "..GggggggggGG...",
+        "..GggggggggGG...",
+        "..GggggggggGG...",
+        "...GGgggggGG....",
+        "....GGgggGG.....",
+        "......GGG.......",
+        ".......b........",
+        ".......b........",
+        ".......b........",
+        ".......b........",
+        ".......b........",
+        "......bbb.......",
+        ".....bbbbb......"
+    ];
+    makeTexture('tree', treeData, treePalette);
+
+    // 3. КАМІНЬ (16x16)
+    const rockPalette = { 'g': '#808080', 'd': '#505050', 'l': '#A0A0A0' };
+    const rockData = [
+        "................",
+        ".....ggggg......",
+        "...ggllllggg....",
+        "..gglllllllgg...",
+        ".gglllggglllgg..",
+        ".ggllggggglllgg.",
+        ".ggllgdddglllgg.",
+        "gglllgdddglllgg.",
+        "gglllggggglllgg.",
+        "ggllllgggllllgg.",
+        ".gglllllllllgg..",
+        ".gglllllllllgg..",
+        "..ggglllllggg...",
+        "...ggggggggg....",
+        ".....ggggg......",
+        "................"
+    ];
+    makeTexture('rock', rockData, rockPalette);
+
+    // 4. ТРАВА (16x16)
+    const grassPalette = { 'g': '#2d5a27', 'l': '#3e7a36' };
+    const grassData = [
+        "gggggggggggggggg",
+        "gggglggggggggggg",
+        "gggggggggggglggg",
+        "ggglgggggggggggg",
+        "gggggggggggggggg",
+        "ggggggggglgggggg",
+        "gggggggggggggggg",
+        "gglggggggggggggg",
+        "gggggggggggggggg",
+        "ggggggggglgggggg",
+        "gggggggggggggggg",
+        "gggglggggggggggg",
+        "gggggggggggglggg",
+        "gggggggggggggggg",
+        "gglggggggggggggg",
+        "gggggggggggggggg"
+    ];
+    makeTexture('grass', grassData, grassPalette);
+}

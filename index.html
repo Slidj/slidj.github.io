@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
-    <link rel="stylesheet" href="css/style.css?v=330">
+    <link rel="stylesheet" href="css/style.css?v=340">
     <link rel="stylesheet" href="css/intro.css">
 
     <style>
@@ -167,11 +167,20 @@
         </div>
     </div>
 
-    <div id="player_modal"><div class="close-player-btn" onclick="window.closePlayer()">×</div><iframe id="video_frame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>
+    <div id="player_modal">
+        <div class="close-player-btn" onclick="window.closePlayer()">×</div>
+        <iframe id="video_frame" src="" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" 
+                allowfullscreen 
+                webkitallowfullscreen 
+                mozallowfullscreen 
+                referrerpolicy="origin">
+        </iframe>
+    </div>
+    
     <div id="movie_details_modal" class="modal-fullscreen details-modal" style="display: none;"><button class="close-round-btn" onclick="window.closeMoviePage()">×</button><div id="movie_details_content"></div></div>
 
     <script>
-        // Логіка мови: Якщо не UA -> перемикаємо на EN
         try {
             const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
             if (tgUser && tgUser.language_code) {
@@ -187,6 +196,6 @@
         }
     </script>
 
-    <script type="module" src="js/app.js?v=330"></script>
+    <script type="module" src="js/app.js?v=340"></script>
 </body>
 </html>

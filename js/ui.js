@@ -307,12 +307,11 @@ export function openPremiumPlayer(tmdbId, btn) {
     const details = document.getElementById('movie_details_modal');
     if(details) details.style.display = 'none';
     
-    // 🔥 1. Змушуємо Telegram розгорнутися на весь екран (якщо це підтримується)
+    // 1. Пробуємо розгорнути Telegram (якщо підтримується)
     if (window.Telegram?.WebApp?.requestFullscreen) {
         window.Telegram.WebApp.requestFullscreen();
     }
-    
-    // 🔥 2. Блокуємо орієнтацію та ховаємо хедер (якщо можливо)
+    // 2. Блокуємо орієнтацію та ховаємо хедер
     if (window.Telegram?.WebApp?.expand) {
         window.Telegram.WebApp.expand();
     }
@@ -321,16 +320,24 @@ export function openPremiumPlayer(tmdbId, btn) {
     p.style.display = 'flex';
 }
 
+// 🔥 ФІКС ЗАКРИТТЯ ПЛЕЄРА
 export function closePlayer() {
     const p = document.getElementById('player_modal');
     const f = document.getElementById('video_frame');
     
     p.style.display = 'none'; 
-    f.src = ''; // Зупиняємо відео
+    f.src = ''; 
     
-    // 🔥 Виходимо з повноекранного режиму Telegram
+    // 1. Виходимо з повноекранного режиму
     if (window.Telegram?.WebApp?.exitFullscreen) {
         window.Telegram.WebApp.exitFullscreen();
+    }
+    
+    // 2. 🔥 ВАЖЛИВО: Примусово робимо хедер чорним, щоб він не виділявся
+    // Це прибере "смужку" зверху, якщо вона стала сірою/білою
+    if (window.Telegram?.WebApp?.setHeaderColor) {
+        window.Telegram.WebApp.setHeaderColor('#000000');
+        window.Telegram.WebApp.setBackgroundColor('#000000');
     }
 
     // Повертаємо вікно з деталями

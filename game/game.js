@@ -7,7 +7,7 @@ const config = {
     height: window.innerHeight,
     parent: 'game-container',
     backgroundColor: '#222',
-    pixelArt: false, // Вимикаємо, бо картинка високої якості (256px)
+    pixelArt: true, // Вмикаємо піксель-арт для чіткості
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: false }
@@ -21,82 +21,90 @@ let player;
 let joystick, joyCursorKeys, cursorKeys;
 let speed = 200;
 let trees, rocks;
-let isUsingFile = false;
+let lastDirection = 'down'; // Запам'ятовуємо, куди дивився герой
 
 function preload() {
     this.load.plugin('rexvirtualjoystickplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.57/dist/rexvirtualjoystickplugin.min.js', true);
 
-    // --- ЗАВАНТАЖЕННЯ ГЕРОЯ 256x256 ---
-    // ВАЖЛИВО: Ми ставимо розмір 256, як в описі!
+    // Завантажуємо героя (256x256)
     this.load.spritesheet('hero_file', 'assets/male_base.png', { 
         frameWidth: 256, 
         frameHeight: 256 
     });
-
-    this.load.on('loaderror', function (file) {
-        console.log('Error loading file:', file.src);
-    });
 }
 
 function create() {
-    // 1. СВІТ
+    // 1. СТВОРЕННЯ АНІМАЦІЙ (Для 8 сторін)
+    // У Flare спрайтах зазвичай 8 рядів по 4 кадри.
+    // Порядок рядів: Південь, Південний Схід, Схід, Пн-Схід, Північ...
+    
+    // ВНИЗ (South) - Ряд 0 (кадри 0-3)
+    this.anims.create({
+        key: 'walk-down',
+        frames: this.anims.generateFrameNumbers('hero_file', { start: 0, end: 3 }),
+        frameRate: 8, repeat: -1
+    });
+
+    // ВПРАВО (East) - Ряд 2 (кадри 8-11)
+    this.anims.create({
+        key: 'walk-right',
+        frames: this.anims.generateFrameNumbers('hero_file', { start: 8, end: 11 }),
+        frameRate: 8, repeat: -1
+    });
+
+    // ВГОРУ (North) - Ряд 4 (кадри 16-19)
+    this.anims.create({
+        key: 'walk-up',
+        frames: this.anims.generateFrameNumbers('hero_file', { start: 16, end: 19 }),
+        frameRate: 8, repeat: -1
+    });
+
+    // ВЛІВО (West) - Ряд 6 (кадри 24-27)
+    this.anims.create({
+        key: 'walk-left',
+        frames: this.anims.generateFrameNumbers('hero_file', { start: 24, end: 27 }),
+        frameRate: 8, repeat: -1
+    });
+
+    // 2. СВІТ
     createEnvironmentAssets(this);
     const ground = this.add.tileSprite(0, 0, 2000, 2000, 'ground').setOrigin(0);
     ground.setDepth(-1000);
     this.physics.world.setBounds(0, 0, 2000, 2000);
 
-    // 2. ДЕКОРАЦІЇ
+    // 3. ДЕКОРАЦІЇ
     trees = this.physics.add.staticGroup();
     rocks = this.physics.add.staticGroup();
-    for (let i = 0; i < 50; i++) {
+
+    for (let i = 0; i < 40; i++) {
         let tree = trees.create(Phaser.Math.Between(100, 1900), Phaser.Math.Between(100, 1900), 'tree');
-        tree.setScale(2); // Дерева теж трохи збільшимо
         tree.body.setSize(20, 10); tree.body.setOffset(22, 100); tree.setDepth(tree.y);
     }
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 20; i++) {
         let rock = rocks.create(Phaser.Math.Between(100, 1900), Phaser.Math.Between(100, 1900), 'rock');
         rock.setDepth(rock.y); rock.refreshBody();
     }
 
-    // --- 3. НАЛАШТУВАННЯ ГЕРОЯ ---
-    
+    // 4. ГЕРОЙ
     if (this.textures.exists('hero_file')) {
-        isUsingFile = true;
-        
-        // Створюємо анімацію ходьби (перші 4 кадри)
-        this.anims.create({
-            key: 'walk',
-            frames: this.anims.generateFrameNumbers('hero_file', { start: 0, end: 3 }), 
-            frameRate: 6, // Швидкість анімації
-            repeat: -1
-        });
-        
         player = this.physics.add.sprite(500, 500, 'hero_file');
-        
-        // МАСШТАБ: Зменшуємо його в 2 рази, бо 256px це забагато
-        player.setScale(0.4); 
-        
-        // КОЛІЗІЯ: Налаштовуємо "коробку" тіла, бо в картинці 256x256 багато пустого місця
-        // Методом "тику": центр знизу
-        player.body.setSize(60, 40); 
+        player.setScale(0.4); // Зменшуємо (бо 256px це багато)
+        player.body.setSize(60, 40); // Колізія ніг
         player.body.setOffset(100, 180); 
-        
-        this.add.text(10, 40, 'Hero 256px Loaded!', { fill: '#0f0', backgroundColor: '#000' }).setScrollFactor(0).setDepth(999999);
     } else {
-        // ЗАПАСНИЙ ВАРІАНТ (якщо файл не знайдено)
-        generateFallbackHero(this);
-        player = this.physics.add.sprite(500, 500, 'fallback_hero');
-        player.setScale(2);
-        this.add.text(10, 40, 'Error: male_base.png not found', { fill: '#f00', backgroundColor: '#000' }).setScrollFactor(0).setDepth(999999);
+        // Якщо файл не завантажився - запасний квадрат
+        player = this.add.rectangle(500, 500, 32, 32, 0xff0000);
+        this.physics.add.existing(player);
     }
 
     player.setCollideWorldBounds(true);
     player.setDepth(500);
     this.cameras.main.startFollow(player);
+    
     this.physics.add.collider(player, trees);
     this.physics.add.collider(player, rocks);
 
-    // 4. ДЖОЙСТИК
+    // 5. ДЖОЙСТИК
     if (this.plugins.get('rexvirtualjoystickplugin')) {
         joystick = this.plugins.get('rexvirtualjoystickplugin').add(this, {
             x: 100, y: window.innerHeight - 100, radius: 50,
@@ -114,36 +122,58 @@ function update() {
     player.body.setVelocity(0);
     let speedX = 0, speedY = 0;
 
+    // Зчитуємо джойстик
     if (joyCursorKeys) {
         if (joyCursorKeys.left.isDown) speedX = -speed;
         if (joyCursorKeys.right.isDown) speedX = speed;
         if (joyCursorKeys.up.isDown) speedY = -speed;
         if (joyCursorKeys.down.isDown) speedY = speed;
     }
+    // Клавіатура
     if (cursorKeys.left.isDown) speedX = -speed;
     if (cursorKeys.right.isDown) speedX = speed;
     if (cursorKeys.up.isDown) speedY = -speed;
     if (cursorKeys.down.isDown) speedY = speed;
 
+    // Нормалізація (щоб по діагоналі не біг швидше)
     if (speedX !== 0 && speedY !== 0) { speedX *= 0.707; speedY *= 0.707; }
 
     player.body.setVelocity(speedX, speedY);
 
+    // --- ЛОГІКА АНІМАЦІЇ ---
+    // Якщо рухаємось
     if (speedX !== 0 || speedY !== 0) {
-        // Якщо є анімація 'walk' - граємо її
-        if(player.anims.exists('walk')) player.anims.play('walk', true);
-        
-        // Поворот (дзеркальний)
-        if (speedX < 0) player.setFlipX(true);
-        else if (speedX > 0) player.setFlipX(false);
+        // Визначаємо пріоритетний напрямок
+        if (Math.abs(speedX) > Math.abs(speedY)) {
+            // Рух по горизонталі
+            if (speedX > 0) {
+                player.anims.play('walk-right', true);
+                lastDirection = 'walk-right';
+            } else {
+                player.anims.play('walk-left', true);
+                lastDirection = 'walk-left';
+            }
+        } else {
+            // Рух по вертикалі
+            if (speedY > 0) {
+                player.anims.play('walk-down', true);
+                lastDirection = 'walk-down';
+            } else {
+                player.anims.play('walk-up', true);
+                lastDirection = 'walk-up';
+            }
+        }
     } else {
+        // Якщо стоїмо - зупиняємо анімацію і показуємо перший кадр останнього напрямку
         player.anims.stop();
-        if(isUsingFile) player.setFrame(0); 
+        // Можна додати idle-анімації, але поки просто зупинимо на поточному кадрі
     }
+
+    // Z-Index (2.5D ефект)
     player.setDepth(player.y);
 }
 
-// Генератор середовища (щоб не було темно)
+// Генератор середовища
 function createEnvironmentAssets(scene) {
     const treeC = document.createElement('canvas'); treeC.width = 64; treeC.height = 128;
     const tCtx = treeC.getContext('2d');
@@ -159,20 +189,6 @@ function createEnvironmentAssets(scene) {
 
     const groundC = document.createElement('canvas'); groundC.width = 64; groundC.height = 64;
     const gCtx = groundC.getContext('2d');
-    gCtx.fillStyle = "#2a2a2a"; gCtx.fillRect(0, 0, 64, 64); // Темно-сіра
+    gCtx.fillStyle = "#2a2a2a"; gCtx.fillRect(0, 0, 64, 64);
     scene.textures.addCanvas('ground', groundC);
-}
-
-function generateFallbackHero(scene) {
-    // Заглушка, якщо файл не знайдено
-    const frameW = 64; const frameH = 64;
-    const canvas = document.createElement('canvas'); canvas.width = frameW * 4; canvas.height = frameH;
-    const ctx = canvas.getContext('2d');
-    const drawFrame = (offsetX) => {
-        const cx = offsetX + 32;
-        ctx.fillStyle = "#800"; ctx.fillRect(cx-10, 20, 20, 30);
-        ctx.fillStyle = "#ddd"; ctx.beginPath(); ctx.arc(cx, 15, 10, 0, Math.PI*2); ctx.fill();
-    };
-    for(let i=0; i<4; i++) drawFrame(i*64);
-    scene.textures.addCanvas('fallback_hero', canvas);
 }

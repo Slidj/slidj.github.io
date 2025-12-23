@@ -5,6 +5,9 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
+// Змінна для таймера кнопки
+let playerIdleTimer = null;
+
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
 
@@ -290,7 +293,7 @@ export function closeMoviePage() {
     setTimeout(() => { modal.style.display = 'none'; content.innerHTML = ''; state.activeMovie = null; if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide(); }, 300);
 }
 
-// 🔥 ОНОВЛЕНО: ЛОГІКА ПОВНОГО ЕКРАНУ
+// 🔥 ОНОВЛЕНО: ЛОГІКА ПОВНОГО ЕКРАНУ + ТАЙМЕР КНОПКИ
 export function openPremiumPlayer(tmdbId, btn) {
     playSound('Click.wav');
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.currentHeroMovie;
@@ -302,12 +305,13 @@ export function openPremiumPlayer(tmdbId, btn) {
     
     const p = document.getElementById('player_modal');
     const f = document.getElementById('video_frame');
+    const closeBtn = document.querySelector('.close-player-btn');
     
-    // Ховаємо деталі фільму, щоб вони не перекривали плеєр
+    // Ховаємо деталі фільму
     const details = document.getElementById('movie_details_modal');
     if(details) details.style.display = 'none';
     
-    // 1. Пробуємо розгорнути Telegram (якщо підтримується)
+    // 1. Повний екран
     if (window.Telegram?.WebApp?.requestFullscreen) {
         window.Telegram.WebApp.requestFullscreen();
     }
@@ -318,20 +322,31 @@ export function openPremiumPlayer(tmdbId, btn) {
 
     f.src = url; 
     p.style.display = 'flex';
+
+    // 🔥 ЛОГІКА "ПРИВИДА": Кнопка зникає через 3.5 сек
+    if (closeBtn) {
+        closeBtn.classList.remove('faded');
+        if (playerIdleTimer) clearTimeout(playerIdleTimer);
+        
+        playerIdleTimer = setTimeout(() => {
+            closeBtn.classList.add('faded');
+        }, 3500); // 3.5 секунди затримки
+    }
 }
 
-// 🔥 ФІКС: ТЕПЕР МИ НЕ ВИХОДИМО З ПОВНОГО ЕКРАНУ
 export function closePlayer() {
     const p = document.getElementById('player_modal');
     const f = document.getElementById('video_frame');
+    const closeBtn = document.querySelector('.close-player-btn');
     
     p.style.display = 'none'; 
     f.src = ''; 
     
-    // ❌ ВИДАЛИВ: exitFullscreen()
-    // Цей рядок повертав системну смугу. Ми його прибрали.
+    // Скидаємо таймер і клас привида
+    if (playerIdleTimer) clearTimeout(playerIdleTimer);
+    if (closeBtn) closeBtn.classList.remove('faded');
     
-    // ✅ ДОДАВ: На всяк випадок ПІДТВЕРДЖУЄМО повний екран
+    // 1. ПІДТВЕРДЖУЄМО повний екран (не виходимо)
     if (window.Telegram?.WebApp?.requestFullscreen) {
         window.Telegram.WebApp.requestFullscreen();
     }

@@ -7,51 +7,13 @@
     <style>
         body { margin: 0; padding: 0; background: #000; overflow: hidden; touch-action: none; }
         #game-container { width: 100vw; height: 100vh; }
-        
-        /* Стилі для екранного джойстика */
-        #controls {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            width: 150px;
-            height: 150px;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr;
-            pointer-events: none; /* Щоб кліки проходили крізь прозорі зони */
-            z-index: 10;
-        }
-        .btn {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            pointer-events: auto; /* Кнопки клікабельні */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            user-select: none;
-            cursor: pointer;
-        }
-        .btn:active { background: rgba(255, 255, 255, 0.5); }
-        .up { grid-column: 2; grid-row: 1; }
-        .left { grid-column: 1; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; }
-        .down { grid-column: 2; grid-row: 3; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser3-rex-plugins/dist/rexvirtualjoystickplugin.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-
     <div id="game-container"></div>
-
-    <div id="controls">
-        <div class="btn up" id="btn-up">⬆️</div>
-        <div class="btn left" id="btn-left">⬅️</div>
-        <div class="btn right" id="btn-right">➡️</div>
-        <div class="btn down" id="btn-down">⬇️</div>
-    </div>
-
     <script src="game.js"></script>
 </body>
 </html>

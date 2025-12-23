@@ -1,17 +1,16 @@
 const tg = window.Telegram.WebApp;
-tg.expand(); // На весь екран
+tg.expand();
 
-// Конфігурація гри
 const config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
     height: window.innerHeight,
     parent: 'game-container',
-    backgroundColor: '#2d2d2d', // Колір фону (землі)
+    backgroundColor: '#2d2d2d',
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 0 }, // В RPG немає гравітації вниз
+            gravity: { y: 0 },
             debug: false
         }
     },
@@ -25,86 +24,70 @@ const config = {
 const game = new Phaser.Game(config);
 
 let player;
-let cursors;
-let moveState = { up: false, down: false, left: false, right: false };
-let speed = 160;
+let joystick;
+let cursorKeys; // Для клавіатури
+let joyCursorKeys; // Для джойстика
+let speed = 200; // Трохи збільшимо швидкість
 
 function preload() {
-    // Тут будемо завантажувати картинки.
-    // Поки що Phaser намалює квадрати сам, якщо картинок немає.
+    // Тут ми можемо завантажити картинки. 
+    // Поки що використовуємо графіку двигуна.
 }
 
 function create() {
-    // 1. Створюємо "землю" (поки просто сітка)
+    // 1. Світ (Сітка)
     this.add.grid(0, 0, 2000, 2000, 32, 32, 0x006400).setOrigin(0);
 
-    // 2. Створюємо Гравця (Синій квадрат)
-    // x=400, y=300, ширина=32, висота=32, колір=0x3390ec (Telegram Blue)
+    // 2. Гравець
     player = this.add.rectangle(400, 300, 32, 32, 0x3390ec);
-    
-    // Додаємо фізику гравцю
     this.physics.add.existing(player);
-    player.body.setCollideWorldBounds(true); // Не виходити за межі світу
+    player.body.setCollideWorldBounds(true);
 
-    // 3. Камера слідує за гравцем
+    // 3. Камера
     this.cameras.main.setBounds(0, 0, 2000, 2000);
     this.cameras.main.startFollow(player);
 
-    // 4. Налаштування керування (Клавіатура для ПК)
-    cursors = this.input.keyboard.createCursorKeys();
+    // 4. Створення джойстика
+    // Він буде з'являтися в лівому нижньому куті
+    joystick = this.plugins.get('rexVirtualJoystick').add(this, {
+        x: 100,
+        y: window.innerHeight - 100,
+        radius: 50,
+        base: this.add.circle(0, 0, 50, 0x888888, 0.5), // Сіра основа (напівпрозора)
+        thumb: this.add.circle(0, 0, 25, 0xcccccc, 0.8), // Світлий "стік"
+        dir: '8dir',   // 8 напрямків руху
+        forceMin: 16,
+        fixed: true    // false - джойстик з'являється там, де ти тикнеш. true - фіксований.
+    });
 
-    // 5. Налаштування керування (Сенсорні кнопки для Телеграм)
-    setupTouchControls();
+    // Отримуємо об'єкт, схожий на клавіатуру, але від джойстика
+    joyCursorKeys = joystick.createCursorKeys();
+
+    // 5. Клавіатура (для тесту на ПК)
+    cursorKeys = this.input.keyboard.createCursorKeys();
+    
+    // Додамо текст-підказку
+    this.add.text(10, 10, 'Use Joystick to Move', { font: '16px Arial', fill: '#ffffff' }).setScrollFactor(0);
 }
 
 function update() {
-    // Скидаємо швидкість
     player.body.setVelocity(0);
 
-    // Логіка руху (Перевіряємо і клавіатуру, і сенсорні кнопки)
-    if (cursors.left.isDown || moveState.left) {
+    // Перевірка: або джойстик, або клавіатура
+    let left = joyCursorKeys.left.isDown || cursorKeys.left.isDown;
+    let right = joyCursorKeys.right.isDown || cursorKeys.right.isDown;
+    let up = joyCursorKeys.up.isDown || cursorKeys.up.isDown;
+    let down = joyCursorKeys.down.isDown || cursorKeys.down.isDown;
+
+    if (left) {
         player.body.setVelocityX(-speed);
-    } else if (cursors.right.isDown || moveState.right) {
+    } else if (right) {
         player.body.setVelocityX(speed);
     }
 
-    if (cursors.up.isDown || moveState.up) {
+    if (up) {
         player.body.setVelocityY(-speed);
-    } else if (cursors.down.isDown || moveState.down) {
+    } else if (down) {
         player.body.setVelocityY(speed);
     }
-}
-
-// Функція для підключення екранних кнопок
-function setupTouchControls() {
-    const ids = ['btn-up', 'btn-down', 'btn-left', 'btn-right'];
-    const directions = ['up', 'down', 'left', 'right'];
-
-    ids.forEach((id, index) => {
-        const btn = document.getElementById(id);
-        const dir = directions[index];
-
-        // Коли натиснули
-        btn.addEventListener('touchstart', (e) => { 
-            e.preventDefault(); 
-            moveState[dir] = true; 
-        });
-        btn.addEventListener('mousedown', (e) => { 
-            e.preventDefault(); 
-            moveState[dir] = true; 
-        });
-
-        // Коли відпустили
-        btn.addEventListener('touchend', (e) => { 
-            e.preventDefault(); 
-            moveState[dir] = false; 
-        });
-        btn.addEventListener('mouseup', (e) => { 
-            e.preventDefault(); 
-            moveState[dir] = false; 
-        });
-        btn.addEventListener('mouseleave', () => { 
-            moveState[dir] = false; 
-        });
-    });
 }

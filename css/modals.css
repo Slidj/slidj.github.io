@@ -15,7 +15,8 @@
 }
 
 /* 2. Анімації */
-.title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }\n.title-visible { opacity: 1; }
+.title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }
+.title-visible { opacity: 1; }
 .logo-anim { animation: popInIcon 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 @keyframes popInIcon {
     from { opacity: 0; transform: scale(0.5); }
@@ -36,14 +37,14 @@
 .nf-hero { 
     position: relative; 
     width: 100%; 
-    height: 65vh; /* Високий блок, як просили */
+    height: 65vh; 
 }
 
 /* Стилі для фону (backdrop) */
 .nf-backdrop { 
     width: 100%; height: 100%; 
-    background-size: cover; /* Заповнює весь блок */
-    background-position: top center; /* Центруємо по верху, щоб було видно обличчя */
+    background-size: cover; 
+    background-position: top center; 
     background-repeat: no-repeat;
     position: absolute; 
     top: 0; left: 0; z-index: 0;
@@ -101,11 +102,12 @@
 .similar-card img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.2s; }
 .similar-rating { position: absolute; top: 2px; right: 2px; background: rgba(229, 9, 20, 0.9); color: #fff; font-size: 10px; font-weight: bold; padding: 1px 3px; border-radius: 2px; }
 
-/* 🔥 ВИПРАВЛЕНИЙ СТИЛЬ ДЛЯ ПЛЕЄРА (БЕЗ ВІДСТУПІВ) */
+/* 🔥 ОНОВЛЕНИЙ СТИЛЬ ПЛЕЄРА */
 #player_modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
     background-color: #000; z-index: 99999;
     display: none; flex-direction: column; align-items: center; justify-content: center;
+    /* Важливо: залишаємо 0, щоб плеєр був на весь екран */
     padding: 0 !important; margin: 0 !important;
     animation: zoomInPlayer 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -120,7 +122,9 @@
 
 .close-player-btn {
     position: absolute; 
-    top: 20px; 
+    /* 🔥 КЛЮЧОВИЙ ФІКС: Відступ = 10px + розмір безпечної зони (близько 75px) */
+    /* Це гарантовано опустить кнопку нижче системного меню Telegram */
+    top: calc(10px + var(--safe-top)); 
     right: 20px; 
     color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
     background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; 

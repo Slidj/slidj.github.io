@@ -320,7 +320,7 @@ export function openPremiumPlayer(tmdbId, btn) {
     p.style.display = 'flex';
 }
 
-// 🔥 ФІКС ЗАКРИТТЯ ПЛЕЄРА
+// 🔥 ФІКС: ТЕПЕР МИ НЕ ВИХОДИМО З ПОВНОГО ЕКРАНУ
 export function closePlayer() {
     const p = document.getElementById('player_modal');
     const f = document.getElementById('video_frame');
@@ -328,13 +328,20 @@ export function closePlayer() {
     p.style.display = 'none'; 
     f.src = ''; 
     
-    // 1. Виходимо з повноекранного режиму
-    if (window.Telegram?.WebApp?.exitFullscreen) {
-        window.Telegram.WebApp.exitFullscreen();
+    // ❌ ВИДАЛИВ: exitFullscreen()
+    // Цей рядок повертав системну смугу. Ми його прибрали.
+    
+    // ✅ ДОДАВ: На всяк випадок ПІДТВЕРДЖУЄМО повний екран
+    if (window.Telegram?.WebApp?.requestFullscreen) {
+        window.Telegram.WebApp.requestFullscreen();
     }
     
-    // 2. 🔥 ВАЖЛИВО: Примусово робимо хедер чорним, щоб він не виділявся
-    // Це прибере "смужку" зверху, якщо вона стала сірою/білою
+    // І переконуємось, що додаток розгорнуто
+    if (window.Telegram?.WebApp?.expand) {
+        window.Telegram.WebApp.expand();
+    }
+
+    // Тримаємо хедер чорним
     if (window.Telegram?.WebApp?.setHeaderColor) {
         window.Telegram.WebApp.setHeaderColor('#000000');
         window.Telegram.WebApp.setBackgroundColor('#000000');

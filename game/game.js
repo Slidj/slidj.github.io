@@ -6,8 +6,8 @@ const config = {
     width: window.innerWidth,
     height: window.innerHeight,
     parent: 'game-container',
-    backgroundColor: '#050505',
-    pixelArt: true, // Для спрайтів це важливо
+    backgroundColor: '#222',
+    pixelArt: true, // Для PNG краще true
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: false }
@@ -19,92 +19,82 @@ const game = new Phaser.Game(config);
 
 let player;
 let joystick, joyCursorKeys, cursorKeys;
-let speed = 150; // Трохи повільніше для реалізму
+let speed = 150;
 let trees, rocks;
 
 function preload() {
     this.load.plugin('rexvirtualjoystickplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.57/dist/rexvirtualjoystickplugin.min.js', true);
 
-    // --- ЗАВАНТАЖЕННЯ СПРАЖНІХ КАРТИНОК ---
-    
-    // 1. Спрайт-лист Лицаря (Це одна картинка, де багато кадрів в ряд)
-    // Розмір кадру 48x48 пікселів
-    this.load.spritesheet('knight', 
-        'https://labs.phaser.io/assets/sprites/metroid.png', // Тимчасово візьмемо цей спрайт для тесту анімації (він якісний)
-        { frameWidth: 32, frameHeight: 48 }
-    );
-
-    // 2. Тайли для землі (Сет "Diablo Dungeon")
-    this.load.image('tiles', 'https://labs.phaser.io/assets/tilemaps/tiles/catastrophi_tiles_16.png');
-    
-    // 3. Елементи оточення
-    this.load.image('tree_tex', 'https://labs.phaser.io/assets/sprites/palm-tree-left.png'); 
+    // --- ЗАВАНТАЖУЄМО ТВОГО ГЕРОЯ ---
+    // Увага: frameWidth і frameHeight мають співпадати з розміром клітинки в твоєму файлі.
+    // Я поставив 64x64. Якщо герой виглядає обрізаним або "поїхав", спробуй змінити на 32 або 48.
+    this.load.spritesheet('hero', 'assets/male_base.png', { 
+        frameWidth: 64, 
+        frameHeight: 64 
+    });
 }
 
 function create() {
-    // 1. АНІМАЦІЇ (Нарізаємо спрайт)
-    // Біг (кадри 0, 1, 2, 3)
+    // --- 1. АНІМАЦІЯ ---
+    // Нам треба вгадати, які кадри відповідають за біг.
+    // Зазвичай в таких файлах:
+    // Ряд 1 (кадри 0-8) - Біг вгору
+    // Ряд 2 (кадри 9-17) - Біг вліво
+    // Ряд 3 (кадри 18-26) - Біг вниз
+    // Ряд 4 (кадри 27-35) - Біг вправо
+    
+    // Створимо універсальну анімацію (беремо перші 4 кадри для тесту)
     this.anims.create({
-        key: 'run',
-        frames: this.anims.generateFrameNumbers('knight', { start: 0, end: 3 }),
-        frameRate: 10,
+        key: 'walk',
+        frames: this.anims.generateFrameNumbers('hero', { start: 0, end: 3 }), 
+        frameRate: 8,
         repeat: -1
     });
-    // Стоїть (кадр 0)
-    this.anims.create({
-        key: 'idle',
-        frames: [ { key: 'knight', frame: 0 } ],
-        frameRate: 20
-    });
 
-    // 2. СВІТ (Темний камінь)
-    const ground = this.add.tileSprite(0, 0, 2000, 2000, 'tiles', 1); // Вибираємо темний тайл
-    ground.setScale(3);
-    ground.setTint(0x666666); // Затемнюємо
-    ground.setDepth(-100);
+    // 2. СВІТ (Генеруємо кодом, поки немає файлів для землі)
+    createEnvironmentAssets(this);
+    const ground = this.add.tileSprite(0, 0, 2000, 2000, 'ground').setOrigin(0);
+    ground.setDepth(-1000);
     this.physics.world.setBounds(0, 0, 2000, 2000);
 
     // 3. ДЕКОРАЦІЇ
     trees = this.physics.add.staticGroup();
-    for (let i = 0; i < 40; i++) {
+    rocks = this.physics.add.staticGroup();
+
+    for (let i = 0; i < 50; i++) {
         let x = Phaser.Math.Between(100, 1900);
         let y = Phaser.Math.Between(100, 1900);
-        // Використовуємо спрайт дерева, фарбуємо в темний колір
-        let tree = this.add.image(x, y, 'tree_tex');
-        tree.setScale(2);
-        tree.setTint(0x444444); // Темне, мертве дерево
-        tree.setDepth(y); // 2.5D ефект
-        
-        // Додаємо невидимий блок для колізії (щоб впиратися в стовбур)
-        let stump = trees.create(x, y + 30, null); // пустий об'єкт
-        stump.setVisible(false);
-        stump.body.setSize(20, 10);
-        stump.refreshBody();
+        let tree = trees.create(x, y, 'tree');
+        tree.body.setSize(20, 10); tree.body.setOffset(22, 100); tree.setDepth(y);
+    }
+    for (let i = 0; i < 30; i++) {
+        let rock = rocks.create(x, y, 'rock');
+        rock.setDepth(y); rock.refreshBody();
     }
 
     // 4. ГЕРОЙ
-    player = this.physics.add.sprite(500, 500, 'knight');
-    player.setScale(3); // Збільшуємо
+    player = this.physics.add.sprite(500, 500, 'hero');
+    player.setScale(1.5); // Масштаб
     player.setCollideWorldBounds(true);
-    player.body.setSize(16, 16); // Колізія тільки ніг
-    player.body.setOffset(8, 32);
+    player.body.setSize(20, 20); // Колізія
     player.setDepth(500);
 
-    // Додаємо йому просту тінь
-    const shadow = this.add.ellipse(0, 0, 20, 10, 0x000000, 0.5);
-    player.setData('shadow', shadow);
-
-    // Камера
     this.cameras.main.startFollow(player);
-    this.cameras.main.setZoom(1.2);
 
     this.physics.add.collider(player, trees);
+    this.physics.add.collider(player, rocks);
 
-    // 5. ВІНЄТКА (Атмосфера)
-    createVignette(this);
-
-    // 6. ДЖОЙСТИК
-    createJoystick(this);
+    // 5. ДЖОЙСТИК
+    if (this.plugins.get('rexvirtualjoystickplugin')) {
+        joystick = this.plugins.get('rexvirtualjoystickplugin').add(this, {
+            x: 100, y: window.innerHeight - 100, radius: 50,
+            base: this.add.circle(0, 0, 50, 0x888888, 0.5),
+            thumb: this.add.circle(0, 0, 25, 0xffffff, 0.8),
+            dir: '8dir', forceMin: 16, fixed: true
+        });
+        joyCursorKeys = joystick.createCursorKeys();
+        joystick.base.setDepth(999999); joystick.thumb.setDepth(999999);
+    }
     cursorKeys = this.input.keyboard.createCursorKeys();
 }
 
@@ -123,58 +113,44 @@ function update() {
     if (cursorKeys.up.isDown) speedY = -speed;
     if (cursorKeys.down.isDown) speedY = speed;
 
-    // Нормалізація діагоналі
     if (speedX !== 0 && speedY !== 0) { speedX *= 0.707; speedY *= 0.707; }
 
     player.body.setVelocity(speedX, speedY);
 
-    // --- АНІМАЦІЯ ---
+    // Анімація
     if (speedX !== 0 || speedY !== 0) {
-        player.anims.play('run', true);
-        
-        // Поворот спрайта
+        player.anims.play('walk', true);
         if (speedX < 0) player.setFlipX(true);
         else if (speedX > 0) player.setFlipX(false);
     } else {
-        player.anims.play('idle', true);
+        player.anims.stop();
+        // player.setFrame(0); // Можна розкоментувати, щоб скидати кадр
     }
 
-    // Глибина і Тінь
     player.setDepth(player.y);
-    const shadow = player.getData('shadow');
-    shadow.setPosition(player.x, player.y + 45);
-    shadow.setDepth(player.y - 1);
-    // Тінь теж скейлимо, бо герой великий
-    shadow.setScale(3);
 }
 
-// --- ДОПОМІЖНІ ФУНКЦІЇ ---
+// Генератор для дерев і землі (поки що)
+function createEnvironmentAssets(scene) {
+    const treeC = document.createElement('canvas');
+    treeC.width = 64; treeC.height = 128;
+    const tCtx = treeC.getContext('2d');
+    tCtx.fillStyle = "#210"; tCtx.fillRect(28, 90, 8, 38); 
+    tCtx.fillStyle = "#131"; 
+    tCtx.beginPath(); tCtx.moveTo(0, 90); tCtx.lineTo(32, 30); tCtx.lineTo(64, 90); tCtx.fill();
+    tCtx.beginPath(); tCtx.moveTo(8, 60); tCtx.lineTo(32, 10); tCtx.lineTo(56, 60); tCtx.fill();
+    scene.textures.addCanvas('tree', treeC);
 
-function createVignette(scene) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512; canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-    const grd = ctx.createRadialGradient(256, 256, 100, 256, 256, 400);
-    grd.addColorStop(0, "rgba(0,0,0,0)");
-    grd.addColorStop(1, "rgba(0,0,0,1)");
-    ctx.fillStyle = grd; ctx.fillRect(0,0,512,512);
-    scene.textures.addCanvas('vignette', canvas);
+    const rockC = document.createElement('canvas');
+    rockC.width = 48; rockC.height = 48;
+    const rCtx = rockC.getContext('2d');
+    rCtx.fillStyle = "#555";
+    rCtx.beginPath(); rCtx.moveTo(10, 40); rCtx.lineTo(20, 5); rCtx.lineTo(40, 10); rCtx.lineTo(30, 45); rCtx.fill();
+    scene.textures.addCanvas('rock', rockC);
 
-    const v = scene.add.image(scene.cameras.main.centerX, scene.cameras.main.centerY, 'vignette');
-    v.setDisplaySize(window.innerWidth, window.innerHeight);
-    v.setScrollFactor(0).setDepth(10000).setAlpha(0.8);
-}
-
-function createJoystick(scene) {
-    if (scene.plugins.get('rexvirtualjoystickplugin')) {
-        joystick = scene.plugins.get('rexvirtualjoystickplugin').add(scene, {
-            x: 100, y: window.innerHeight - 100, radius: 50,
-            base: scene.add.circle(0, 0, 50, 0x222222, 0.5).setStrokeStyle(2, 0x888888), 
-            thumb: scene.add.circle(0, 0, 25, 0x555555, 0.8),
-            dir: '8dir', forceMin: 16, fixed: true
-        });
-        joyCursorKeys = joystick.createCursorKeys();
-        joystick.base.setDepth(20000); joystick.thumb.setDepth(20000);
-    }
-    cursorKeys = scene.input.keyboard.createCursorKeys();
+    const groundC = document.createElement('canvas');
+    groundC.width = 64; groundC.height = 64;
+    const gCtx = groundC.getContext('2d');
+    gCtx.fillStyle = "#222"; gCtx.fillRect(0, 0, 64, 64);
+    scene.textures.addCanvas('ground', groundC);
 }

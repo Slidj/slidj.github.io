@@ -7,7 +7,7 @@ const config = {
     height: window.innerHeight,
     parent: 'game-container',
     backgroundColor: '#222',
-    pixelArt: true, // Вмикаємо піксель-арт для чіткості
+    pixelArt: false,
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: false }
@@ -17,16 +17,25 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+// --- ТВОЇ НАЛАШТУВАННЯ ---
+// Ми перевели твої рядки (1, 3, 5, 7) в індекси (0, 2, 4, 6)
+const ROW_LEFT  = 0;  // Твій рядок 1
+const ROW_UP    = 2;  // Твій рядок 3
+const ROW_RIGHT = 4;  // Твій рядок 5
+const ROW_DOWN  = 6;  // Твій рядок 7
+
+const FRAMES_PER_ROW = 8; // У цьому файлі 8 кадрів в ряд
+const ANIM_LENGTH = 8;    // Використаємо всі 8 кадрів для плавності
+
 let player;
 let joystick, joyCursorKeys, cursorKeys;
 let speed = 200;
 let trees, rocks;
-let lastDirection = 'down'; // Запам'ятовуємо, куди дивився герой
 
 function preload() {
     this.load.plugin('rexvirtualjoystickplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.57/dist/rexvirtualjoystickplugin.min.js', true);
 
-    // Завантажуємо героя (256x256)
+    // Завантажуємо героя
     this.load.spritesheet('hero_file', 'assets/male_base.png', { 
         frameWidth: 256, 
         frameHeight: 256 
@@ -34,37 +43,24 @@ function preload() {
 }
 
 function create() {
-    // 1. СТВОРЕННЯ АНІМАЦІЙ (Для 8 сторін)
-    // У Flare спрайтах зазвичай 8 рядів по 4 кадри.
-    // Порядок рядів: Південь, Південний Схід, Схід, Пн-Схід, Північ...
-    
-    // ВНИЗ (South) - Ряд 0 (кадри 0-3)
-    this.anims.create({
-        key: 'walk-down',
-        frames: this.anims.generateFrameNumbers('hero_file', { start: 0, end: 3 }),
-        frameRate: 8, repeat: -1
-    });
+    // 1. СТВОРЕННЯ АНІМАЦІЙ
+    const createAnim = (key, row) => {
+        const startFrame = row * FRAMES_PER_ROW;
+        this.anims.create({
+            key: key,
+            frames: this.anims.generateFrameNumbers('hero_file', { 
+                start: startFrame, 
+                end: startFrame + (ANIM_LENGTH - 1) 
+            }),
+            frameRate: 12, // Трохи швидше для плавності
+            repeat: -1
+        });
+    };
 
-    // ВПРАВО (East) - Ряд 2 (кадри 8-11)
-    this.anims.create({
-        key: 'walk-right',
-        frames: this.anims.generateFrameNumbers('hero_file', { start: 8, end: 11 }),
-        frameRate: 8, repeat: -1
-    });
-
-    // ВГОРУ (North) - Ряд 4 (кадри 16-19)
-    this.anims.create({
-        key: 'walk-up',
-        frames: this.anims.generateFrameNumbers('hero_file', { start: 16, end: 19 }),
-        frameRate: 8, repeat: -1
-    });
-
-    // ВЛІВО (West) - Ряд 6 (кадри 24-27)
-    this.anims.create({
-        key: 'walk-left',
-        frames: this.anims.generateFrameNumbers('hero_file', { start: 24, end: 27 }),
-        frameRate: 8, repeat: -1
-    });
+    createAnim('walk-left',  ROW_LEFT);
+    createAnim('walk-up',    ROW_UP);
+    createAnim('walk-right', ROW_RIGHT);
+    createAnim('walk-down',  ROW_DOWN);
 
     // 2. СВІТ
     createEnvironmentAssets(this);
@@ -72,10 +68,10 @@ function create() {
     ground.setDepth(-1000);
     this.physics.world.setBounds(0, 0, 2000, 2000);
 
-    // 3. ДЕКОРАЦІЇ
+    // 3. ОБ'ЄКТИ
     trees = this.physics.add.staticGroup();
     rocks = this.physics.add.staticGroup();
-
+    
     for (let i = 0; i < 40; i++) {
         let tree = trees.create(Phaser.Math.Between(100, 1900), Phaser.Math.Between(100, 1900), 'tree');
         tree.body.setSize(20, 10); tree.body.setOffset(22, 100); tree.setDepth(tree.y);
@@ -88,11 +84,12 @@ function create() {
     // 4. ГЕРОЙ
     if (this.textures.exists('hero_file')) {
         player = this.physics.add.sprite(500, 500, 'hero_file');
-        player.setScale(0.4); // Зменшуємо (бо 256px це багато)
-        player.body.setSize(60, 40); // Колізія ніг
-        player.body.setOffset(100, 180); 
+        player.setScale(0.4); 
+        // Колізія під ногами
+        player.body.setSize(50, 30); 
+        player.body.setOffset(100, 190); 
     } else {
-        // Якщо файл не завантажився - запасний квадрат
+        // Запасний варіант
         player = this.add.rectangle(500, 500, 32, 32, 0xff0000);
         this.physics.add.existing(player);
     }
@@ -100,7 +97,6 @@ function create() {
     player.setCollideWorldBounds(true);
     player.setDepth(500);
     this.cameras.main.startFollow(player);
-    
     this.physics.add.collider(player, trees);
     this.physics.add.collider(player, rocks);
 
@@ -122,58 +118,48 @@ function update() {
     player.body.setVelocity(0);
     let speedX = 0, speedY = 0;
 
-    // Зчитуємо джойстик
     if (joyCursorKeys) {
         if (joyCursorKeys.left.isDown) speedX = -speed;
         if (joyCursorKeys.right.isDown) speedX = speed;
         if (joyCursorKeys.up.isDown) speedY = -speed;
         if (joyCursorKeys.down.isDown) speedY = speed;
     }
-    // Клавіатура
     if (cursorKeys.left.isDown) speedX = -speed;
     if (cursorKeys.right.isDown) speedX = speed;
     if (cursorKeys.up.isDown) speedY = -speed;
     if (cursorKeys.down.isDown) speedY = speed;
 
-    // Нормалізація (щоб по діагоналі не біг швидше)
     if (speedX !== 0 && speedY !== 0) { speedX *= 0.707; speedY *= 0.707; }
 
     player.body.setVelocity(speedX, speedY);
 
     // --- ЛОГІКА АНІМАЦІЇ ---
-    // Якщо рухаємось
     if (speedX !== 0 || speedY !== 0) {
-        // Визначаємо пріоритетний напрямок
+        // Визначаємо, куди більше тягне джойстик
         if (Math.abs(speedX) > Math.abs(speedY)) {
-            // Рух по горизонталі
+            // Рух ГОРИЗОНТАЛЬНО
             if (speedX > 0) {
                 player.anims.play('walk-right', true);
-                lastDirection = 'walk-right';
             } else {
                 player.anims.play('walk-left', true);
-                lastDirection = 'walk-left';
             }
         } else {
-            // Рух по вертикалі
+            // Рух ВЕРТИКАЛЬНО
             if (speedY > 0) {
                 player.anims.play('walk-down', true);
-                lastDirection = 'walk-down';
             } else {
                 player.anims.play('walk-up', true);
-                lastDirection = 'walk-up';
             }
         }
     } else {
-        // Якщо стоїмо - зупиняємо анімацію і показуємо перший кадр останнього напрямку
         player.anims.stop();
-        // Можна додати idle-анімації, але поки просто зупинимо на поточному кадрі
+        // player.setFrame(ROW_DOWN * FRAMES_PER_ROW); // Можна розкоментувати, щоб ставав обличчям до нас
     }
 
-    // Z-Index (2.5D ефект)
     player.setDepth(player.y);
 }
 
-// Генератор середовища
+// Генератор текстур
 function createEnvironmentAssets(scene) {
     const treeC = document.createElement('canvas'); treeC.width = 64; treeC.height = 128;
     const tCtx = treeC.getContext('2d');

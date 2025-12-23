@@ -8,6 +8,8 @@ const config = {
     height: window.innerHeight,
     parent: 'game-container',
     backgroundColor: '#000',
+    // ВАЖЛИВО: Вмикаємо режим піксель-арту для чіткості
+    pixelArt: true,
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: false }
@@ -24,60 +26,81 @@ let joyCursorKeys;
 let cursorKeys;
 let speed = 200;
 
-// Групи ресурсів
 let trees;
 let rocks;
 
-// Інвентар
 let inventory = { wood: 0, stone: 0 };
 let inventoryText;
-
-// Стан
-let isActionPressed = false;
 
 function preload() {
     // Завантаження плагіна джойстика
     this.load.plugin('rexvirtualjoystickplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.57/dist/rexvirtualjoystickplugin.min.js', true);
+
+    // --- ЗАВАНТАЖЕННЯ 2D СПРАЙТІВ ---
+    // Використовуємо безкоштовні ассети з відкритого репозиторію
+    const repoUrl = 'https://raw.githubusercontent.com/Slidj/game/main/assets/'; // Приклад (тимчасові посилання)
+
+    // Я використовую надійні публічні посилання на піксель-арт.
+    // Якщо вони не завантажаться, ми побачимо чорні квадрати.
+    
+    // Герой (Лицар)
+    this.load.image('hero', 'https://img.itch.zone/aW1hZ2UvNTg1MTguMC92JTJGejI0ODg2LnBuZw==/original/6O%2B%2F%2Bm.png');
+    // Трава (Тайл)
+    this.load.image('grass', 'https://img.itch.zone/aW1hZ2UvNTg1MTguMC92JTJGTmVnd1lQLnBuZw==/original/sX7S4%2B.png');
+    // Дерево
+    this.load.image('tree', 'https://img.itch.zone/aW1hZ2UvNTg1MTguMC92JTJGcE9xUjVBLnBuZw==/original/P%2FjW8P.png');
+    // Камінь
+    this.load.image('rock', 'https://img.itch.zone/aW1hZ2UvNTg1MTguMC92JTJGbU5tWkxrLnBuZw==/original/%2BVgJkQ.png');
 }
 
 function create() {
-    // 1. ГЕНЕРАЦІЯ ГРАФІКИ (Щоб не качати картинки)
-    createAssets(this);
+    // 1. СВІТ
+    // Трава (збільшуємо масштаб, бо спрайт маленький)
+    const grass = this.add.tileSprite(0, 0, 2000, 2000, 'grass').setOrigin(0);
+    grass.setScale(3); 
 
-    // 2. СВІТ
-    // Створюємо траву (TiledSprite - повторювана текстура)
-    this.add.tileSprite(0, 0, 2000, 2000, 'grass').setOrigin(0);
-    // Обмежуємо світ
-    this.physics.world.setBounds(0, 0, 2000, 2000);
+    this.physics.world.setBounds(0, 0, 2000 * 3, 2000 * 3);
 
-    // 3. РЕСУРСИ (Генеруємо випадково)
+    // 2. РЕСУРСИ
     trees = this.physics.add.staticGroup();
     rocks = this.physics.add.staticGroup();
 
-    for (let i = 0; i < 30; i++) {
-        let tx = Phaser.Math.Between(100, 1900);
-        let ty = Phaser.Math.Between(100, 1900);
-        trees.create(tx, ty, 'tree').setScale(0.8).refreshBody();
+    // Розкидаємо дерева
+    for (let i = 0; i < 40; i++) {
+        let tx = Phaser.Math.Between(100, 1800);
+        let ty = Phaser.Math.Between(100, 1800);
+        // Створюємо дерево і збільшуємо його в 3 рази
+        let tree = trees.create(tx, ty, 'tree');
+        tree.setScale(3).refreshBody();
+        // Зсуваємо колізію вниз, щоб герой міг заходити "за" дерево
+        tree.body.setSize(tree.width * 0.5, tree.height * 0.2);
+        tree.body.setOffset(tree.width * 0.25, tree.height * 0.8);
     }
-    for (let i = 0; i < 15; i++) {
-        let rx = Phaser.Math.Between(100, 1900);
-        let ry = Phaser.Math.Between(100, 1900);
-        rocks.create(rx, ry, 'rock').setScale(0.8).refreshBody();
+    // Розкидаємо каміння
+    for (let i = 0; i < 20; i++) {
+        let rx = Phaser.Math.Between(100, 1800);
+        let ry = Phaser.Math.Between(100, 1800);
+        rocks.create(rx, ry, 'rock').setScale(3).refreshBody();
     }
 
-    // 4. ГРАВЕЦЬ
-    player = this.physics.add.sprite(1000, 1000, 'hero');
+    // 3. ГРАВЕЦЬ
+    // Використовуємо спрайт героя, збільшуємо в 3 рази
+    player = this.physics.add.sprite(1000, 1000, 'hero').setScale(3);
     player.setCollideWorldBounds(true);
+    // Зменшуємо зону колізії героя до його ніг
+    player.body.setSize(12, 16);
+    player.body.setOffset(2, 16);
     
     // Камера
-    this.cameras.main.setBounds(0, 0, 2000, 2000);
+    this.cameras.main.setBounds(0, 0, 2000 * 3, 2000 * 3);
     this.cameras.main.startFollow(player);
+    this.cameras.main.setZoom(1.2); // Трохи наблизимо камеру
 
-    // Колізія (Гравець не може пройти крізь дерево)
+    // Колізія
     this.physics.add.collider(player, trees);
     this.physics.add.collider(player, rocks);
 
-    // 5. ДЖОЙСТИК
+    // 4. ДЖОЙСТИК
     if (this.plugins.get('rexvirtualjoystickplugin')) {
         joystick = this.plugins.get('rexvirtualjoystickplugin').add(this, {
             x: 100, y: window.innerHeight - 100,
@@ -90,20 +113,22 @@ function create() {
     }
     cursorKeys = this.input.keyboard.createCursorKeys();
 
-    // 6. ІНТЕРФЕЙС (Інвентар)
-    // Закріплюємо текст на екрані (setScrollFactor(0))
+    // 5. ІНТЕРФЕЙС
     inventoryText = this.add.text(20, 20, 'Wood: 0 | Stone: 0', {
-        font: '20px Arial', fill: '#ffffff', backgroundColor: '#000000aa', padding: { x: 10, y: 5 }
+        font: '20px monospace', fill: '#ffffff', backgroundColor: '#000000aa', padding: { x: 10, y: 5 }
     }).setScrollFactor(0).setDepth(100);
 
-    // 7. ЛОГІКА КНОПКИ ДІЇ (HTML кнопка)
+    // Кнопка дії
     const actionBtn = document.getElementById('action-btn');
-    actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); tryGatherResource(); });
-    actionBtn.addEventListener('mousedown', (e) => { e.preventDefault(); tryGatherResource(); });
+    // Видаляємо старі слухачі, якщо вони були (щоб не дублювалися при перезавантаженні)
+    let newBtn = actionBtn.cloneNode(true);
+    actionBtn.parentNode.replaceChild(newBtn, actionBtn);
+    
+    newBtn.addEventListener('touchstart', (e) => { e.preventDefault(); tryGatherResource(); });
+    newBtn.addEventListener('mousedown', (e) => { e.preventDefault(); tryGatherResource(); });
 }
 
 function update() {
-    // Рух гравця
     player.body.setVelocity(0);
     let speedX = 0;
     let speedY = 0;
@@ -114,43 +139,36 @@ function update() {
         if (joyCursorKeys.up.isDown) speedY = -speed;
         if (joyCursorKeys.down.isDown) speedY = speed;
     }
-    // Клавіатура
     if (cursorKeys.left.isDown) speedX = -speed;
     if (cursorKeys.right.isDown) speedX = speed;
     if (cursorKeys.up.isDown) speedY = -speed;
     if (cursorKeys.down.isDown) speedY = speed;
 
     player.body.setVelocity(speedX, speedY);
+
+    // Проста анімація повороту (дзеркальне відображення)
+    if (speedX < 0) player.setFlipX(true); // Йде вліво
+    else if (speedX > 0) player.setFlipX(false); // Йде вправо
 }
 
-// Функція добування ресурсів
 function tryGatherResource() {
-    // Перевіряємо, чи торкається гравець дерева
-    // Використовуємо overlap для перевірки близькості
-    
     let hitSomething = false;
+    const scene = game.scene.scenes[0];
 
-    // Перевірка дерев
-    game.scene.scenes[0].physics.overlap(player, trees, (player, tree) => {
-        if (hitSomething) return; // Рубаємо тільки одне за раз
-        
-        // Ефект "удару"
-        game.scene.scenes[0].tweens.add({ targets: tree, alpha: 0.5, duration: 100, yoyo: true });
-
-        // Шанс добути (імітація HP дерева)
+    scene.physics.overlap(player, trees, (player, tree) => {
+        if (hitSomething) return;
+        scene.tweens.add({ targets: tree, alpha: 0.5, duration: 100, yoyo: true });
         inventory.wood++;
         updateInventory();
-        
-        // Видаляємо дерево (для спрощення - з одного удару)
         tree.disableBody(true, true); 
         hitSomething = true;
         showFloatingText(player.x, player.y, "+1 Wood 🌲");
     });
 
-    // Перевірка каміння
     if (!hitSomething) {
-        game.scene.scenes[0].physics.overlap(player, rocks, (player, rock) => {
+        scene.physics.overlap(player, rocks, (player, rock) => {
             if (hitSomething) return;
+            scene.tweens.add({ targets: rock, alpha: 0.5, duration: 100, yoyo: true });
             inventory.stone++;
             updateInventory();
             rock.disableBody(true, true);
@@ -160,8 +178,8 @@ function tryGatherResource() {
     }
 
     if (!hitSomething) {
-        // Анімація удару в повітря
-        game.scene.scenes[0].tweens.add({ targets: player, angle: 360, duration: 200 });
+        // Анімація "стрибка" при ударі в повітря
+        scene.tweens.add({ targets: player, y: player.y - 10, duration: 100, yoyo: true });
     }
 }
 
@@ -170,38 +188,14 @@ function updateInventory() {
 }
 
 function showFloatingText(x, y, message) {
-    let text = game.scene.scenes[0].add.text(x, y - 20, message, {
-        font: '16px Arial', fill: '#ffff00', stroke: '#000', strokeThickness: 3
-    }).setOrigin(0.5);
+    const scene = game.scene.scenes[0];
+    let text = scene.add.text(x, y - 20, message, {
+        font: '18px monospace', fill: '#ffff00', stroke: '#000', strokeThickness: 3
+    }).setOrigin(0.5).setDepth(101);
 
-    game.scene.scenes[0].tweens.add({
-        targets: text, y: y - 50, alpha: 0, duration: 1000,
+    scene.tweens.add({
+        targets: text, y: y - 60, alpha: 0, duration: 1000,
         onComplete: () => text.destroy()
     });
 }
-
-// --- ДОДАТКОВА ФУНКЦІЯ: СТВОРЕННЯ ГРАФІКИ КОДОМ ---
-function createAssets(scene) {
-    const g = scene.make.graphics();
-
-    // 1. Герой (Білий круг з обводкою)
-    g.fillStyle(0xffffff); g.fillCircle(16, 16, 14);
-    g.lineStyle(2, 0x000000); g.strokeCircle(16, 16, 14);
-    g.generateTexture('hero', 32, 32); g.clear();
-
-    // 2. Трава (Зелений квадрат з крапками)
-    g.fillStyle(0x2d5a27); g.fillRect(0, 0, 64, 64); // Темно-зелений
-    g.fillStyle(0x3e7a36); // Світлі плями
-    g.fillCircle(10, 10, 4); g.fillCircle(40, 50, 6); g.fillCircle(55, 20, 3);
-    g.generateTexture('grass', 64, 64); g.clear();
-
-    // 3. Дерево (Коричневий стовбур + зелена крона)
-    g.fillStyle(0x8B4513); g.fillRect(12, 20, 8, 20); // Стовбур
-    g.fillStyle(0x228B22); g.fillCircle(16, 15, 14); // Крона
-    g.generateTexture('tree', 32, 40); g.clear();
-
-    // 4. Камінь (Сіра брила)
-    g.fillStyle(0x808080); 
-    g.fillCircle(16, 16, 12);
-    g.generateTexture('rock', 32, 32); g.clear();
-}
+// Функцію createAssets видалено, вона більше не потрібна.

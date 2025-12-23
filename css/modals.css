@@ -15,8 +15,7 @@
 }
 
 /* 2. Анімації */
-.title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }
-.title-visible { opacity: 1; }
+.title-fade-in { opacity: 0; transition: opacity 0.6s ease-out; }\n.title-visible { opacity: 1; }
 .logo-anim { animation: popInIcon 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 @keyframes popInIcon {
     from { opacity: 0; transform: scale(0.5); }
@@ -102,21 +101,30 @@
 .similar-card img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.2s; }
 .similar-rating { position: absolute; top: 2px; right: 2px; background: rgba(229, 9, 20, 0.9); color: #fff; font-size: 10px; font-weight: bold; padding: 1px 3px; border-radius: 2px; }
 
+/* 🔥 ВИПРАВЛЕНИЙ СТИЛЬ ДЛЯ ПЛЕЄРА (БЕЗ ВІДСТУПІВ) */
 #player_modal {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
     background-color: #000; z-index: 99999;
     display: none; flex-direction: column; align-items: center; justify-content: center;
+    padding: 0 !important; margin: 0 !important;
     animation: zoomInPlayer 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    padding-top: var(--safe-top); box-sizing: border-box;
 }
-#video_frame { width: 100%; height: 100%; border: none; background: #000; }
+
+#video_frame { 
+    width: 100%; 
+    height: 100%; 
+    border: none; 
+    background: #000; 
+    display: block; 
+}
+
 .close-player-btn {
-    position: absolute; top: calc(20px + var(--safe-top)); right: 20px; 
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
     color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
-    background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-}
-@media (orientation: landscape) {
-    #player_modal { padding: 0 !important; background-color: #000; }
-    #video_frame { aspect-ratio: 16 / 9; max-width: 100vw; max-height: 100vh; width: auto !important; height: auto !important; }
-    .close-player-btn { top: 20px; right: 40px; background: rgba(0,0,0,0.5); }
+    background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+    backdrop-filter: blur(5px);
 }

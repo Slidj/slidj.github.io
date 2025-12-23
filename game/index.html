@@ -2,55 +2,56 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My RPG Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RPG World</title>
     <style>
-        body {
-            font-family: sans-serif;
-            background-color: var(--tg-theme-bg-color, #fff); /* Колір фону з теми Телеграму */
-            color: var(--tg-theme-text-color, #000); /* Колір тексту з теми Телеграму */
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; touch-action: none; }
+        #game-container { width: 100vw; height: 100vh; }
+        
+        /* Стилі для екранного джойстика */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 150px;
+            height: 150px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            pointer-events: none; /* Щоб кліки проходили крізь прозорі зони */
+            z-index: 10;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            pointer-events: auto; /* Кнопки клікабельні */
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            background-color: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #fff);
-            border: none;
-            border-radius: 8px;
+            font-size: 24px;
+            user-select: none;
             cursor: pointer;
         }
+        .btn:active { background: rgba(255, 255, 255, 0.5); }
+        .up { grid-column: 2; grid-row: 1; }
+        .left { grid-column: 1; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 3; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
-    <h1>Вітаю в RPG!</h1>
-    <p id="username">Гравець: ...</p>
-    <button onclick="startGame()">Почати пригоду</button>
+    <div id="game-container"></div>
 
-    <script>
-        // Ініціалізація
-        let tg = window.Telegram.WebApp;
-        tg.expand(); // Розгортаємо на весь екран
+    <div id="controls">
+        <div class="btn up" id="btn-up">⬆️</div>
+        <div class="btn left" id="btn-left">⬅️</div>
+        <div class="btn right" id="btn-right">➡️</div>
+        <div class="btn down" id="btn-down">⬇️</div>
+    </div>
 
-        // Отримуємо дані користувача (якщо доступні)
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            document.getElementById('username').innerText = 
-                `Гравець: ${tg.initDataUnsafe.user.first_name}`;
-        }
-
-        function startGame() {
-            // Тут буде логіка запуску
-            tg.sendData("start_game"); // Відправити дані боту (опціонально)
-            alert("Гру розпочато! (Тут буде ігровий процес)");
-        }
-    </script>
+    <script src="game.js"></script>
 </body>
 </html>
-

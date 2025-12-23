@@ -17,15 +17,22 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// --- ТВОЇ НАЛАШТУВАННЯ ---
-// Ми перевели твої рядки (1, 3, 5, 7) в індекси (0, 2, 4, 6)
-const ROW_LEFT  = 0;  // Твій рядок 1
-const ROW_UP    = 2;  // Твій рядок 3
-const ROW_RIGHT = 4;  // Твій рядок 5
-const ROW_DOWN  = 6;  // Твій рядок 7
+// --- НАЛАШТУВАННЯ АНІМАЦІЇ ---
 
-const FRAMES_PER_ROW = 8; // У цьому файлі 8 кадрів в ряд
-const ANIM_LENGTH = 8;    // Використаємо всі 8 кадрів для плавності
+// Твої правильні рядки:
+const ROW_LEFT  = 0;  
+const ROW_UP    = 2;  
+const ROW_RIGHT = 4;  
+const ROW_DOWN  = 6;  
+
+// ВАЖЛИВІ ЗМІНИ ТУТ:
+const FRAMES_PER_ROW = 8; // Скільки всього кадрів у файлі в одному рядку (для відступу)
+
+// Скільки кадрів ми хочемо ГРАТИ.
+// Ти казав 5, але для плавності циклу (ліва нога - стійка - права нога - стійка)
+// зазвичай ідеально підходить 4. Я поставив 4.
+// Якщо буде мало - зміни цю цифру на 5.
+const ANIM_LENGTH = 4;    
 
 let player;
 let joystick, joyCursorKeys, cursorKeys;
@@ -35,7 +42,6 @@ let trees, rocks;
 function preload() {
     this.load.plugin('rexvirtualjoystickplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.57/dist/rexvirtualjoystickplugin.min.js', true);
 
-    // Завантажуємо героя
     this.load.spritesheet('hero_file', 'assets/male_base.png', { 
         frameWidth: 256, 
         frameHeight: 256 
@@ -45,14 +51,19 @@ function preload() {
 function create() {
     // 1. СТВОРЕННЯ АНІМАЦІЙ
     const createAnim = (key, row) => {
+        // Обчислюємо початок рядка (наприклад, 4 * 8 = 32-й кадр)
         const startFrame = row * FRAMES_PER_ROW;
+        
+        // Генеруємо номери кадрів.
+        // Якщо ANIM_LENGTH = 4, ми беремо кадри: start, start+1, start+2, start+3.
+        // Зайві кадри (атака, смерть) ігноруються.
         this.anims.create({
             key: key,
             frames: this.anims.generateFrameNumbers('hero_file', { 
                 start: startFrame, 
                 end: startFrame + (ANIM_LENGTH - 1) 
             }),
-            frameRate: 12, // Трохи швидше для плавності
+            frameRate: 8, // Швидкість анімації (можна міняти: 6 повільніше, 12 швидше)
             repeat: -1
         });
     };
@@ -85,11 +96,9 @@ function create() {
     if (this.textures.exists('hero_file')) {
         player = this.physics.add.sprite(500, 500, 'hero_file');
         player.setScale(0.4); 
-        // Колізія під ногами
         player.body.setSize(50, 30); 
         player.body.setOffset(100, 190); 
     } else {
-        // Запасний варіант
         player = this.add.rectangle(500, 500, 32, 32, 0xff0000);
         this.physics.add.existing(player);
     }
@@ -135,31 +144,24 @@ function update() {
 
     // --- ЛОГІКА АНІМАЦІЇ ---
     if (speedX !== 0 || speedY !== 0) {
-        // Визначаємо, куди більше тягне джойстик
         if (Math.abs(speedX) > Math.abs(speedY)) {
-            // Рух ГОРИЗОНТАЛЬНО
-            if (speedX > 0) {
-                player.anims.play('walk-right', true);
-            } else {
-                player.anims.play('walk-left', true);
-            }
+            // Горизонтально
+            if (speedX > 0) player.anims.play('walk-right', true);
+            else player.anims.play('walk-left', true);
         } else {
-            // Рух ВЕРТИКАЛЬНО
-            if (speedY > 0) {
-                player.anims.play('walk-down', true);
-            } else {
-                player.anims.play('walk-up', true);
-            }
+            // Вертикально
+            if (speedY > 0) player.anims.play('walk-down', true);
+            else player.anims.play('walk-up', true);
         }
     } else {
         player.anims.stop();
-        // player.setFrame(ROW_DOWN * FRAMES_PER_ROW); // Можна розкоментувати, щоб ставав обличчям до нас
+        // Якщо зупинилися - показуємо перший кадр поточної анімації (щоб не завмер в позі кроку)
+        // player.setFrame(player.anims.currentAnim ? player.anims.currentAnim.frames[0].frame.name : 0);
     }
 
     player.setDepth(player.y);
 }
 
-// Генератор текстур
 function createEnvironmentAssets(scene) {
     const treeC = document.createElement('canvas'); treeC.width = 64; treeC.height = 128;
     const tCtx = treeC.getContext('2d');

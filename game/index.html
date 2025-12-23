@@ -5,15 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RPG World</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; overflow: hidden; touch-action: none; }
-        #game-container { width: 100vw; height: 100vh; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #000; 
+            overflow: hidden; 
+            touch-action: none; /* Забороняє зум і скрол пальцями */
+        }
+        #game-container { 
+            width: 100vw; 
+            height: 100vh; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/phaser3-rex-plugins/dist/rexvirtualjoystickplugin.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+
     <div id="game-container"></div>
+
     <script src="game.js"></script>
 </body>
 </html>

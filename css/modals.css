@@ -122,6 +122,7 @@
 /* 🔥 КНОПКА З ЕФЕКТОМ ЗНИКНЕННЯ */
 .close-player-btn {
     position: absolute; 
+    /* Відступ від верху + safe area */
     top: calc(10px + var(--safe-top)); 
     right: 20px; 
     color: #fff; font-size: 40px; cursor: pointer; z-index: 100000;
@@ -135,12 +136,12 @@
     opacity: 1; /* По замовчуванню видима */
 }
 
-/* Коли кнопка в "режимі привида" */
+/* Коли кнопка в "режимі привида" - майже прозора (15%) */
 .close-player-btn.faded {
-    opacity: 0.15; /* 15% видимості - ледь помітна */
+    opacity: 0.15; 
 }
 
-/* Коли натискаємо - стає яскравою */
+/* При натисканні стає яскравою */
 .close-player-btn:active {
     opacity: 1 !important;
     transform: scale(0.9);

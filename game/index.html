@@ -1,1 +1,56 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My RPG Game</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: var(--tg-theme-bg-color, #fff); /* Колір фону з теми Телеграму */
+            color: var(--tg-theme-text-color, #000); /* Колір тексту з теми Телеграму */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #fff);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+    <h1>Вітаю в RPG!</h1>
+    <p id="username">Гравець: ...</p>
+    <button onclick="startGame()">Почати пригоду</button>
+
+    <script>
+        // Ініціалізація
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Розгортаємо на весь екран
+
+        // Отримуємо дані користувача (якщо доступні)
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            document.getElementById('username').innerText = 
+                `Гравець: ${tg.initDataUnsafe.user.first_name}`;
+        }
+
+        function startGame() {
+            // Тут буде логіка запуску
+            tg.sendData("start_game"); // Відправити дані боту (опціонально)
+            alert("Гру розпочато! (Тут буде ігровий процес)");
+        }
+    </script>
+</body>
+</html>
 

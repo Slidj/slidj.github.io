@@ -1,4 +1,3 @@
-// --- НАЛАШТУВАННЯ ---
 const tg = window.Telegram.WebApp;
 tg.expand();
 
@@ -7,8 +6,8 @@ const config = {
     width: window.innerWidth,
     height: window.innerHeight,
     parent: 'game-container',
-    backgroundColor: '#1a1a1a', // Темний фон підкладки
-    pixelArt: true, // ВАЖЛИВО: Робить пікселі чіткими
+    backgroundColor: '#000000', // Повна темрява фону
+    pixelArt: true,
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: false }
@@ -18,7 +17,6 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// --- ЗМІННІ ---
 let player;
 let joystick;
 let joyCursorKeys;
@@ -30,82 +28,99 @@ let rocks;
 let inventory = { wood: 0, stone: 0 };
 let inventoryText;
 
+// Для освітлення
+let lightLayer; 
+let spotlight;
+
 function preload() {
-    // Тільки плагін джойстика беремо з інтернету (він надійний)
     this.load.plugin('rexvirtualjoystickplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.57/dist/rexvirtualjoystickplugin.min.js', true);
 }
 
 function create() {
-    // 1. СТВОРЮЄМО ПІКСЕЛЬ-АРТ (Магія коду)
     createPixelTextures(this);
 
-    // 2. СВІТ
-    // Трава (Тайл 16x16, збільшений в 4 рази)
+    // 1. СВІТ (Робимо землю темнішою, як у Diablo)
     const grass = this.add.tileSprite(0, 0, 2000, 2000, 'grass').setOrigin(0);
     grass.setScale(4); 
+    grass.setTint(0x555555); // Затінюємо саму траву, щоб вона не була яскравою
 
     this.physics.world.setBounds(0, 0, 2000 * 4, 2000 * 4);
 
-    // 3. РЕСУРСИ
+    // 2. РЕСУРСИ
     trees = this.physics.add.staticGroup();
     rocks = this.physics.add.staticGroup();
 
-    // Садимо дерева
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 60; i++) {
         let x = Phaser.Math.Between(100, 2500);
         let y = Phaser.Math.Between(100, 2500);
         let tree = trees.create(x, y, 'tree');
-        tree.setScale(4).refreshBody(); // Збільшуємо пікселі в 4 рази
-        // Робимо так, щоб герой ходив "за" деревом (колізія по пеньку)
+        tree.setScale(4).refreshBody(); 
         tree.body.setSize(10, 8);
         tree.body.setOffset(3, 24);
+        tree.setDepth(y); // Сортування глибини (щоб герой заходив ЗА дерево)
     }
 
-    // Розкидаємо каміння
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 40; i++) {
         let x = Phaser.Math.Between(100, 2500);
         let y = Phaser.Math.Between(100, 2500);
         let rock = rocks.create(x, y, 'rock');
         rock.setScale(4).refreshBody();
         rock.body.setSize(14, 10);
         rock.body.setOffset(1, 6);
+        rock.setDepth(y);
     }
 
-    // 4. ГРАВЕЦЬ (ЛИЦАР)
+    // 3. ГРАВЕЦЬ
     player = this.physics.add.sprite(500, 500, 'hero');
-    player.setScale(4); // Великий піксельний герой
+    player.setScale(4);
     player.setCollideWorldBounds(true);
-    player.body.setSize(10, 8); // Колізія тільки на ногах
+    player.body.setSize(10, 8);
     player.body.setOffset(3, 24);
+    player.setDepth(500); // Початкова глибина
 
     // Камера
     this.cameras.main.setBounds(0, 0, 8000, 8000);
     this.cameras.main.startFollow(player);
     this.cameras.main.setZoom(1.0);
 
-    // Колізія
+    // Колізії
     this.physics.add.collider(player, trees);
     this.physics.add.collider(player, rocks);
 
-    // 5. ДЖОЙСТИК
+    // 4. СИСТЕМА ОСВІТЛЕННЯ (Fog of War)
+    // Створюємо чорну текстуру поверх всього світу
+    lightLayer = this.add.renderTexture(0, 0, 2000 * 4, 2000 * 4);
+    lightLayer.setDepth(10000); // Поверх усього
+    lightLayer.fill(0x000000, 0.95); // Чорний колір, 95% непрозорості (темрява)
+    lightLayer.setBlendMode(Phaser.BlendModes.MULTIPLY); // Режим накладання
+
+    // "Пензлик" світла (круглий градієнт)
+    spotlight = this.make.image({
+        x: 0, y: 0, key: 'light', add: false
+    });
+    spotlight.setScale(6); // Розмір світла
+
+    // 5. ДЖОЙСТИК ТА UI
     if (this.plugins.get('rexvirtualjoystickplugin')) {
         joystick = this.plugins.get('rexvirtualjoystickplugin').add(this, {
             x: 100, y: window.innerHeight - 100,
             radius: 50,
-            base: this.add.circle(0, 0, 50, 0x888888, 0.5),
-            thumb: this.add.circle(0, 0, 25, 0xcccccc, 0.8),
+            base: this.add.circle(0, 0, 50, 0x444444, 0.5),
+            thumb: this.add.circle(0, 0, 25, 0x888888, 0.8),
             dir: '8dir', forceMin: 16, fixed: true
-        });
+        }).on('update', dumpJoyState, this);
         joyCursorKeys = joystick.createCursorKeys();
+        
+        // Джойстик має бути поверх темряви
+        joystick.base.setDepth(20000);
+        joystick.thumb.setDepth(20000);
     }
     cursorKeys = this.input.keyboard.createCursorKeys();
 
-    // 6. ІНТЕРФЕЙС
     inventoryText = this.add.text(20, 20, 'Wood: 0 | Stone: 0', {
-        font: '20px monospace', fill: '#ffffff', backgroundColor: '#000000aa', padding: { x: 10, y: 5 }
-    }).setScrollFactor(0).setDepth(100);
+        font: '20px monospace', fill: '#ffaa00', backgroundColor: '#000000', padding: { x: 10, y: 5 }
+    }).setScrollFactor(0).setDepth(20000);
 
-    // Кнопка дії
     const actionBtn = document.getElementById('action-btn');
     if(actionBtn) {
         let newBtn = actionBtn.cloneNode(true);
@@ -133,39 +148,52 @@ function update() {
 
     player.body.setVelocity(speedX, speedY);
 
-    // Поворот героя
     if (speedX < 0) player.setFlipX(true);
     else if (speedX > 0) player.setFlipX(false);
+
+    // --- ОНОВЛЕННЯ ГЛИБИНИ ---
+    // Це створює 2.5D ефект: якщо ти нижче дерева на екрані, ти його перекриваєш.
+    // Якщо ти вище дерева - воно перекриває тебе.
+    player.setDepth(player.y);
+
+    // --- ОНОВЛЕННЯ СВІТЛА ---
+    // Очищаємо шар світла (робимо його знову темним)
+    lightLayer.fill(0x000000, 0.98); // Дуже темно
+    
+    // "Вирізаємо" дірку у темряві навколо гравця
+    // erase - стирає чорний колір, відкриваючи світ під ним
+    lightLayer.erase(spotlight, player.x, player.y);
 }
 
 function tryGatherResource() {
     let hitSomething = false;
     const scene = game.scene.scenes[0];
 
+    // Ефект "маху мечем" - спалах
+    const slash = scene.add.circle(player.x, player.y, 40, 0xffffff, 0.8);
+    slash.setDepth(player.y + 1);
+    scene.tweens.add({ targets: slash, alpha: 0, scale: 1.5, duration: 150, onComplete: () => slash.destroy() });
+
     scene.physics.overlap(player, trees, (player, tree) => {
         if (hitSomething) return;
-        scene.tweens.add({ targets: tree, alpha: 0.5, duration: 100, yoyo: true });
+        scene.tweens.add({ targets: tree, alpha: 0.5, duration: 100, yoyo: true, onComplete: () => tree.setAlpha(1) });
         inventory.wood++;
         updateInventory();
         tree.destroy(); 
         hitSomething = true;
-        showFloatingText(player.x, player.y, "+1 Wood 🌲");
+        showFloatingText(player.x, player.y, "+ Wood", '#00ff00');
     });
 
     if (!hitSomething) {
         scene.physics.overlap(player, rocks, (player, rock) => {
             if (hitSomething) return;
-            scene.tweens.add({ targets: rock, alpha: 0.5, duration: 100, yoyo: true });
+            scene.tweens.add({ targets: rock, alpha: 0.5, duration: 100, yoyo: true, onComplete: () => rock.setAlpha(1) });
             inventory.stone++;
             updateInventory();
             rock.destroy();
             hitSomething = true;
-            showFloatingText(player.x, player.y, "+1 Stone 🪨");
+            showFloatingText(player.x, player.y, "+ Stone", '#aaaaaa');
         });
-    }
-
-    if (!hitSomething) {
-        scene.tweens.add({ targets: player, y: player.y - 10, duration: 100, yoyo: true });
     }
 }
 
@@ -173,27 +201,24 @@ function updateInventory() {
     inventoryText.setText(`Wood: ${inventory.wood} | Stone: ${inventory.stone}`);
 }
 
-function showFloatingText(x, y, message) {
+function showFloatingText(x, y, message, color) {
     const scene = game.scene.scenes[0];
     let text = scene.add.text(x, y - 40, message, {
-        font: '20px monospace', fill: '#ffff00', stroke: '#000', strokeThickness: 4
-    }).setOrigin(0.5).setDepth(101);
+        font: '16px monospace', fill: color, stroke: '#000', strokeThickness: 3
+    }).setOrigin(0.5).setDepth(100000); // Поверх темряви
 
     scene.tweens.add({
-        targets: text, y: y - 100, alpha: 0, duration: 1000,
+        targets: text, y: y - 80, alpha: 0, duration: 1000,
         onComplete: () => text.destroy()
     });
 }
 
-// --- ГЕНЕРАТОР ПІКСЕЛЬ-АРТУ ---
 function createPixelTextures(scene) {
-    // Функція малювання з тексту
     const makeTexture = (key, data, palette) => {
         const canvas = document.createElement('canvas');
         canvas.width = data[0].length;
         canvas.height = data.length;
         const ctx = canvas.getContext('2d');
-        
         for (let y = 0; y < data.length; y++) {
             for (let x = 0; x < data[y].length; x++) {
                 const pixel = data[y][x];
@@ -206,93 +231,57 @@ function createPixelTextures(scene) {
         scene.textures.addCanvas(key, canvas);
     };
 
-    // 1. ЛИЦАР (16x16)
-    // s = silver (armor), r = red (plume), f = face, . = empty
-    const heroPalette = { 's': '#C0C0C0', 'd': '#696969', 'r': '#FF0000', 'f': '#FFCCAA', 'b': '#000000' };
+    // ГЕРОЙ
+    const heroPalette = { 's': '#888888', 'r': '#880000', 'f': '#CCAA88', 'b': '#000000' };
     const heroData = [
-        "......rr........",
-        ".....rrrr.......",
-        "....ssssrr......",
-        "...ssbbfssr.....",
-        "...ssfffsr......",
-        "...ssssss.......",
-        "..ssssssss......",
-        ".ddssssssdd.....",
-        "d.ssssssss.d....",
-        "d.ssssssss.d....",
-        "..ssssssss......",
-        "..ssssssss......",
-        "...dd..dd.......",
-        "...ss..ss.......",
-        "...ss..ss.......",
-        "..dd....dd......"
+        "......rr........", ".....rrrr.......", "....ssssrr......", "...ssbbfssr.....",
+        "...ssfffsr......", "...ssssss.......", "..ssssssss......", ".ddssssssdd.....",
+        "d.ssssssss.d....", "d.ssssssss.d....", "..ssssssss......", "..ssssssss......",
+        "...dd..dd.......", "...ss..ss.......", "...ss..ss.......", "..dd....dd......"
     ];
     makeTexture('hero', heroData, heroPalette);
 
-    // 2. ДЕРЕВО (16x32)
-    // g = green, G = dark green, b = brown
-    const treePalette = { 'g': '#228B22', 'G': '#006400', 'b': '#8B4513' };
+    // ДЕРЕВО (Більш темне)
+    const treePalette = { 'g': '#114411', 'G': '#002200', 'b': '#331100' };
     const treeData = [
-        "......GGG.......",
-        "....GGggGGG.....",
-        "...GggggggGG....",
-        "..GggggggggGG...",
-        "..GggggggggGG...",
-        "..GggggggggGG...",
-        "...GGgggggGG....",
-        "....GGgggGG.....",
-        "......GGG.......",
-        ".......b........",
-        ".......b........",
-        ".......b........",
-        ".......b........",
-        ".......b........",
-        "......bbb.......",
-        ".....bbbbb......"
+        "......GGG.......", "....GGggGGG.....", "...GggggggGG....", "..GggggggggGG...",
+        "..GggggggggGG...", "..GggggggggGG...", "...GGgggggGG....", "....GGgggGG.....",
+        "......GGG.......", ".......b........", ".......b........", ".......b........",
+        ".......b........", ".......b........", "......bbb.......", ".....bbbbb......"
     ];
     makeTexture('tree', treeData, treePalette);
 
-    // 3. КАМІНЬ (16x16)
-    const rockPalette = { 'g': '#808080', 'd': '#505050', 'l': '#A0A0A0' };
+    // КАМІНЬ
+    const rockPalette = { 'g': '#444444', 'd': '#222222', 'l': '#666666' };
     const rockData = [
-        "................",
-        ".....ggggg......",
-        "...ggllllggg....",
-        "..gglllllllgg...",
-        ".gglllggglllgg..",
-        ".ggllggggglllgg.",
-        ".ggllgdddglllgg.",
-        "gglllgdddglllgg.",
-        "gglllggggglllgg.",
-        "ggllllgggllllgg.",
-        ".gglllllllllgg..",
-        ".gglllllllllgg..",
-        "..ggglllllggg...",
-        "...ggggggggg....",
-        ".....ggggg......",
-        "................"
+        "................", ".....ggggg......", "...ggllllggg....", "..gglllllllgg...",
+        ".gglllggglllgg..", ".ggllggggglllgg.", ".ggllgdddglllgg.", "gglllgdddglllgg.",
+        "gglllggggglllgg.", "ggllllgggllllgg.", ".gglllllllllgg..", ".gglllllllllgg..",
+        "..ggglllllggg...", "...ggggggggg....", ".....ggggg......", "................"
     ];
     makeTexture('rock', rockData, rockPalette);
 
-    // 4. ТРАВА (16x16)
-    const grassPalette = { 'g': '#2d5a27', 'l': '#3e7a36' };
+    // ТРАВА
+    const grassPalette = { 'g': '#1a3315', 'l': '#2b4d24' };
     const grassData = [
-        "gggggggggggggggg",
-        "gggglggggggggggg",
-        "gggggggggggglggg",
-        "ggglgggggggggggg",
-        "gggggggggggggggg",
-        "ggggggggglgggggg",
-        "gggggggggggggggg",
-        "gglggggggggggggg",
-        "gggggggggggggggg",
-        "ggggggggglgggggg",
-        "gggggggggggggggg",
-        "gggglggggggggggg",
-        "gggggggggggglggg",
-        "gggggggggggggggg",
-        "gglggggggggggggg",
-        "gggggggggggggggg"
+        "gggggggggggggggg", "gggglggggggggggg", "gggggggggggglggg", "ggglgggggggggggg",
+        "gggggggggggggggg", "ggggggggglgggggg", "gggggggggggggggg", "gglggggggggggggg",
+        "gggggggggggggggg", "ggggggggglgggggg", "gggggggggggggggg", "gggglggggggggggg",
+        "gggggggggggglggg", "gggggggggggggggg", "gglggggggggggggg", "gggggggggggggggg"
     ];
     makeTexture('grass', grassData, grassPalette);
+
+    // СВІТЛО (Градієнт) 
+    const lightCanvas = document.createElement('canvas');
+    lightCanvas.width = 128; lightCanvas.height = 128;
+    const lCtx = lightCanvas.getContext('2d');
+    const grd = lCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grd.addColorStop(0, 'rgba(255, 255, 200, 1)');   // Центр (яскравий)
+    grd.addColorStop(0.5, 'rgba(255, 200, 100, 0.5)'); // Середина (жовта)
+    grd.addColorStop(1, 'rgba(0, 0, 0, 0)');     // Краї (прозорі)
+    lCtx.fillStyle = grd;
+    lCtx.fillRect(0, 0, 128, 128);
+    scene.textures.addCanvas('light', lightCanvas);
 }
+
+function dumpJoyState() {} // Заглушка

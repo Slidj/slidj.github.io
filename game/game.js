@@ -6,8 +6,8 @@ const config = {
     width: window.innerWidth,
     height: window.innerHeight,
     parent: 'game-container',
-    backgroundColor: '#1a1a1a', // Темний фон за межами кімнати
-    pixelArt: true, // ВАЖЛИВО ДЛЯ PIXEL ART
+    backgroundColor: '#151515',
+    pixelArt: true,
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: false }
@@ -17,103 +17,92 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// --- ДАНІ СИМА ---
-let stats = {
-    energy: 100,
-    hunger: 100,
-    money: 50
-};
-
-// Змінні
+let stats = { energy: 100, hunger: 100, money: 50 };
 let player;
 let joystick, joyCursorKeys, cursorKeys;
-let speed = 150;
-let walls, furnitureGroup;
-let activeZone = null; // Де зараз стоїть гравець
+let speed = 200; // Трохи швидше
+let activeZone = null;
+let furnitureGroup;
 
 function preload() {
     this.load.plugin('rexvirtualjoystickplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.57/dist/rexvirtualjoystickplugin.min.js', true);
 }
 
 function create() {
-    // Експортуємо сцену в window, щоб HTML кнопка могла її викликати
     window.gameScene = this;
+    createPixelAssets(this); // Малюємо меблі
 
-    // 1. ГЕНЕРУЄМО ГРАФІКУ (Тимчасова, в стилі піксель-арт)
-    createPixelAssets(this);
+    // ЦЕНТР КІМНАТИ
+    const roomX = window.innerWidth / 2;
+    const roomY = window.innerHeight / 2;
+    const roomW = 400; const roomH = 400;
 
-    // 2. БУДУЄМО КІМНАТУ
-    // Підлога (світле дерево)
-    const floor = this.add.tileSprite(0, 0, 400, 400, 'floor').setOrigin(0);
-    // Центруємо кімнату
-    const roomX = (window.innerWidth - 400) / 2;
-    const roomY = (window.innerHeight - 400) / 2;
-    floor.setPosition(roomX, roomY);
+    // 1. ПІДЛОГА
+    const floor = this.add.tileSprite(roomX, roomY, roomW, roomH, 'floor');
+    
+    // 2. СТІНИ (Колізія)
+    const walls = this.physics.add.staticGroup();
+    // Верх, Низ, Ліво, Право
+    walls.create(roomX, roomY - 210, 'wall_h'); 
+    walls.create(roomX, roomY + 210, 'wall_h');
+    walls.create(roomX - 210, roomY, 'wall_v');
+    walls.create(roomX + 210, roomY, 'wall_v');
 
-    // Стіни
-    walls = this.physics.add.staticGroup();
-    // Верхня, Нижня, Ліва, Права
-    walls.create(roomX + 200, roomY - 10, 'wall_h').refreshBody(); 
-    walls.create(roomX + 200, roomY + 410, 'wall_h').refreshBody();
-    walls.create(roomX - 10, roomY + 200, 'wall_v').refreshBody();
-    walls.create(roomX + 410, roomY + 200, 'wall_v').refreshBody();
-
-    // 3. МЕБЛІ (Інтерактивні зони)
+    // 3. МЕБЛІ
     furnitureGroup = this.physics.add.staticGroup();
-
-    // Ліжко (Спати)
-    let bed = furnitureGroup.create(roomX + 60, roomY + 60, 'bed');
-    bed.setData('type', 'bed'); bed.setData('text', '😴 Спати');
-
-    // Холодильник (Їсти)
-    let fridge = furnitureGroup.create(roomX + 340, roomY + 60, 'fridge');
-    fridge.setData('type', 'fridge'); fridge.setData('text', '🍔 Їсти (10$)');
-
-    // ПК (Працювати)
-    let pc = furnitureGroup.create(roomX + 340, roomY + 300, 'pc');
-    pc.setData('type', 'pc'); pc.setData('text', '💻 Працювати');
+    
+    // Ліжко (зліва зверху)
+    let bed = furnitureGroup.create(roomX - 120, roomY - 120, 'bed');
+    bed.setData({ type: 'bed', text: '😴 Спати' });
+    
+    // Холодильник (справа зверху)
+    let fridge = furnitureGroup.create(roomX + 120, roomY - 120, 'fridge');
+    fridge.setData({ type: 'fridge', text: '🍔 Їсти (10$)' });
+    
+    // ПК (справа знизу)
+    let pc = furnitureGroup.create(roomX + 120, roomY + 100, 'pc');
+    pc.setData({ type: 'pc', text: '💻 Працювати' });
 
     // 4. ГРАВЕЦЬ
-    player = this.physics.add.sprite(roomX + 200, roomY + 200, 'hero');
-    player.setCollideWorldBounds(false); // Дозволяємо ходити по всій сцені, але стіни зупинять
+    player = this.physics.add.sprite(roomX, roomY, 'hero');
+    player.setCollideWorldBounds(false);
+    player.setDepth(10); // Герой поверх підлоги
     
-    // Камера
     this.cameras.main.startFollow(player);
-    this.cameras.main.setZoom(1.5); // Зумуємо, бо це піксель-арт
+    this.cameras.main.setZoom(1.2);
 
-    // Колізії
     this.physics.add.collider(player, walls);
     this.physics.add.collider(player, furnitureGroup);
 
-    // 5. ДЖОЙСТИК
+    // 5. ДЖОЙСТИК (ВИПРАВЛЕНО)
     if (this.plugins.get('rexvirtualjoystickplugin')) {
         joystick = this.plugins.get('rexvirtualjoystickplugin').add(this, {
             x: 100, y: window.innerHeight - 100, radius: 50,
-            base: this.add.circle(0, 0, 50, 0x888888, 0.5),
+            base: this.add.circle(0, 0, 50, 0x888888, 0.5).setStrokeStyle(2, 0xaaaaaa),
             thumb: this.add.circle(0, 0, 25, 0xffffff, 0.8),
             dir: '8dir', forceMin: 16, fixed: true
         });
         joyCursorKeys = joystick.createCursorKeys();
+        
+        // ВАЖЛИВО: Джойстик поверх усього
+        joystick.base.setDepth(9999);
+        joystick.thumb.setDepth(9999);
     }
     cursorKeys = this.input.keyboard.createCursorKeys();
 
-    // 6. ТАЙМЕР ГОЛОДУ (Голод падає кожні 5 секунд)
-    this.time.addEvent({
-        delay: 5000, loop: true,
-        callback: () => {
-            stats.hunger = Math.max(0, stats.hunger - 2);
-            updateHtml();
-        }
-    });
-
+    // Таймер голоду
+    this.time.addEvent({ delay: 5000, loop: true, callback: () => {
+        if(stats.hunger > 0) stats.hunger -= 2;
+        updateHtml();
+    }});
     updateHtml();
 }
 
 function update() {
-    // Рух
     player.body.setVelocity(0);
     let speedX = 0, speedY = 0;
 
+    // Джойстик
     if (joyCursorKeys) {
         if (joyCursorKeys.left.isDown) speedX = -speed;
         if (joyCursorKeys.right.isDown) speedX = speed;
@@ -126,66 +115,55 @@ function update() {
     if (cursorKeys.up.isDown) speedY = -speed;
     if (cursorKeys.down.isDown) speedY = speed;
 
-    player.body.setVelocity(speedX, speedY);
+    // Нормалізація
+    if (speedX !== 0 && speedY !== 0) { speedX *= 0.707; speedY *= 0.707; }
 
-    // Перевірка взаємодії
+    player.body.setVelocity(speedX, speedY);
+    
     checkInteraction();
 }
 
 function checkInteraction() {
     let nearby = false;
-    
-    // Перевіряємо відстань до кожного меблевого об'єкту
     furnitureGroup.children.iterate((item) => {
-        if (Phaser.Math.Distance.Between(player.x, player.y, item.x, item.y) < 60) {
+        if (Phaser.Math.Distance.Between(player.x, player.y, item.x, item.y) < 70) {
             nearby = true;
             if (activeZone !== item) {
                 activeZone = item;
-                // Показуємо кнопку в HTML
                 window.showButton(item.getData('text'), item.getData('type'));
             }
         }
     });
-
     if (!nearby && activeZone) {
         activeZone = null;
         window.hideButton();
     }
 }
 
-// Функція, яку викликає HTML кнопка
 this.triggerAction = function(type) {
     if (type === 'bed') {
-        // СПАТИ
-        player.body.enable = false; // Блокуємо рух
-        player.setAlpha(0.5);
-        // Швидке відновлення
+        player.setAlpha(0.5); player.body.enable = false;
+        showFloatText(player.x, player.y - 50, "Zzz...", "#fff");
         setTimeout(() => {
-            stats.energy = 100;
-            player.body.enable = true;
-            player.setAlpha(1);
-            showFloatingText(player.x, player.y, "Виспався! ⚡", '#ffff00');
+            stats.energy = 100; player.setAlpha(1); player.body.enable = true;
+            showFloatText(player.x, player.y - 50, "Бодрячком! ⚡", "#ff0");
             updateHtml();
-        }, 2000); // 2 секунди сну
-
-    } else if (type === 'fridge') {
-        // ЇСТИ
+        }, 2000);
+    } 
+    else if (type === 'fridge') {
         if (stats.money >= 10) {
-            stats.money -= 10;
-            stats.hunger = Math.min(100, stats.hunger + 30);
-            showFloatingText(player.x, player.y, "Ням-ням! 🍔", '#ff4444');
+            stats.money -= 10; stats.hunger = Math.min(100, stats.hunger + 40);
+            showFloatText(player.x, player.y - 50, "Смачно! 🍔", "#f88");
         } else {
-            showFloatingText(player.x, player.y, "Мало грошей! 💸", '#888');
+            showFloatText(player.x, player.y - 50, "Нема грошей 💸", "#888");
         }
-
-    } else if (type === 'pc') {
-        // ПРАЦЮВАТИ
-        if (stats.energy >= 10) {
-            stats.energy -= 10;
-            stats.money += 15; // Зарплата
-            showFloatingText(player.x, player.y, "Робота... +15$", '#00ff00');
+    } 
+    else if (type === 'pc') {
+        if (stats.energy >= 15) {
+            stats.energy -= 15; stats.money += 20;
+            showFloatText(player.x, player.y - 50, "Кодинг... +20$", "#0f0");
         } else {
-            showFloatingText(player.x, player.y, "Треба поспати! 😴", '#888');
+            showFloatText(player.x, player.y - 50, "Втомився... 😴", "#888");
         }
     }
     updateHtml();
@@ -195,53 +173,29 @@ function updateHtml() {
     if(window.updateStats) window.updateStats(stats.energy, stats.hunger, stats.money);
 }
 
-function showFloatingText(x, y, message, color) {
-    let text = window.gameScene.add.text(x, y - 30, message, {
-        font: '14px Arial', fill: color, stroke: '#000', strokeThickness: 3
-    }).setOrigin(0.5);
-    window.gameScene.tweens.add({ targets: text, y: y - 60, alpha: 0, duration: 1000, onComplete: () => text.destroy() });
+function showFloatText(x, y, msg, color) {
+    let t = window.gameScene.add.text(x, y, msg, { font: '16px Arial', fill: color, stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(100);
+    window.gameScene.tweens.add({ targets: t, y: y - 50, alpha: 0, duration: 1000, onComplete: () => t.destroy() });
 }
 
-// --- ГЕНЕРАТОР ГРАФІКИ (SIMS STYLE) ---
 function createPixelAssets(scene) {
-    const make = (key, w, h, color, label) => {
-        const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        
-        // Основний колір
-        ctx.fillStyle = color; ctx.fillRect(0,0,w,h);
-        // Обводка
-        ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 4; ctx.strokeRect(0,0,w,h);
-        
-        // Деталі (щоб було схоже на меблі)
-        if(key === 'bed') {
-            ctx.fillStyle = "#fff"; ctx.fillRect(5, 5, w-10, 15); // Подушка
-            ctx.fillStyle = "#ccddff"; ctx.fillRect(5, 25, w-10, h-30); // Ковдра
-        }
-        if(key === 'fridge') {
-            ctx.fillStyle = "#ddd"; ctx.fillRect(5, 5, w-10, h/2-5); // Верхні двері
-            ctx.fillRect(5, h/2+2, w-10, h/2-7); // Нижні
-        }
-        if(key === 'pc') {
-            ctx.fillStyle = "#000"; ctx.fillRect(10, 5, w-20, h-20); // Монітор
-            ctx.fillStyle = "#0f0"; ctx.fillRect(12, 7, w-24, h-24); // Екран
-        }
-        
-        scene.textures.addCanvas(key, canvas);
+    // Генератор квадратної графіки
+    const box = (k, w, h, c) => {
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        const x = cv.getContext('2d');
+        x.fillStyle = c; x.fillRect(0,0,w,h);
+        x.strokeStyle = "rgba(0,0,0,0.5)"; x.lineWidth = 4; x.strokeRect(0,0,w,h);
+        scene.textures.addCanvas(k, cv);
     };
-
-    make('hero', 24, 24, '#ffcc00'); // Жовтий чоловічок
-    make('bed', 40, 60, '#8B4513');  // Ліжко
-    make('fridge', 32, 50, '#eee');  // Холодильник
-    make('pc', 40, 30, '#555');      // Стіл з ПК
+    box('hero', 30, 30, '#ffbb00');
+    box('bed', 50, 70, '#5D4037');
+    box('fridge', 40, 60, '#E0E0E0');
+    box('pc', 50, 40, '#424242');
+    box('wall_h', 420, 20, '#333');
+    box('wall_v', 20, 420, '#333');
     
-    // Стіни і підлога
-    make('wall_h', 420, 20, '#555');
-    make('wall_v', 20, 420, '#555');
-    
-    const floorC = document.createElement('canvas'); floorC.width = 32; floorC.height = 32;
-    const fCtx = floorC.getContext('2d');
-    fCtx.fillStyle = "#d2b48c"; fCtx.fillRect(0,0,32,32); // Світлий беж
-    fCtx.strokeStyle = "#c19a6b"; fCtx.strokeRect(0,0,32,32); // Плитка
-    scene.textures.addCanvas('floor', floorC);
+    const fl = document.createElement('canvas'); fl.width=32; fl.height=32;
+    const fx = fl.getContext('2d'); fx.fillStyle="#8D6E63"; fx.fillRect(0,0,32,32);
+    fx.strokeStyle="#6D4C41"; fx.strokeRect(0,0,32,32);
+    scene.textures.addCanvas('floor', fl);
 }

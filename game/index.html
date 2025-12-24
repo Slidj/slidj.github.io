@@ -5,17 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Life Sim</title>
     <style>
-        body { margin: 0; padding: 0; background: #202020; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        /* touch-action: none - ВАЖЛИВО для джойстика */
+        body { 
+            margin: 0; padding: 0; background: #111; overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif;
+            touch-action: none; user-select: none; -webkit-user-select: none;
+        }
         #game-container { width: 100vw; height: 100vh; }
         
-        /* UI зверху (Стати) */
+        /* UI Статистика */
         #ui-layer {
             position: fixed; top: 10px; left: 10px; right: 10px;
-            display: flex; gap: 10px; pointer-events: none;
+            display: flex; gap: 10px; pointer-events: none; z-index: 10;
         }
         .stat-box {
-            background: rgba(0,0,0,0.7); color: white; padding: 5px 10px;
-            border-radius: 8px; flex: 1; border: 2px solid #444;
+            background: rgba(0,0,0,0.8); color: white; padding: 5px 10px;
+            border-radius: 8px; flex: 1; border: 1px solid #555; font-size: 12px;
         }
         .bar-container {
             width: 100%; height: 6px; background: #333; margin-top: 5px; border-radius: 3px;
@@ -26,21 +31,22 @@
 
         /* Гроші */
         #money-box {
-            position: fixed; top: 10px; right: 10px;
-            background: #28a745; color: white; padding: 8px 15px;
-            border-radius: 20px; font-weight: bold; border: 2px solid #fff;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: fixed; top: 50px; right: 10px;
+            background: #28a745; color: white; padding: 5px 10px;
+            border-radius: 15px; font-weight: bold; border: 2px solid #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 10;
         }
 
-        /* Кнопка дії (з'являється, коли підходиш до меблів) */
+        /* Кнопка дії */
         #interact-btn {
-            display: none; /* Спочатку прихована */
-            position: fixed; bottom: 120px; right: 30px;
+            display: none;
+            position: fixed; bottom: 140px; right: 20px;
             background: white; color: black;
-            padding: 10px 20px; border-radius: 20px;
-            font-weight: bold; border: 3px solid #333;
+            padding: 12px 25px; border-radius: 25px;
+            font-weight: bold; border: 4px solid #333;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            cursor: pointer; pointer-events: auto; animation: popIn 0.2s;
+            cursor: pointer; pointer-events: auto; z-index: 20;
+            transform-origin: center; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
     </style>
@@ -51,46 +57,30 @@
     <div id="game-container"></div>
 
     <div id="ui-layer">
-        <div class="stat-box">
-            ⚡ Енергія
-            <div class="bar-container"><div id="energy-fill" class="bar-fill"></div></div>
-        </div>
-        <div class="stat-box">
-            🍔 Ситість
-            <div class="bar-container"><div id="hunger-fill" class="bar-fill"></div></div>
-        </div>
+        <div class="stat-box">⚡ Енергія <div class="bar-container"><div id="energy-fill" class="bar-fill"></div></div></div>
+        <div class="stat-box">🍔 Їжа <div class="bar-container"><div id="hunger-fill" class="bar-fill"></div></div></div>
     </div>
-
-    <div id="money-box">0 $</div>
+    <div id="money-box">50 $</div>
 
     <div id="interact-btn" onclick="doInteraction()">Дія</div>
 
-    <script src="game.js?v=sims1"></script>
+    <script src="game.js?v=fix1"></script>
 
     <script>
-        // Функції для оновлення HTML з гри
-        window.updateStats = (energy, hunger, money) => {
-            document.getElementById('energy-fill').style.width = energy + '%';
-            document.getElementById('hunger-fill').style.width = hunger + '%';
-            document.getElementById('money-box').innerText = money + ' $';
+        window.updateStats = (e, h, m) => {
+            document.getElementById('energy-fill').style.width = e + '%';
+            document.getElementById('hunger-fill').style.width = h + '%';
+            document.getElementById('money-box').innerText = m + ' $';
         };
-
-        window.showButton = (text, action) => {
+        window.showButton = (txt, type) => {
             const btn = document.getElementById('interact-btn');
-            btn.innerText = text;
-            btn.style.display = 'block';
-            window.currentAction = action;
+            btn.innerText = txt; btn.style.display = 'block'; window.currentAction = type;
         };
-
         window.hideButton = () => {
-            document.getElementById('interact-btn').style.display = 'none';
-            window.currentAction = null;
+            document.getElementById('interact-btn').style.display = 'none'; window.currentAction = null;
         };
-
         function doInteraction() {
-            if (window.gameScene && window.currentAction) {
-                window.gameScene.triggerAction(window.currentAction);
-            }
+            if (window.gameScene && window.currentAction) window.gameScene.triggerAction(window.currentAction);
         }
     </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v20: Home BG</title>
+    <title>Life OS v21: Double Ring</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
@@ -13,27 +13,19 @@
 
         .reset-btn { position: fixed; top: 10px; right: 10px; z-index: 9999; background: rgba(255, 69, 58, 0.3); color: white; border: 1px solid var(--red); padding: 5px 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
 
-        /* --- СЦЕНА З ФОНОМ --- */
+        /* SCENE */
         .scene-container { 
             position: relative; width: 100%; height: 260px; 
-            
-            /* ФОН КІМНАТИ */
-            background-color: #2c2c2e; /* Колір, поки вантажиться картинка */
-            background-image: url('images/bg-home.svg'); /* Твій файл */
-            background-size: cover; /* Розтягнути на весь блок */
-            background-position: center bottom; /* Притиснути до низу */
-            background-repeat: no-repeat;
-            
+            background-color: #2c2c2e; 
+            /* Переконайся, що файл існує, або видали цей рядок, щоб був просто сірий фон */
+            background-image: url('images/bg-home.svg'); 
+            background-size: cover; background-position: center bottom;
             border-bottom: 1px solid #333; overflow: hidden; 
         }
-
         #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
-        
         .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
-        /* Розміщення меблів поверх фону */
         #item-pc { right: 30px; bottom: 40px; }
         #item-bed { left: 30px; bottom: 40px; }
-        
         .broken-visual { filter: grayscale(1) opacity(0.5); }
 
         /* OVERLAY */
@@ -55,49 +47,58 @@
         .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .shop-list { display: flex; flex-direction: column; gap: 15px; }
 
-        /* APP CARD */
+        /* APP CARD (DOUBLE RING) */
         .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .app-card:active .icon-wrapper { transform: scale(0.95); }
-        .icon-wrapper { position: relative; width: 68px; height: 68px; display: flex; justify-content: center; align-items: center; }
-        .app-bg { width: 58px; height: 58px; background: var(--card); border-radius: 16px; display: flex; justify-content: center; align-items: center; z-index: 1; border: 1px solid #333; }
-        .app-emoji { font-size: 28px; }
-        .progress-svg { position: absolute; top: 0; left: 0; width: 68px; height: 68px; transform: rotate(-90deg); z-index: 2; pointer-events: none; }
-        .progress-ring { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.1s linear; }
-        .app-label { font-size: 11px; margin-top: 8px; color: #fff; }
-        .app-badge { position: absolute; bottom: -5px; right: -5px; z-index: 3; font-size: 9px; font-weight: bold; padding: 2px 5px; background: #333; border-radius: 6px; border: 2px solid var(--bg); }
+        
+        .icon-wrapper { position: relative; width: 72px; height: 72px; display: flex; justify-content: center; align-items: center; }
+        
+        .app-bg { 
+            width: 50px; height: 50px; background: var(--card); border-radius: 12px; 
+            display: flex; justify-content: center; align-items: center; z-index: 1; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid #333;
+        }
+        .app-emoji { font-size: 24px; }
+
+        /* SVGs */
+        .progress-svg { position: absolute; top: 0; left: 0; width: 72px; height: 72px; transform: rotate(-90deg); z-index: 2; pointer-events: none; }
+        
+        /* Inner Ring (Durability) */
+        .ring-bg { fill: none; stroke: #333; stroke-width: 4; }
+        .ring-hp { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.3s; }
+        
+        /* Outer Ring (Timer) */
+        .ring-timer { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0; transition: opacity 0.2s; }
+        .ring-timer.active { opacity: 1; }
+
+        .app-label { font-size: 11px; margin-top: 5px; color: #fff; font-weight: 500; }
+        
+        .app-badge { 
+            position: absolute; bottom: -8px; z-index: 3; 
+            font-size: 9px; font-weight: bold; padding: 2px 6px; 
+            background: #333; border-radius: 10px; border: 2px solid var(--bg); color: #ccc;
+            min-width: 20px; text-align: center;
+        }
 
         /* SHOP CARD */
-        .shop-card {
-            background: var(--card); border-radius: 16px; border: 1px solid #333;
-            display: flex; overflow: hidden; min-height: 110px;
-        }
-        .shop-visual {
-            width: 90px; background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 40px; border-right: 1px solid #333;
-        }
+        .shop-card { background: var(--card); border-radius: 16px; border: 1px solid #333; display: flex; overflow: hidden; min-height: 110px; }
+        .shop-visual { width: 90px; background: linear-gradient(135deg, #2a2a2a, #1a1a1a); display: flex; justify-content: center; align-items: center; font-size: 40px; border-right: 1px solid #333; }
         .shop-info { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; }
         .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         .shop-title { font-weight: bold; font-size: 15px; }
         .shop-price { font-weight: bold; color: var(--green); font-size: 14px; }
         .shop-desc { font-size: 11px; color: #888; margin-bottom: 8px; line-height: 1.3; }
-        
         .shop-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
         .tag { font-size: 9px; padding: 3px 6px; border-radius: 4px; background: #333; color: #ccc; font-weight: 500; }
         .tag-green { color: var(--green); background: rgba(48, 209, 88, 0.1); }
         .tag-blue { color: var(--accent); background: rgba(10, 132, 255, 0.1); }
         .tag-orange { color: var(--orange); background: rgba(255, 159, 10, 0.1); }
         .tag-red { color: var(--red); background: rgba(255, 69, 58, 0.1); }
-
-        .shop-btn {
-            background: var(--accent); color: white; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 13px;
-        }
+        .shop-btn { background: var(--accent); color: white; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 13px; }
         .shop-btn:disabled { background: #333; color: #555; }
 
-        /* TABS */
+        /* TABS & NAV */
         .tab { display: none; } .tab.active { display: block; animation: fade 0.2s; } @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-        
-        /* NAV */
         .nav { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; padding: 10px 0; border-top: 1px solid #333; z-index: 300; }
         .nav-btn { flex: 1; background: none; border: none; font-size: 26px; color: #666; }
         .nav-btn.active { color: var(--accent); }
@@ -105,7 +106,7 @@
 </head>
 <body>
 
-    <button class="reset-btn" onclick="hardReset()">RESET (v20)</button>
+    <button class="reset-btn" onclick="hardReset()">RESET v21</button>
 
     <div class="scene-container">
         <div id="scene-overlay">
@@ -124,19 +125,16 @@
         </div>
 
         <div id="tab-home" class="tab active">
-            <div style="color:#666;font-size:12px;margin-bottom:10px">ГОЛОВНА</div>
-            <div class="app-grid">
-                <div class="app-card" onclick="work(this)">
-                    <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">💻</span></div><svg class="progress-svg" viewBox="0 0 72 72"><rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#64d2ff" stroke-dasharray="200" stroke-dashoffset="0" /></svg><div class="app-badge">3с</div></div><div class="app-label">Фріланс</div>
+            <div style="color:#666;font-size:12px;margin-bottom:10px">МОЯ КІМНАТА</div>
+            <div id="home-grid" class="app-grid">
                 </div>
-                <div class="app-card" onclick="sleep(this)">
-                    <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">😴</span></div><svg class="progress-svg" viewBox="0 0 72 72"><rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#bf5af2" stroke-dasharray="200" stroke-dashoffset="0" /></svg><div class="app-badge">3с</div></div><div class="app-label">Сон</div>
-                </div>
+            <div id="empty-home-msg" style="text-align:center; color:#555; margin-top:20px; display:none;">
+                У кімнаті пусто.<br>Купи меблі в магазині!
             </div>
         </div>
 
         <div id="tab-inv" class="tab">
-            <div style="color:#666;font-size:12px;margin-bottom:10px">ІНВЕНТАР</div>
+            <div style="color:#666;font-size:12px;margin-bottom:10px">РЮКЗАК (ЇЖА)</div>
             <div id="inventory-grid" class="app-grid"></div>
         </div>
 
@@ -148,83 +146,49 @@
 
     <div class="nav">
         <button class="nav-btn active" onclick="switchTab('home', this)"><i class="ri-home-fill"></i></button>
-        <button class="nav-btn" onclick="switchTab('inv', this)"><i class="ri-apps-fill"></i></button>
+        <button class="nav-btn" onclick="switchTab('inv', this)"><i class="ri-backpack-fill"></i></button>
         <button class="nav-btn" onclick="switchTab('shop', this)"><i class="ri-shopping-bag-fill"></i></button>
     </div>
 
     <script>
-        // --- БАЗА ТОВАРІВ ---
         const shopItems = [
-            { 
-                id: 'pc', type: 'device', name: 'iMac Pro', price: 150, icon: '🖥️', 
-                desc: 'Робоча станція. Необхідна для заробітку.',
-                specs: [ {t:'⚡ -10 Ен', c:'tag-red'}, {t:'💰 Дохід', c:'tag-green'} ]
-            },
-            { 
-                id: 'bed', type: 'device', name: 'Smart Bed', price: 100, icon: '🛏️', 
-                desc: 'М\'яке ліжко для ефективного сну.',
-                specs: [ {t:'⚡ +30 Ен', c:'tag-green'}, {t:'💤 3 сек', c:'tag-blue'} ]
-            },
-            { 
-                id: 'pizza', type: 'food', name: 'Pepperoni', price: 20, icon: '🍕', 
-                desc: 'Ситна піца. Дає енергію, але холоне.',
-                specs: [ {t:'⚡ +20 Ен', c:'tag-green'}, {t:'⏳ 30 сек', c:'tag-orange'} ]
-            },
-            { 
-                id: 'sushi', type: 'food', name: 'Sushi Set', price: 45, icon: '🍣', 
-                desc: 'Свіжа риба. Дуже швидко псується!',
-                specs: [ {t:'⚡ +35 Ен', c:'tag-green'}, {t:'⏳ 15 сек', c:'tag-red'} ]
-            }
+            { id: 'pc', type: 'device', name: 'iMac Pro', price: 150, icon: '🖥️', desc: 'Засіб для заробітку.', specs: [{t:'⚡ -10',c:'tag-red'},{t:'💰 +20$',c:'tag-green'}] },
+            { id: 'bed', type: 'device', name: 'Smart Bed', price: 100, icon: '🛏️', desc: 'Відновлює сили.', specs: [{t:'⚡ +30',c:'tag-green'},{t:'⏳ 3с',c:'tag-blue'}] },
+            { id: 'pizza', type: 'food', name: 'Pepperoni', price: 20, icon: '🍕', desc: 'Дає енергію.', specs: [{t:'⚡ +20',c:'tag-green'},{t:'Термін 30с',c:'tag-orange'}] },
+            { id: 'sushi', type: 'food', name: 'Sushi', price: 45, icon: '🍣', desc: 'Смачна риба.', specs: [{t:'⚡ +35',c:'tag-green'},{t:'Термін 15с',c:'tag-red'}] }
         ];
 
         let game;
 
-        // --- ЗАПУСК ---
         document.addEventListener("DOMContentLoaded", () => {
-            console.log("System Starting...");
-            
-            // Завантаження або Скидання
             try {
-                const saved = localStorage.getItem('lifeSim_v20');
-                if(saved) {
-                    game = JSON.parse(saved);
-                } else {
-                    game = { money: 300, energy: 100, inventory: [] };
-                }
+                const saved = localStorage.getItem('lifeSim_v21_final');
+                if(saved) game = JSON.parse(saved);
+                else game = { money: 300, energy: 100, inventory: [] };
                 if(!game.inventory) game.inventory = [];
-            } catch(e) {
-                game = { money: 300, energy: 100, inventory: [] };
-            }
+            } catch(e) { game = { money: 300, energy: 100, inventory: [] }; }
 
             const tg = window.Telegram.WebApp;
             tg.expand();
 
-            // Перший рендер
-            render();
-            renderShop(); 
-
-            // Запуск циклу
+            render(); renderHome(); renderShop();
             setInterval(gameLoop, 1000);
         });
 
-        // --- GAME LOOP ---
         function gameLoop() {
             const now = Date.now();
             let saveNeeded = false;
-            
             game.inventory.forEach(item => {
                 if(item.category==='food' && !item.isSpoiled && now > item.expireTime) {
                     item.isSpoiled = true; saveNeeded = true;
                 }
             });
-
             if(saveNeeded) { save(); render(); }
-            
             if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
-            if(document.getElementById('tab-shop').classList.contains('active')) renderShop();
+            if(document.getElementById('tab-home').classList.contains('active')) renderHome(); // Оновлюємо стан кілець
         }
 
-        // --- RENDERING ---
+        // --- RENDERERS ---
         function render() {
             document.getElementById('money').innerText = game.money;
             document.getElementById('energy').innerText = game.energy;
@@ -233,42 +197,72 @@
             const bed = game.inventory.find(i => i.id === 'bed');
             
             const pcEl = document.getElementById('item-pc');
-            if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; } 
-            else { pcEl.style.display='none'; }
+            if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; } else { pcEl.style.display='none'; }
             
             const bedEl = document.getElementById('item-bed');
-            if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; } 
-            else { bedEl.style.display='none'; }
+            if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; } else { bedEl.style.display='none'; }
+        }
+
+        function renderHome() {
+            const grid = document.getElementById('home-grid');
+            // Ми не очищаємо грі повністю, щоб не збивати анімацію, якщо вона йде
+            // Але для простоти коду поки що очистимо.
+            grid.innerHTML = "";
+            
+            const devices = game.inventory.filter(i => i.category === 'device');
+            
+            if(devices.length === 0) {
+                document.getElementById('empty-home-msg').style.display = 'block';
+            } else {
+                document.getElementById('empty-home-msg').style.display = 'none';
+                
+                devices.forEach(item => {
+                    // Колір HP (Внутрішнє кільце)
+                    let hpColor = item.hp > 50 ? '#30d158' : (item.hp > 20 ? '#ff9f0a' : '#ff453a');
+                    // Довжина HP кільця (Радіус 26 => Периметр ~163)
+                    let hpOffset = 163 - (163 * item.hp / 100);
+                    
+                    let icon = item.id === 'pc' ? '🖥️' : '🛏️';
+                    let action = item.id === 'pc' ? 'work' : 'sleep';
+                    
+                    grid.innerHTML += `
+                    <div class="app-card" onclick="startAction('${item.id}', '${action}', this)">
+                        <div class="icon-wrapper">
+                            <div class="app-bg"><span class="app-emoji">${icon}</span></div>
+                            
+                            <svg class="progress-svg" viewBox="0 0 72 72">
+                                <circle class="ring-bg" cx="36" cy="36" r="26" opacity="0.3"></circle>
+                                <circle class="ring-hp" cx="36" cy="36" r="26" stroke="${hpColor}" stroke-dasharray="163" stroke-dashoffset="${hpOffset}"></circle>
+                                
+                                <circle class="ring-timer" id="timer-${item.id}" cx="36" cy="36" r="32" stroke-dasharray="200" stroke-dashoffset="0"></circle>
+                            </svg>
+                            
+                            <div class="app-badge" id="badge-${item.id}">${item.hp}%</div>
+                        </div>
+                        <div class="app-label">${item.name}</div>
+                    </div>`;
+                });
+            }
         }
 
         function renderShop() {
             const container = document.getElementById('shop-container');
-            container.innerHTML = ""; 
-
+            container.innerHTML = "";
             shopItems.forEach(item => {
-                let tagsHTML = item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('');
-                
-                let btnText = `Купити ${item.price}$`;
-                let btnDisabled = false;
-
-                const hasItem = game.inventory.some(i => i.id === item.id);
-
-                if (item.type === 'device' && hasItem) {
-                    btnText = "Вже є"; btnDisabled = true;
-                } else if (game.money < item.price) {
-                    btnText = `Нема грошей (${item.price}$)`; btnDisabled = true;
-                }
+                let tags = item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('');
+                let btnTxt = `Купити ${item.price}$`;
+                let dis = false;
+                if (item.type === 'device' && game.inventory.some(i => i.id === item.id)) { btnTxt="Вже є"; dis=true; }
+                else if (game.money < item.price) { btnTxt=`Треба ${item.price}$`; dis=true; }
 
                 container.innerHTML += `
                 <div class="shop-card">
                     <div class="shop-visual">${item.icon}</div>
                     <div class="shop-info">
-                        <div class="shop-header">
-                            <span class="shop-title">${item.name}</span>
-                        </div>
+                        <div class="shop-header"><span class="shop-title">${item.name}</span></div>
                         <div class="shop-desc">${item.desc}</div>
-                        <div class="shop-tags">${tagsHTML}</div>
-                        <button class="shop-btn" onclick="buy('${item.id}')" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
+                        <div class="shop-tags">${tags}</div>
+                        <button class="shop-btn" onclick="buy('${item.id}')" ${dis?'disabled':''}>${btnTxt}</button>
                     </div>
                 </div>`;
             });
@@ -277,37 +271,30 @@
         function renderGrid() {
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = "";
-            const now = Date.now();
+            const foods = game.inventory.filter(i => i.category === 'food');
+            if(foods.length === 0) grid.innerHTML = "<div style='color:#555;grid-column:1/-1;text-align:center'>Рюкзак пустий</div>";
+            
+            foods.forEach((item) => {
+                let emoji = item.id==='pizza'?'🍕':'🍣';
+                let badge = "";
+                let color = "#30d158";
+                let offset = 0;
 
-            if(game.inventory.length === 0) {
-                grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;color:#555;padding:20px;'>Інвентар пустий</div>";
-                return;
-            }
-
-            game.inventory.forEach((item, index) => {
-                let emoji = "📦", color = "#30d158", badge = "", offset = 0;
-                
-                if(item.category === 'device') {
-                    const meta = shopItems.find(x => x.id === item.id);
-                    emoji = meta ? meta.icon : "📦";
-                    if(item.hp <= 0) { color="#ff453a"; badge="ЗЛАМ."; offset=200; }
-                    else { badge = item.hp + "%"; offset = 200 - (200 * item.hp / 100); }
-                } else {
-                    const meta = shopItems.find(x => x.id === item.id);
-                    emoji = meta ? meta.icon : "🍔";
-                    if(item.isSpoiled) { emoji="🤢"; color="#555"; badge="🗑️"; offset=200; }
-                    else {
-                        const left = Math.max(0, item.expireTime - now);
-                        badge = Math.ceil(left/1000)+"с"; color="#0a84ff";
-                        offset = 200 - (200 * (left/item.totalLife));
-                    }
+                if(item.isSpoiled) { emoji="🤢"; color="#555"; badge="🗑️"; offset=163; }
+                else {
+                    const left = Math.max(0, item.expireTime - Date.now());
+                    badge = Math.ceil(left/1000)+"с"; color="#0a84ff";
+                    offset = 163 - (163 * (left/item.totalLife));
                 }
 
+                // Використовуємо тут одне кільце для їжі
                 grid.innerHTML += `
-                <div class="app-card" onclick="useItem(${index})">
+                <div class="app-card" onclick="useFood('${item.id}')">
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">${emoji}</span></div>
-                        <svg class="progress-svg" viewBox="0 0 72 72"><rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="${color}" stroke-dasharray="200" stroke-dashoffset="${offset}" /></svg>
+                        <svg class="progress-svg" viewBox="0 0 72 72">
+                            <circle cx="36" cy="36" r="26" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="${offset}"></circle>
+                        </svg>
                         <div class="app-badge">${badge}</div>
                     </div>
                     <div class="app-label">${item.name}</div>
@@ -316,87 +303,89 @@
         }
 
         // --- ACTIONS ---
-        window.buy = function(id) {
-            const meta = shopItems.find(x => x.id === id);
-            if(game.money < meta.price) return;
-            
-            if(meta.type === 'device') {
-                game.inventory.push({id: meta.id, name: meta.name, category: 'device', hp: 100});
-            } else {
-                let time = id==='pizza' ? 30000 : 15000;
-                game.inventory.push({id: meta.id, name: meta.name, category: 'food', expireTime: Date.now()+time, totalLife:time, isSpoiled:false});
-            }
-            game.money -= meta.price;
-            save(); render(); renderShop();
-            alert("Куплено!");
-        };
-
-        window.useItem = function(index) {
-            const item = game.inventory[index];
-            if(item.category === 'device') {
-                if(item.hp < 100 && game.money >= 50) {
-                    if(confirm("Ремонт за 50$?")) { game.money-=50; item.hp=100; render(); renderGrid(); }
-                } else { alert("Стан: " + item.hp + "%"); }
-            } else {
-                if(item.isSpoiled) {
-                    game.inventory.splice(index, 1); renderGrid();
-                } else {
-                    game.inventory.splice(index, 1); game.energy+=20; render(); renderGrid();
-                }
-            }
-        };
-
         let isBusy = false;
-        function runAction(icon, text, btn, cb) {
-            if(isBusy) return; isBusy = true;
+
+        function startAction(itemId, type, btnEl) {
+            if(isBusy) return;
+            const item = game.inventory.find(i => i.id === itemId);
+            if(item.hp <= 0) { 
+                if(game.money >= 50 && confirm("Предмет зламаний. Ремонт 50$?")) {
+                    game.money -= 50; item.hp = 100; save(); render(); renderHome();
+                }
+                return;
+            }
+            if(game.energy < 10) return alert("Втома!");
+
+            isBusy = true;
             
-            const ring = btn.querySelector('.progress-ring');
-            const badge = btn.querySelector('.app-badge');
+            // ANIMATION
+            const timerRing = document.getElementById(`timer-${itemId}`);
+            const badge = document.getElementById(`badge-${itemId}`);
+            timerRing.classList.add('active'); // Показати синє кільце
+            
             let start = Date.now();
+            let duration = 3000;
+            
             let int = setInterval(() => {
                 let p = Date.now() - start;
-                let left = Math.max(0, 3000 - p);
-                ring.style.strokeDashoffset = 200 - (200 * left / 3000);
-                badge.innerText = (left/1000).toFixed(1) + 's';
-                if(left<=0) { clearInterval(int); badge.innerText="3s"; ring.style.strokeDashoffset=0; }
+                let left = Math.max(0, duration - p);
+                
+                // Outer ring animation (200 circumference)
+                let offset = 200 - (200 * (left/duration));
+                timerRing.style.strokeDashoffset = -offset; // Крутимо в інший бік для краси
+                
+                badge.innerText = (left/1000).toFixed(1) + 'с';
+                
+                if(left <= 0) {
+                    clearInterval(int);
+                    timerRing.classList.remove('active'); // Сховати кільце
+                    badge.innerText = (item.hp - (type==='work'?20:5)) + '%'; // Повернути HP
+                }
             }, 30);
 
+            // SCENE OVERLAY
             const ov = document.getElementById('scene-overlay');
-            document.getElementById('overlay-icon').innerText = icon;
-            document.getElementById('overlay-text').innerText = text;
+            document.getElementById('overlay-icon').innerText = type==='work'?'👨‍💻':'😴';
+            document.getElementById('overlay-text').innerText = type==='work'?'КОДИНГ':'СОН';
             ov.style.display = 'flex';
-            
+
             setTimeout(() => {
-                cb();
+                if(type==='work') { game.money+=20; game.energy-=10; item.hp-=20; }
+                if(type==='sleep') { game.energy+=30; item.hp-=5; }
+                
                 ov.style.display = 'none';
                 isBusy = false;
-                save(); render();
-            }, 3000);
+                save(); render(); renderHome();
+            }, duration);
         }
 
-        window.work = function(btn) {
-            const pc = game.inventory.find(i => i.id === 'pc');
-            if(!pc || pc.hp <= 0) return alert("Потрібен ПК! Купи в магазині.");
-            runAction("👨‍💻", "КОДИНГ", btn, () => { game.money+=20; game.energy-=10; pc.hp-=20; });
-        };
+        function useFood(itemId) {
+            const idx = game.inventory.findIndex(i => i.id === itemId && i.category === 'food'); // Find first of type
+            if(idx === -1) return;
+            const item = game.inventory[idx];
+            
+            if(item.isSpoiled) {
+                game.inventory.splice(idx, 1);
+            } else {
+                game.inventory.splice(idx, 1);
+                game.energy = Math.min(100, game.energy + 20);
+            }
+            save(); render(); renderGrid();
+        }
 
-        window.sleep = function(btn) {
-            const bed = game.inventory.find(i => i.id === 'bed');
-            if(!bed || bed.hp <= 0) return alert("Потрібне ліжко! Купи в магазині.");
-            runAction("😴", "СОН", btn, () => { game.energy+=30; bed.hp-=5; });
-        };
+        function buy(id) {
+            const meta = shopItems.find(x => x.id === id);
+            if(game.money < meta.price) return;
+            game.money -= meta.price;
+            
+            if(meta.type === 'device') {
+                game.inventory.push({id:meta.id, name:meta.name, category:'device', hp:100});
+            } else {
+                let time = id==='pizza'?30000:15000;
+                game.inventory.push({id:meta.id, name:meta.name, category:'food', expireTime:Date.now()+time, totalLife:time, isSpoiled:false});
+            }
+            save(); render(); renderShop(); renderHome();
+            alert("Куплено!");
+        }
 
-        window.switchTab = function(tab, btn) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-'+tab).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            if(tab === 'shop') renderShop();
-            if(tab === 'inv') renderGrid();
-        };
-
-        function save() { localStorage.setItem('lifeSim_v20', JSON.stringify(game)); }
-        window.hardReset = function() { localStorage.clear(); location.reload(); }
-    </script>
-</body>
-</html>
+        functio

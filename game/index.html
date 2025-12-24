@@ -3,54 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life Sim: Spoilage</title>
+    <title>Life Sim: App Grid</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --accent: #7b61ff; --text: #fff; --red: #ff4757; --green: #2ecc71; --yellow: #f1c40f; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-bottom: 90px; user-select: none; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; }
 
         /* СЦЕНА */
-        .scene-container { position: relative; width: 100%; height: 260px; background-color: #333; border-bottom: 8px solid #555; overflow: hidden; }
-        #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 80px; z-index: 10; }
-        .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
-        #item-pc { right: 30px; bottom: 40px; }
-        #item-bed { left: 30px; bottom: 40px; }
+        .scene-container { position: relative; width: 100%; height: 240px; background-color: #333; border-bottom: 8px solid #555; overflow: hidden; }
+        #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; }
+        .room-item { position: absolute; font-size: 45px; display: none; z-index: 5; }
+        #item-pc { right: 30px; bottom: 35px; }
+        #item-bed { left: 30px; bottom: 35px; }
+        .broken-visual { filter: grayscale(1) brightness(0.7); transform: rotate(5deg); }
 
         /* UI */
         .ui { padding: 15px; }
-        .header { display: flex; justify-content: space-between; background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
-        .money { color: var(--green); font-weight: bold; font-size: 20px; }
+        .header { display: flex; justify-content: space-between; background: var(--card); padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #333; }
+        .money { color: var(--green); font-weight: 800; font-size: 20px; }
 
-        .btn { background: var(--card); color: white; border: 1px solid #333; padding: 15px; width: 100%; margin-bottom: 10px; border-radius: 12px; display: flex; align-items: center; gap: 15px; cursor: pointer; text-align: left; }
-        .btn:active { transform: scale(0.98); background: #333; }
-        .btn-icon { font-size: 24px; color: var(--accent); background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; }
+        .btn { background: var(--card); color: white; border: 1px solid #333; padding: 15px; width: 100%; margin-bottom: 10px; border-radius: 16px; display: flex; align-items: center; gap: 15px; cursor: pointer; text-align: left; transition: transform 0.1s;}
+        .btn:active { transform: scale(0.98); background: #2a2a2a; }
+        .btn-icon { font-size: 24px; color: var(--accent); background: rgba(255,255,255,0.05); padding: 8px; border-radius: 12px; }
+        .section-title { font-size: 12px; color: #888; margin: 15px 0 5px 0; text-transform: uppercase; }
 
-        /* КАРТКИ ІНВЕНТАРЮ */
-        .inv-card { background: var(--card); border: 1px solid #333; padding: 12px; border-radius: 12px; margin-bottom: 10px; position: relative; }
-        .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .inv-name { font-weight: bold; font-size: 14px; }
+        /* --- НОВИЙ ДИЗАЙН ІНВЕНТАРЮ (APP GRID) --- */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 в ряд */
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        /* Картка "Застосунок" */
+        .app-card {
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
+        }
         
-        /* Смужки */
-        .bar-bg { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 5px; }
-        .bar-fill { height: 100%; transition: width 0.3s; }
-        
-        /* Стиль для їжі */
-        .food-spoiled { border: 1px solid var(--red); opacity: 0.7; }
-        .food-fresh { border: 1px solid var(--green); }
+        /* Іконка (Квадрат) */
+        .app-icon-square {
+            width: 70px; height: 70px;
+            background: var(--card);
+            border-radius: 18px; /* Закруглені кути як в iOS/Android */
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+            border: 3px solid #333; /* Базова рамка */
+            transition: transform 0.1s, border-color 0.3s;
+        }
+        .app-card:active .app-icon-square { transform: scale(0.92); }
+        .app-emoji { font-size: 32px; }
 
-        .action-btn-small { padding: 8px 15px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
+        /* Підпис під іконкою */
+        .app-label {
+            font-size: 11px; color: #aaa; margin-top: 6px; text-align: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
+        }
 
-        /* TABS */
-        .tab { display: none; } .tab.active { display: block; }
-        .nav { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; padding: 15px 0; border-top: 1px solid #333; z-index: 300; }
-        .nav-btn { flex: 1; background: none; border: none; font-size: 24px; color: #555; }
+        /* СТАНИ (Кольорові рамки) */
+        .status-good { border-color: var(--green) !important; }
+        .status-warn { border-color: var(--yellow) !important; }
+        .status-bad { border-color: var(--red) !important; }
+        .status-spoiled { 
+            border-color: #555 !important; background: #2a0e0e !important; /* Темно-червоний фон */
+            filter: grayscale(0.6);
+        }
+
+        /* БЕЙДЖИК (Куток з цифрою) */
+        .app-badge {
+            position: absolute; bottom: -5px; right: -5px;
+            background: #333; color: white; font-size: 10px; font-weight: bold;
+            padding: 3px 6px; border-radius: 10px; border: 2px solid var(--bg);
+        }
+        .badge-good { background: var(--green); color: black; }
+        .badge-warn { background: var(--yellow); color: black; }
+        .badge-bad { background: var(--red); }
+
+        /* TABS & NAV */
+        .tab { display: none; } .tab.active { display: block; animation: fadeUp 0.2s ease-out; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .nav { position: fixed; bottom: 0; width: 100%; background: rgba(18,18,18,0.95); backdrop-filter: blur(10px); display: flex; padding: 15px 0; border-top: 1px solid #333; z-index: 300; }
+        .nav-btn { flex: 1; background: none; border: none; font-size: 24px; color: #555; transition: color 0.2s; cursor: pointer;}
         .nav-btn.active { color: var(--accent); }
         
         /* Overlay */
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 999; color: white; flex-direction: column; }
-        .overlay-emoji { font-size: 80px; }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 999; color: white; flex-direction: column; backdrop-filter: blur(5px); }
+        .overlay-emoji { font-size: 80px; animation: pulse 1s infinite alternate;}
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
     </style>
 </head>
 <body>
@@ -70,7 +110,7 @@
         </div>
 
         <div id="tab-home" class="tab active">
-            <h3>Дії</h3>
+            <div class="section-title">Основне</div>
             <button class="btn" onclick="work()">
                 <div class="btn-icon"><i class="ri-macbook-line"></i></div>
                 <div><b>Фріланс</b><br><small>+15$ | -10 Енергії | Знос ПК</small></div>
@@ -82,12 +122,13 @@
         </div>
 
         <div id="tab-inv" class="tab">
-            <h3>Мій Інвентар</h3>
-            <div id="inventory-list"></div>
+            <div class="section-title">Мої додатки (Речі)</div>
+            <div id="inventory-grid" class="inventory-grid">
+                </div>
         </div>
 
         <div id="tab-shop" class="tab">
-            <h3>Техніка</h3>
+             <div class="section-title">Техніка</div>
             <button class="btn" onclick="buyItem('pc', 150)">
                 <div class="btn-icon"><i class="ri-computer-line"></i></div>
                 <div><b>ПК</b> (150$)<br><small>Для роботи</small></div>
@@ -96,22 +137,21 @@
                 <div class="btn-icon"><i class="ri-home-heart-line"></i></div>
                 <div><b>Ліжко</b> (100$)<br><small>Для сну</small></div>
             </button>
-            
-            <h3>Їжа (Псується!)</h3>
+             <div class="section-title">Їжа (Псується!)</div>
             <button class="btn" onclick="buyFood('pizza', 20)">
                 <div class="btn-icon">🍕</div>
                 <div><b>Піца</b> (20$)<br><small>Термін: 30 сек</small></div>
             </button>
             <button class="btn" onclick="buyFood('sushi', 35)">
                 <div class="btn-icon">🍣</div>
-                <div><b>Суші</b> (35$)<br><small>Термін: 15 сек (Швидко псується!)</small></div>
+                <div><b>Суші</b> (35$)<br><small>Термін: 15 сек</small></div>
             </button>
         </div>
     </div>
 
     <div class="nav">
         <button class="nav-btn active" onclick="switchTab('home', this)"><i class="ri-home-5-line"></i></button>
-        <button class="nav-btn" onclick="switchTab('inv', this)"><i class="ri-backpack-line"></i></button>
+        <button class="nav-btn" onclick="switchTab('inv', this)"><i class="ri-apps-2-line"></i></button>
         <button class="nav-btn" onclick="switchTab('shop', this)"><i class="ri-shopping-cart-2-line"></i></button>
     </div>
 
@@ -121,34 +161,27 @@
 
         let game = {
             money: 300, energy: 100, health: 100,
-            inventory: [] // Тут тепер і їжа, і техніка
+            inventory: [] 
         };
 
-        if(localStorage.getItem('simSpoil')) game = JSON.parse(localStorage.getItem('simSpoil'));
+        if(localStorage.getItem('simGrid')) game = JSON.parse(localStorage.getItem('simGrid'));
 
         // --- ЛОГІКА ПСУВАННЯ ---
         setInterval(() => {
-            // Перевіряємо кожну секунду стан їжі
             let needsRender = false;
             const now = Date.now();
-
             game.inventory.forEach(item => {
-                if (item.category === 'food' && !item.isSpoiled) {
-                    // Якщо час вийшов - їжа псується
-                    if (now > item.expireTime) {
-                        item.isSpoiled = true;
-                        item.name = "Зіпсовано (" + item.originalName + ")";
-                        tg.showAlert(`🤮 Твій ${item.originalName} зіпсувався!`);
-                        needsRender = true;
-                    }
+                if (item.category === 'food' && !item.isSpoiled && now > item.expireTime) {
+                    item.isSpoiled = true;
+                    tg.HapticFeedback.notificationOccurred('warning');
+                    needsRender = true;
                 }
             });
-
             if(needsRender) { render(); save(); }
             
-            // Якщо ми на вкладці інвентарю - оновлюємо смужки часу в реальному часі
+            // Постійне оновлення інвентарю (для таймерів)
             if(document.getElementById('tab-inv').classList.contains('active')) {
-                renderInventory();
+                renderInventoryGrid();
             }
         }, 1000);
 
@@ -157,88 +190,102 @@
             document.getElementById('energy').innerText = game.energy;
             document.getElementById('health').innerText = game.health;
 
-            // Візуал кімнати (тільки техніка)
-            const hasPC = game.inventory.some(i => i.id === 'pc' && i.hp > 0);
-            const hasBed = game.inventory.some(i => i.id === 'bed' && i.hp > 0);
+            const pc = game.inventory.find(i => i.id === 'pc');
+            const bed = game.inventory.find(i => i.id === 'bed');
             
-            document.getElementById('item-pc').style.display = hasPC ? 'block' : 'none';
-            document.getElementById('item-bed').style.display = hasBed ? 'block' : 'none';
+            const pcEl = document.getElementById('item-pc');
+            const bedEl = document.getElementById('item-bed');
+
+            pcEl.style.display = pc ? 'block' : 'none';
+            if(pc) pcEl.className = pc.hp <= 0 ? 'room-item broken-visual' : 'room-item';
+            
+            bedEl.style.display = bed ? 'block' : 'none';
+            if(bed) bedEl.className = bed.hp <= 0 ? 'room-item broken-visual' : 'room-item';
         }
 
-        function renderInventory() {
-            const list = document.getElementById('inventory-list');
-            list.innerHTML = "";
+        // --- НОВИЙ РЕНДЕР ІНВЕНТАРЮ (ГРІД) ---
+        function renderInventoryGrid() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = "";
             const now = Date.now();
 
-            if (game.inventory.length === 0) list.innerHTML = "<div style='text-align:center;color:gray'>Пусто</div>";
+            if (game.inventory.length === 0) {
+                grid.innerHTML = "<div style='grid-column:1/-1; text-align:center;color:gray; padding:20px;'>Пусто</div>";
+                return;
+            }
 
             game.inventory.forEach((item, index) => {
-                let cardHTML = "";
+                let emoji = "📦";
+                let statusClass = "";
+                let badgeHTML = "";
+                let label = item.name;
+                let action = "";
 
-                // --- 1. ТЕХНІКА (Знос) ---
+                // Логіка для Техніки
                 if (item.category === 'device') {
-                    const barColor = item.hp > 50 ? '#2ecc71' : '#e74c3c';
-                    let btn = item.hp <= 0 
-                        ? `<button class="action-btn-small" style="background:#e67e22" onclick="repair(${index})">🔧 Ремонт (50$)</button>`
-                        : `<div style="font-size:10px; color:gray; margin-top:5px;">Використовується...</div>`;
+                    if (item.id === 'pc') emoji = "🖥️";
+                    if (item.id === 'bed') emoji = "🛏️";
+
+                    if (item.hp > 50) { statusClass = "status-good"; badgeHTML = `<span class="app-badge badge-good">${item.hp}%</span>`; }
+                    else if (item.hp > 0) { statusClass = "status-warn"; badgeHTML = `<span class="app-badge badge-warn">${item.hp}%</span>`; }
+                    else { statusClass = "status-bad"; badgeHTML = `<span class="app-badge badge-bad">ЗЛАМ.</span>`; label = "Зламано"; }
                     
-                    cardHTML = `
-                        <div class="inv-card">
-                            <div class="inv-header"><div>${item.name}</div><div>${item.hp}%</div></div>
-                            <div class="bar-bg"><div class="bar-fill" style="width:${item.hp}%; background:${barColor}"></div></div>
-                            ${btn}
-                        </div>`;
+                    action = `onclick="repair(${index})"`;
                 }
 
-                // --- 2. ЇЖА (Час) ---
+                // Логіка для Їжі
                 if (item.category === 'food') {
+                    if (item.id === 'pizza') emoji = "🍕";
+                    if (item.id === 'sushi') emoji = "🍣";
+
                     if (item.isSpoiled) {
-                        // ЗІПСОВАНА
-                        cardHTML = `
-                        <div class="inv-card food-spoiled">
-                            <div class="inv-header"><div>🤢 ${item.name}</div><div style="color:red">Сміття</div></div>
-                            <button class="action-btn-small" style="background:#444" onclick="trash(${index})">🗑️ Викинути</button>
-                        </div>`;
+                        emoji = "🤢";
+                        statusClass = "status-spoiled";
+                        label = "Сміття";
+                        action = `onclick="trash(${index})"`;
                     } else {
-                        // СВІЖА
-                        const totalLife = item.totalLife;
-                        const timeLeft = Math.max(0, item.expireTime - now);
-                        const percent = (timeLeft / totalLife) * 100;
-                        
-                        cardHTML = `
-                        <div class="inv-card food-fresh">
-                            <div class="inv-header"><div>🥣 ${item.name}</div><div>${Math.ceil(timeLeft/1000)} сек</div></div>
-                            <div class="bar-bg"><div class="bar-fill" style="width:${percent}%; background:#3498db"></div></div>
-                            <button class="action-btn-small" style="background:#2ecc71" onclick="eat(${index})">🍽️ З'їсти</button>
-                        </div>`;
+                        const timeLeft = Math.max(0, Math.ceil((item.expireTime - now)/1000));
+                        statusClass = timeLeft > 10 ? "status-good" : "status-warn";
+                        // Бейдж з таймером
+                        badgeHTML = `<span class="app-badge ${timeLeft > 10 ? 'badge-good' : 'badge-warn'}">${timeLeft}с</span>`;
+                        action = `onclick="eat(${index})"`;
                     }
                 }
-                list.innerHTML += cardHTML;
+
+                grid.innerHTML += `
+                <div class="app-card" ${action}>
+                    <div class="app-icon-square ${statusClass}">
+                        <span class="app-emoji">${emoji}</span>
+                        ${badgeHTML}
+                    </div>
+                    <div class="app-label">${label}</div>
+                </div>
+                `;
             });
         }
 
         // --- ACTIONS ---
         function work() {
             const pc = game.inventory.find(i => i.id === 'pc');
-            if (!pc || pc.hp <= 0) return alert("Потрібен робочий ПК!");
-            if (game.energy < 10) return alert("Втомився!");
+            if (!pc || pc.hp <= 0) return tg.showAlert("Потрібен робочий ПК!");
+            if (game.energy < 10) return tg.showAlert("Втомився!");
             
             showOverlay("👨‍💻", "КОДИНГ...");
             setTimeout(() => {
                 game.money += 15; game.energy -= 10;
-                pc.hp -= 10; // Знос
+                pc.hp -= 20; // Швидший знос для тесту
                 finishAction();
             }, 2000);
         }
 
         function sleep() {
             const bed = game.inventory.find(i => i.id === 'bed');
-            if (!bed || bed.hp <= 0) return alert("Потрібне ціле ліжко!");
+            if (!bed || bed.hp <= 0) return tg.showAlert("Потрібне ціле ліжко!");
             
             showOverlay("😴", "СОН...");
             setTimeout(() => {
                 game.energy = Math.min(100, game.energy + 20);
-                bed.hp -= 5; // Знос
+                bed.hp -= 10;
                 finishAction();
             }, 2000);
         }
@@ -247,6 +294,7 @@
             document.getElementById('overlay-emoji').innerText = emoji;
             document.getElementById('overlay-text').innerText = text;
             document.getElementById('overlay').style.display = 'flex';
+            tg.HapticFeedback.impactOccurred('medium');
         }
 
         function finishAction() {
@@ -254,63 +302,57 @@
             save(); render();
         }
 
-        // --- SHOP & ITEMS ---
+        // --- SHOP & INVENTORY ---
         function buyItem(id, price) {
-            if (game.inventory.some(i => i.id === id)) return alert("Вже є!");
-            if (game.money < price) return alert("Нема грошей");
+            if (game.inventory.some(i => i.id === id)) return tg.showAlert("Вже є!");
+            if (game.money < price) return tg.showAlert("Нема грошей");
             
             game.money -= price;
             game.inventory.push({
                 id: id, name: id === 'pc' ? 'ПК' : 'Ліжко',
                 category: 'device', hp: 100
             });
-            save(); render(); alert("Куплено!");
+            save(); render(); tg.showAlert("Куплено!");
+            tg.HapticFeedback.notificationOccurred('success');
         }
 
         function buyFood(type, price) {
-            if (game.money < price) return alert("Нема грошей");
-            
+            if (game.money < price) return tg.showAlert("Нема грошей");
             game.money -= price;
-            
-            // Налаштування часу життя (в секундах)
             let lifeSeconds = type === 'pizza' ? 30 : 15; 
-            
             game.inventory.push({
-                id: type, 
-                name: type === 'pizza' ? 'Піца' : 'Суші',
-                originalName: type === 'pizza' ? 'Піца' : 'Суші',
-                category: 'food',
-                expireTime: Date.now() + (lifeSeconds * 1000), // Час смерті
-                totalLife: lifeSeconds * 1000,
-                isSpoiled: false
+                id: type, name: type === 'pizza' ? 'Піца' : 'Суші', category: 'food',
+                expireTime: Date.now() + (lifeSeconds * 1000), isSpoiled: false
             });
-            save(); render(); alert("Куплено! Їж швидше!");
+            save(); render(); tg.showAlert("Куплено! Їж швидше!");
+            tg.HapticFeedback.notificationOccurred('success');
         }
 
-        // --- FOOD LOGIC ---
         function eat(index) {
-            const item = game.inventory[index];
-            game.inventory.splice(index, 1); // Видаляємо з інвентарю
-            
+            game.inventory.splice(index, 1);
             game.energy = Math.min(100, game.energy + 20);
             game.health = Math.min(100, game.health + 5);
-            alert("Смачно! +Енергія");
-            
-            save(); render(); renderInventory();
+            tg.showAlert("Смачно! +Енергія");
+            tg.HapticFeedback.impactOccurred('light');
+            save(); render(); renderInventoryGrid();
         }
 
         function trash(index) {
             game.inventory.splice(index, 1);
-            alert("Викинуто у смітник.");
-            save(); render(); renderInventory();
+            tg.showAlert("Викинуто.");
+            tg.HapticFeedback.impactOccurred('heavy');
+            save(); render(); renderInventoryGrid();
         }
 
         function repair(index) {
-            if(game.money < 50) return alert("Треба 50$");
+            const item = game.inventory[index];
+            if(item.hp >= 100) return tg.showAlert("Ще ціле.");
+            if(game.money < 50) return tg.showAlert("Треба 50$");
             game.money -= 50;
-            game.inventory[index].hp = 100;
-            alert("Відремонтовано!");
-            save(); render(); renderInventory();
+            item.hp = 100;
+            tg.showAlert("Відремонтовано!");
+            tg.HapticFeedback.notificationOccurred('success');
+            save(); render(); renderInventoryGrid();
         }
 
         // NAV
@@ -319,10 +361,11 @@
             document.getElementById('tab-'+tab).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            if(tab === 'inv') renderInventory();
+            if(tab === 'inv') renderInventoryGrid();
+            tg.HapticFeedback.selectionChanged();
         }
 
-        function save() { localStorage.setItem('simSpoil', JSON.stringify(game)); }
+        function save() { localStorage.setItem('simGrid', JSON.stringify(game)); }
         render();
 
     </script>

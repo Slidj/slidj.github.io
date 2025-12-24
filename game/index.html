@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v25: Squircle</title>
+    <title>Life OS v26: Separated Rings</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <style>
@@ -44,26 +44,30 @@
         .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .shop-list { display: flex; flex-direction: column; gap: 15px; }
 
-        /* --- SQUIRCLE BUTTON --- */
+        /* APP CARD */
         .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; z-index: 1; }
         .app-card:active .icon-wrapper { transform: scale(0.95); }
         
+        /* Icon Wrapper size must fit Outer Ring (76px) */
         .icon-wrapper { position: relative; width: 76px; height: 76px; display: flex; justify-content: center; align-items: center; }
         
-        .app-bg { width: 54px; height: 54px; background: var(--card); border-radius: 14px; display: flex; justify-content: center; align-items: center; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .app-emoji { font-size: 26px; }
+        /* Button BG (Smaller than rings) */
+        .app-bg { width: 50px; height: 50px; background: var(--card); border-radius: 12px; display: flex; justify-content: center; align-items: center; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .app-emoji { font-size: 24px; }
         
         /* SVG SQUIRCLE RINGS */
         .progress-svg { position: absolute; top: 0; left: 0; width: 76px; height: 76px; transform: rotate(-90deg); z-index: 2; pointer-events: none; }
         
-        /* Головна магія форми */
+        /* Common style for Squircles */
         .squircle { 
-            fill: none; stroke-width: 3; stroke-linecap: round; 
-            rx: 18; /* Радіус заокруглення кутів (співпадає з кнопкою) */
+            fill: none; stroke-width: 2.5; stroke-linecap: round; 
         }
         
-        .ring-bg { stroke: #333; }
+        /* INNER RING (HP) - Smaller */
+        .ring-bg-inner { stroke: #333; }
         .ring-hp { transition: stroke-dashoffset 0.3s; }
+        
+        /* OUTER RING (TIMER) - Larger */
         .ring-timer { stroke: var(--accent); opacity: 0; transition: opacity 0.2s; }
         .ring-timer.active { opacity: 1; }
 
@@ -87,7 +91,7 @@
         .shop-btn { background: var(--accent); color: white; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 13px; }
         .shop-btn:disabled { background: #333; color: #555; }
 
-        /* TABS */
+        /* TABS & NAV */
         .tab { display: none; } .tab.active { display: block; }
         .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; padding: 15px 0; border-top: 1px solid #333; z-index: 9999; }
         .nav-btn { flex: 1; background: none; border: none; font-size: 28px; cursor: pointer; opacity: 0.5; transition: 0.2s; }
@@ -96,7 +100,7 @@
 </head>
 <body>
 
-    <button class="reset-btn" onclick="hardReset()">FIX & RESET</button>
+    <button class="reset-btn" onclick="hardReset()">RESET v26</button>
 
     <div class="scene-container">
         <div id="scene-overlay">
@@ -137,8 +141,8 @@
 
     <script>
         const shopItems = [
-            { id: 'pc', type: 'device', name: 'iMac Pro', price: 150, icon: '🖥️', desc: 'Засіб заробітку. Натисни щоб працювати.', specs: [{t:'⚡ -10',c:'tag-red'},{t:'💰 +20$',c:'tag-green'}] },
-            { id: 'bed', type: 'device', name: 'Smart Bed', price: 100, icon: '🛏️', desc: 'Відновлює сили. Натисни щоб спати.', specs: [{t:'⚡ +30',c:'tag-green'},{t:'⏳ 3с',c:'tag-blue'}] },
+            { id: 'pc', type: 'device', name: 'iMac Pro', price: 150, icon: '🖥️', desc: 'Для заробітку.', specs: [{t:'⚡ -10',c:'tag-red'},{t:'💰 +20$',c:'tag-green'}] },
+            { id: 'bed', type: 'device', name: 'Smart Bed', price: 100, icon: '🛏️', desc: 'Відновлює сили.', specs: [{t:'⚡ +30',c:'tag-green'},{t:'⏳ 3с',c:'tag-blue'}] },
             { id: 'pizza', type: 'food', name: 'Pepperoni', price: 20, icon: '🍕', desc: 'Дає енергію.', specs: [{t:'⚡ +20',c:'tag-green'},{t:'Термін 30с',c:'tag-orange'}] },
             { id: 'sushi', type: 'food', name: 'Sushi', price: 45, icon: '🍣', desc: 'Смачна риба.', specs: [{t:'⚡ +35',c:'tag-green'},{t:'Термін 15с',c:'tag-red'}] }
         ];
@@ -146,19 +150,13 @@
         let game;
 
         document.addEventListener("DOMContentLoaded", () => {
-            // АВТО-ФІКС БАЗИ ДАНИХ
             try {
-                const saved = localStorage.getItem('lifeSim_v25_sq');
+                const saved = localStorage.getItem('lifeSim_v26_sep');
                 if(saved) game = JSON.parse(saved);
                 else game = { money: 300, energy: 100, room: [], inventory: [] };
-                
-                // Перевірка цілісності
                 if(!Array.isArray(game.room)) game.room = [];
                 if(!Array.isArray(game.inventory)) game.inventory = [];
-                
-            } catch(e) { 
-                game = { money: 300, energy: 100, room: [], inventory: [] }; 
-            }
+            } catch(e) { game = { money: 300, energy: 100, room: [], inventory: [] }; }
 
             const tg = window.Telegram.WebApp;
             tg.expand();
@@ -177,7 +175,6 @@
             });
             if(saveNeeded) { save(); render(); renderGrid(); }
             
-            // Якщо відкрита вкладка - оновлюємо (для таймерів)
             if(document.getElementById('tab-home').classList.contains('active')) renderHome();
             if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
         }
@@ -187,7 +184,7 @@
             document.getElementById('energy').innerText = game.energy;
         }
 
-        // --- RENDER HOME (SQUIRCLE RINGS) ---
+        // --- RENDER HOME (CONCENTRIC SQUIRCLES) ---
         function renderHome() {
             if(isBusy) return;
             const grid = document.getElementById('home-grid');
@@ -199,24 +196,22 @@
                 document.getElementById('empty-home-msg').style.display = 'none';
                 game.room.forEach(item => {
                     let hpColor = item.hp > 50 ? '#30d158' : (item.hp > 20 ? '#ff9f0a' : '#ff453a');
-                    let hpOffset = 100 - item.hp; // pathLength="100"
+                    let hpOffset = 100 - item.hp; 
                     
                     let icon = item.id === 'pc' ? '🖥️' : '🛏️';
                     let action = item.id === 'pc' ? 'work' : 'sleep';
                     
-                    // УВАГА: Тут ми використовуємо <rect> замість <circle>
                     grid.innerHTML += `
                     <div class="app-card" onclick="startAction('${item.id}', '${action}')">
                         <div class="icon-wrapper">
                             <div class="app-bg"><span class="app-emoji">${icon}</span></div>
                             
                             <svg class="progress-svg" viewBox="0 0 76 76">
-                                <rect class="squircle ring-bg" x="3" y="3" width="70" height="70" opacity="0.3"></rect>
-                                
-                                <rect class="squircle ring-hp" x="3" y="3" width="70" height="70" 
+                                <rect class="squircle ring-bg-inner" x="8" y="8" width="60" height="60" rx="16" opacity="0.3"></rect>
+                                <rect class="squircle ring-hp" x="8" y="8" width="60" height="60" rx="16" 
                                       stroke="${hpColor}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${hpOffset}"></rect>
                                 
-                                <rect class="squircle ring-timer" id="timer-${item.id}" x="3" y="3" width="70" height="70" 
+                                <rect class="squircle ring-timer" id="timer-${item.id}" x="3" y="3" width="70" height="70" rx="20" 
                                       pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></rect>
                             </svg>
                             
@@ -228,7 +223,7 @@
             }
         }
 
-        // --- RENDER INV (SQUIRCLE) ---
+        // --- RENDER INV (SINGLE SQUIRCLE) ---
         function renderGrid() {
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = "";
@@ -252,8 +247,8 @@
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">${emoji}</span></div>
                         <svg class="progress-svg" viewBox="0 0 76 76">
-                            <rect class="squircle" x="3" y="3" width="70" height="70" 
-                                  stroke="${color}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}"></rect>
+                            <rect class="squircle" x="3" y="3" width="70" height="70" rx="18" fill="none" stroke="${color}" 
+                                  pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}"></rect>
                         </svg>
                         <div class="app-badge">${badge}</div>
                     </div>
@@ -348,7 +343,7 @@
             alert("Куплено!");
         }
 
-        function save() { localStorage.setItem('lifeSim_v25_sq', JSON.stringify(game)); }
+        function save() { localStorage.setItem('lifeSim_v26_sep', JSON.stringify(game)); }
         window.hardReset = function() { localStorage.clear(); location.reload(); }
         
         window.switchTab = function(tabName, btn) {

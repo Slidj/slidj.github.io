@@ -3,64 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Visual Life Sim</title>
+    <title>Life Sim</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="scene-container" id="game-scene">
-        <img src="assets/item-pc.png" id="visual-pc" class="room-item" alt="PC">
-        <img src="assets/item-bed.png" id="visual-bed" class="room-item" alt="Bed">
+    <div class="scene-container">
         
-        <div id="visual-hero" class="room-item" style="display:block; font-size:80px; text-align:center;">
-            🧍
-        </div>
+        <div id="visual-pc" class="room-item item-placeholder" style="right: 20px; bottom: 50px;">🖥️</div>
+        <div id="visual-bed" class="room-item item-placeholder" style="left: 20px; bottom: 50px;">🛏️</div>
+        <div id="visual-hero">🧍</div>
     </div>
 
     <div class="ui-container">
+        
         <div class="header">
-            <div class="money"><span id="money">0</span> $</div>
-            <div style="font-size:12px; color:#888;">День 1</div>
+            <div>
+                <div style="font-size:12px; color:#888;">Баланс</div>
+                <div class="money"><span id="money">0</span> $</div>
+            </div>
+            <div>
+                <div style="font-size:12px; color:#888; text-align:right;">Статус</div>
+                <div id="status-text" style="font-weight:bold; color:var(--accent)">Вільний</div>
+            </div>
         </div>
 
         <div class="stats-grid">
-            <div class="stat-box">❤️ <span id="health">100</span></div>
-            <div class="stat-box">⚡ <span id="energy">100</span></div>
+            <div class="stat-box">
+                <i class="ri-heart-pulse-fill" style="color:var(--red)"></i> 
+                <span id="health">100</span>%
+            </div>
+            <div class="stat-box">
+                <i class="ri-flashlight-fill" style="color:#ffeaa7"></i> 
+                <span id="energy">100</span>%
+            </div>
         </div>
 
         <div id="tab-home" class="tab-content active">
+            <div class="section-title">Робота</div>
             <button class="action-btn" onclick="startAction('work')">
-                <i class="ri-computer-line btn-icon"></i>
+                <div class="btn-icon"><i class="ri-macbook-line"></i></div>
                 <div>
-                    <div><b>Фріланс</b></div>
-                    <div style="font-size:12px; color:#888;">+15$ | -10 Енергії</div>
+                    <div class="btn-title">Фріланс</div>
+                    <div class="btn-desc">3 сек | +15$ | <span style="color:var(--red)">-10 Енергії</span></div>
+                </div>
+            </button>
+
+            <div class="section-title">Відпочинок</div>
+            <button class="action-btn" onclick="startAction('sleep')">
+                <div class="btn-icon"><i class="ri-hotel-bed-line"></i></div>
+                <div>
+                    <div class="btn-title">Подрімати</div>
+                    <div class="btn-desc">3 сек | <span style="color:var(--green)">+20 Енергії</span></div>
                 </div>
             </button>
         </div>
 
         <div id="tab-shop" class="tab-content">
+            <div class="section-title">Меблі</div>
+            
             <button class="action-btn" onclick="buyItem('pc')">
-                <i class="ri-macbook-line btn-icon"></i>
+                <div class="btn-icon"><i class="ri-computer-line"></i></div>
                 <div>
-                    <div><b>Ігровий ПК</b> (200$)</div>
-                    <div style="font-size:12px; color:#888;">З'явиться в кімнаті!</div>
+                    <div class="btn-title">Потужний ПК (200$)</div>
+                    <div class="btn-desc">З'явиться в кімнаті</div>
                 </div>
             </button>
-             <button class="action-btn" onclick="buyItem('bed')">
-                <i class="ri-hotel-bed-line btn-icon"></i>
+
+            <button class="action-btn" onclick="buyItem('bed')">
+                <div class="btn-icon"><i class="ri-home-heart-line"></i></div>
                 <div>
-                    <div><b>М'яке ліжко</b> (100$)</div>
-                    <div style="font-size:12px; color:#888;">Краще відновлює сон</div>
+                    <div class="btn-title">Королівське ліжко (150$)</div>
+                    <div class="btn-desc">З'явиться в кімнаті</div>
+                </div>
+            </button>
+
+            <div class="section-title">Їжа</div>
+             <button class="action-btn" onclick="buyFood()">
+                <div class="btn-icon"><i class="ri-restaurant-2-line"></i></div>
+                <div>
+                    <div class="btn-title">Піца (20$)</div>
+                    <div class="btn-desc">+10 Енергії | +5 Здоров'я</div>
                 </div>
             </button>
         </div>
     </div>
 
     <div class="nav">
-        <button class="nav-btn active" onclick="switchTab('home')"><i class="ri-home-line"></i></button>
-        <button class="nav-btn" onclick="switchTab('shop')"><i class="ri-shopping-cart-2-line"></i></button>
+        <button class="nav-item active" onclick="switchTab('home', this)">
+            <i class="ri-home-5-line"></i>
+        </button>
+        <button class="nav-item" onclick="switchTab('shop', this)">
+            <i class="ri-shopping-cart-2-line"></i>
+        </button>
     </div>
 
     <script src="script.js"></script>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS Stable</title>
+    <title>Life OS: Scene Focus</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
@@ -11,60 +11,91 @@
         :root { 
             --bg: #000; --card: #1c1c1e; --accent: #0a84ff; 
             --text: #fff; --red: #ff453a; --green: #30d158; --gray: #8e8e93;
+            --purple: #bf5af2; --teal: #64d2ff;
         }
         body { 
             background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; 
             margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; 
         }
 
-        /* КНОПКА СКИДАННЯ (РЯТУНОК) */
+        /* КНОПКА СКИДАННЯ */
         .reset-btn {
             position: fixed; top: 10px; right: 10px; z-index: 1000;
-            background: rgba(255, 69, 58, 0.3); color: white; border: 1px solid var(--red);
-            padding: 5px 10px; border-radius: 8px; font-size: 10px; cursor: pointer;
+            background: rgba(255, 69, 58, 0.2); color: white; border: 1px solid var(--red);
+            padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; opacity: 0.5;
         }
 
-        /* СЦЕНА */
-        .scene-container { position: relative; width: 100%; height: 240px; background-color: #2c2c2e; border-bottom: 1px solid #3a3a3c; overflow: hidden; }
-        #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: all 0.5s ease;}
+        /* --- СЦЕНА (КОНТЕЙНЕР) --- */
+        .scene-container { 
+            position: relative; /* ВАЖЛИВО для шторки */
+            width: 100%; height: 260px; 
+            background-color: #2c2c2e; border-bottom: 1px solid #3a3a3c; 
+            overflow: hidden; 
+        }
+
+        /* ЕЛЕМЕНТИ СЦЕНИ */
+        #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
         .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
         #item-pc { right: 30px; bottom: 40px; }
         #item-bed { left: 30px; bottom: 40px; }
         .broken-visual { filter: grayscale(1) opacity(0.5); }
 
+        /* --- ШТОРКА (OVERLAY) ТЕПЕР ВСЕРЕДИНІ СЦЕНИ --- */
+        #scene-overlay {
+            position: absolute; /* Абсолютно відносно сцени, а не екрану */
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); /* Темна вуаль */
+            backdrop-filter: blur(4px);
+            display: none; /* Приховано */
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; /* Поверх героя, але нижче меню */
+            color: white;
+            transition: opacity 0.3s;
+        }
+        .overlay-loader { font-size: 60px; animation: pulse 1s infinite; margin-bottom: 10px; }
+        .overlay-text { font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
         /* UI */
-        .ui { padding: 20px; }
+        .ui { padding: 20px; transition: opacity 0.3s; }
         
+        /* Якщо гравець зайнятий, інтерфейс трохи тьмяніє, але ВИДИМИЙ */
+        .ui.busy { opacity: 0.6; pointer-events: none; /* Блокуємо кліки, але бачимо */ }
+
         .widget-header {
             background: #1c1c1e; padding: 20px; border-radius: 20px; margin-bottom: 25px;
             display: flex; justify-content: space-between; align-items: center; border: 1px solid #333;
         }
         .widget-money { font-size: 28px; font-weight: 800; color: var(--text); }
-        
-        /* СІТКА ІКОНОК (APP GRID) */
+
+        /* APP GRID */
         .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 5px; }
-        
-        .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-        .app-card:active { transform: scale(0.95); transition: 0.1s; }
+        .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; }
+        .app-card:active .icon-wrapper { transform: scale(0.95); }
 
         .icon-wrapper {
-            position: relative; width: 64px; height: 64px;
+            position: relative; width: 68px; height: 68px;
             display: flex; justify-content: center; align-items: center;
         }
-
         .app-bg {
-            width: 100%; height: 100%; background: var(--card); border-radius: 16px;
+            width: 58px; height: 58px; background: var(--card); border-radius: 16px;
             display: flex; justify-content: center; align-items: center; z-index: 1;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid #333;
         }
-        .app-emoji { font-size: 30px; }
+        .app-emoji { font-size: 28px; }
 
-        /* КРУГОВИЙ ПРОГРЕС (SVG) */
+        /* SVG RINGS */
         .progress-svg {
-            position: absolute; top: -4px; left: -4px; width: 72px; height: 72px;
+            position: absolute; top: 0; left: 0; width: 68px; height: 68px;
             transform: rotate(-90deg); z-index: 2; pointer-events: none;
         }
         .progress-ring { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.5s; }
+
+        /* Colors for Rings */
+        .ring-work { stroke: var(--teal); }
+        .ring-sleep { stroke: var(--purple); }
+        .ring-bank { stroke: var(--green); }
+        .ring-hosp { stroke: var(--red); }
 
         .app-label { font-size: 11px; color: #fff; margin-top: 8px; text-align: center; font-weight: 500;}
         .app-badge {
@@ -73,17 +104,12 @@
             background: #333; color: white; border: 2px solid var(--bg);
         }
 
-        /* OVERLAY (ШИРМА) */
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 900; color: white; backdrop-filter: blur(5px); }
-        .overlay-loader { font-size: 80px; animation: pulse 1s infinite; margin-bottom: 20px; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        
         /* ACTION SHEET */
         #action-sheet {
             position: fixed; bottom: -100%; left: 0; width: 100%;
             background: #1c1c1e; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 25px; box-sizing: border-box; transition: bottom 0.3s ease;
-            z-index: 1000; border-top: 1px solid #333;
+            padding: 25px; box-sizing: border-box; transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 1000; border-top: 1px solid #333; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
         }
         #action-sheet.open { bottom: 0; }
         .sheet-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
@@ -97,22 +123,23 @@
 </head>
 <body>
 
-    <button class="reset-btn" onclick="resetGame()">RESET GAME</button>
-
-    <div id="overlay">
-        <div class="overlay-loader" id="overlay-icon">⏳</div>
-        <h2 id="overlay-text">...</h2>
-    </div>
+    <button class="reset-btn" onclick="resetGame()">RESET</button>
 
     <div id="action-sheet"><div id="sheet-content"></div></div>
 
     <div class="scene-container">
+        
+        <div id="scene-overlay">
+            <div class="overlay-loader" id="overlay-icon">⏳</div>
+            <div id="overlay-text" class="overlay-text">Дія...</div>
+        </div>
+
         <div id="item-pc" class="room-item">🖥️</div>
         <div id="item-bed" class="room-item">🛏️</div>
         <div id="visual-hero">🧍</div>
     </div>
 
-    <div class="ui">
+    <div class="ui" id="ui-layer">
         <div class="widget-header">
             <div>
                 <div class="widget-money"><span id="money">0</span> $</div>
@@ -131,18 +158,18 @@
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">💻</span></div>
                         <svg class="progress-svg" viewBox="0 0 72 72">
-                            <rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#64d2ff" stroke-dasharray="200" stroke-dashoffset="0" />
+                            <rect class="progress-ring ring-work" x="4" y="4" width="64" height="64" rx="14" stroke-dasharray="200" stroke-dashoffset="0" />
                         </svg>
                         <div class="app-badge">3с</div>
                     </div>
-                    <div class="app-label">Робота</div>
+                    <div class="app-label">Фріланс</div>
                 </div>
 
                 <div class="app-card" onclick="sleep()">
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">😴</span></div>
                         <svg class="progress-svg" viewBox="0 0 72 72">
-                            <rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#bf5af2" stroke-dasharray="200" stroke-dashoffset="0" />
+                            <rect class="progress-ring ring-sleep" x="4" y="4" width="64" height="64" rx="14" stroke-dasharray="200" stroke-dashoffset="0" />
                         </svg>
                         <div class="app-badge">3с</div>
                     </div>
@@ -156,7 +183,6 @@
                     </div>
                     <div class="app-label">Банк</div>
                 </div>
-
             </div>
         </div>
 
@@ -194,48 +220,30 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // СТАН ГРИ (ЗА ЗАМОВЧУВАННЯМ)
-        const defaultState = { money: 300, energy: 100, health: 100, inventory: [], debt: 0 };
-        let game = { ...defaultState };
-
-        // ЗАВАНТАЖЕННЯ (З новим ключем 'v11_stable' щоб уникнути конфліктів)
+        // СТАН
+        let game = { money: 300, energy: 100, inventory: [], debt: 0 };
         try {
-            const saved = localStorage.getItem('lifeSim_v11_stable');
-            if (saved) {
-                game = JSON.parse(saved);
-                // Захист: якщо інвентар зник, робимо пустий
-                if (!game.inventory) game.inventory = [];
-            }
-        } catch (e) {
-            console.error("Save Error", e);
-            localStorage.clear(); // Якщо помилка - чистимо
-        }
+            if(localStorage.getItem('lifeSim_v12')) game = JSON.parse(localStorage.getItem('lifeSim_v12'));
+            if(!game.inventory) game.inventory = [];
+        } catch(e) { localStorage.clear(); }
 
-        // ГОЛОВНИЙ ЦИКЛ ОНОВЛЕННЯ
+        // LOOP
         setInterval(() => {
             const now = Date.now();
-            let needsSave = false;
-            
-            // Псування їжі
+            let saveNeeded = false;
             game.inventory.forEach(item => {
                 if (item.category === 'food' && !item.isSpoiled && now > item.expireTime) {
-                    item.isSpoiled = true; needsSave = true;
+                    item.isSpoiled = true; saveNeeded = true;
                 }
             });
-
-            if (needsSave) { save(); render(); }
-            
-            // Оновлюємо грід в реальному часі (таймери)
-            if(document.getElementById('tab-inv').classList.contains('active')) {
-                renderGrid();
-            }
+            if(saveNeeded) { save(); render(); }
+            if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
         }, 1000);
 
         function render() {
             document.getElementById('money').innerText = game.money;
             document.getElementById('energy').innerText = game.energy;
 
-            // Візуал в кімнаті
             const pc = game.inventory.find(i => i.id === 'pc');
             const bed = game.inventory.find(i => i.id === 'bed');
             
@@ -277,7 +285,6 @@
                     }
                 }
 
-                // Малюємо коло SVG (200 - довжина)
                 const offset = 200 - (200 * percent / 100);
 
                 grid.innerHTML += `
@@ -294,38 +301,51 @@
             });
         }
 
-        // ДІЇ
+        // ACTIONS
+        let isBusy = false;
+
+        function startSceneAction(icon, text, callback) {
+            if(isBusy) return;
+            isBusy = true;
+            
+            // 1. Показуємо шторку тільки в сцені
+            const overlay = document.getElementById('scene-overlay');
+            document.getElementById('overlay-icon').innerText = icon;
+            document.getElementById('overlay-text').innerText = text;
+            overlay.style.display = 'flex';
+
+            // 2. Блокуємо UI (візуально)
+            document.getElementById('ui-layer').classList.add('busy');
+
+            setTimeout(() => {
+                callback();
+                overlay.style.display = 'none';
+                document.getElementById('ui-layer').classList.remove('busy');
+                isBusy = false;
+                save(); render();
+            }, 3000);
+        }
+
         function work() {
             const pc = game.inventory.find(i => i.id === 'pc');
-            if (!pc || pc.hp <= 0) return alert("Потрібен робочий ПК! Купи в магазині.");
+            if (!pc || pc.hp <= 0) return alert("Потрібен робочий ПК!");
             if (game.energy < 10) return alert("Мало енергії!");
             
-            runOverlay("👨‍💻", "КОДИНГ...", () => {
+            startSceneAction("👨‍💻", "КОДИНГ...", () => {
                 game.money += 20; game.energy -= 10; pc.hp -= 20;
             });
         }
 
         function sleep() {
             const bed = game.inventory.find(i => i.id === 'bed');
-            if (!bed || bed.hp <= 0) return alert("Потрібне ліжко! Купи в магазині.");
+            if (!bed || bed.hp <= 0) return alert("Потрібне ліжко!");
             
-            runOverlay("😴", "СОН...", () => {
-                game.energy = Math.min(100, game.energy + 30); bed.hp -= 10;
+            startSceneAction("😴", "СОН...", () => {
+                game.energy = Math.min(100, game.energy + 30); bed.hp -= 5;
             });
         }
 
-        function runOverlay(icon, text, callback) {
-            document.getElementById('overlay-icon').innerText = icon;
-            document.getElementById('overlay-text').innerText = text;
-            document.getElementById('overlay').style.display = 'flex';
-            setTimeout(() => {
-                callback();
-                document.getElementById('overlay').style.display = 'none';
-                save(); render();
-            }, 3000);
-        }
-
-        // БАНК
+        // BANK & OTHER
         function openBank() {
             openCustomSheet(`
                 <span class="sheet-emoji">🏦</span>
@@ -337,19 +357,17 @@
         }
         function takeLoan() { game.money+=100; game.debt+=120; closeSheet(); save(); render(); }
 
-        // SHOP & INV
+        // HELPERS
         function buyItem(id, p) {
             if(game.inventory.some(i=>i.id===id)) return alert("Вже є!");
             if(game.money<p) return alert("Нема грошей");
-            game.money-=p; 
-            game.inventory.push({id, name:id==='pc'?'iMac':'Ліжко', category:'device', hp:100});
+            game.money-=p; game.inventory.push({id, name:id==='pc'?'iMac':'Ліжко', category:'device', hp:100});
             save(); render(); alert("Куплено!");
         }
 
         function buyFood(id, p) {
             if(game.money<p) return alert("Нема грошей");
-            game.money-=p;
-            game.inventory.push({id, name:'Піца', category:'food', expireTime:Date.now()+30000, isSpoiled:false});
+            game.money-=p; game.inventory.push({id, name:'Піца', category:'food', expireTime:Date.now()+30000, isSpoiled:false});
             save(); render(); alert("Куплено!");
         }
 
@@ -357,33 +375,21 @@
             const item = game.inventory[index];
             let btn = "";
             if(item.category==='device') {
-                if(item.hp<100) btn=`<button class="sheet-btn" style="background:#ff9f0a;color:white" onclick="repair(${index})">Ремонт (50$)</button>`;
+                btn = item.hp<100 ? `<button class="sheet-btn" style="background:#ff9f0a;color:white" onclick="repair(${index})">Ремонт (50$)</button>` : `<button class="sheet-btn" style="background:#333;color:#777">Все ок</button>`;
             } else {
-                if(!item.isSpoiled) btn=`<button class="sheet-btn" style="background:#30d158;color:white" onclick="eat(${index})">З'їсти</button>`;
-                else btn=`<button class="sheet-btn" style="background:red;color:white" onclick="trash(${index})">Викинути</button>`;
+                btn = item.isSpoiled ? `<button class="sheet-btn" style="background:#ff453a;color:white" onclick="trash(${index})">Викинути</button>` : `<button class="sheet-btn" style="background:#30d158;color:white" onclick="eat(${index})">З'їсти</button>`;
             }
-            openCustomSheet(`
-                <span class="sheet-emoji">📦</span>
-                <div style="text-align:center;font-weight:bold">${item.name}</div>
-                ${btn}
-                <button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>
-            `);
+            openCustomSheet(`<span class="sheet-emoji">${item.name==='iMac'?'🖥️':(item.category==='food'?(item.isSpoiled?'🤢':'🍕'):'🛏️')}</span><div style="text-align:center;font-weight:bold">${item.name}</div>${btn}<button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>`);
         }
 
-        function openCustomSheet(html) {
-            document.getElementById('sheet-content').innerHTML = html;
-            document.getElementById('action-sheet').classList.add('open');
-        }
-
-        function repair(i) {
-            if(game.money<50) return alert("Треба 50$");
-            game.money-=50; game.inventory[i].hp=100; closeSheet(); save(); render(); renderGrid();
-        }
+        function openCustomSheet(html) { document.getElementById('sheet-content').innerHTML=html; document.getElementById('action-sheet').classList.add('open'); }
+        function closeSheet() { document.getElementById('action-sheet').classList.remove('open'); }
+        
+        function repair(i) { if(game.money<50)return alert("Треба 50$"); game.money-=50; game.inventory[i].hp=100; closeSheet(); save(); render(); renderGrid(); }
         function eat(i) { game.inventory.splice(i,1); game.energy+=20; closeSheet(); save(); render(); renderGrid(); }
         function trash(i) { game.inventory.splice(i,1); closeSheet(); save(); render(); renderGrid(); }
 
-        function closeSheet() { document.getElementById('action-sheet').classList.remove('open'); }
-        function save() { localStorage.setItem('lifeSim_v11_stable', JSON.stringify(game)); }
+        function save() { localStorage.setItem('lifeSim_v12', JSON.stringify(game)); }
         function resetGame() { localStorage.clear(); location.reload(); }
         
         window.switchTab = function(tab, btn) {
@@ -393,7 +399,6 @@
             btn.classList.add('active');
             if(tab==='inv') renderGrid();
         }
-
         render();
     </script>
 </body>

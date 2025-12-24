@@ -3,103 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life Sim</title>
+    <title>Life Sim Fixed</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        body { 
+            background: #121212; color: white; font-family: sans-serif; 
+            margin: 0; padding-bottom: 80px; user-select: none;
+        }
+
+        /* --- СЦЕНА (КІМНАТА) --- */
+        .scene-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background-color: #333; /* Темно-сірі стіни */
+            border-bottom: 10px solid #555; /* Підлога */
+            overflow: hidden;
+        }
+
+        /* --- ГЕРОЙ --- */
+        #visual-hero {
+            position: absolute;
+            bottom: 20px;       /* Стоїть на підлозі */
+            left: 50%;          /* По центру */
+            transform: translateX(-50%);
+            
+            font-size: 60px;    /* Великий розмір */
+            width: 80px; height: 80px;
+            text-align: center;
+            line-height: 80px;
+            
+            /* ТИМЧАСОВИЙ ФОН (Щоб ти точно його побачив) */
+            background: rgba(255, 255, 255, 0.1); 
+            border: 2px dashed yellow; 
+            border-radius: 50%;
+            
+            transition: all 0.8s ease; /* Плавний рух */
+            z-index: 100; /* Поверх усього */
+        }
+
+        /* Стани руху героя */
+        .state-work { left: 80% !important; bottom: 50px !important; transform: translateX(-50%) scale(0.9) !important; border-color: cyan !important; }
+        .state-sleep { left: 20% !important; bottom: 30px !important; transform: translateX(-50%) rotate(-90deg) !important; border-color: orange !important; }
+
+        /* МЕБЛІ (Заглушки) */
+        .room-item { position: absolute; font-size: 50px; display: none; }
+        #item-pc { right: 20px; bottom: 40px; }
+        #item-bed { left: 20px; bottom: 40px; }
+
+        /* --- ІНТЕРФЕЙС --- */
+        .ui { padding: 20px; }
+        .header { display: flex; justify-content: space-between; background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .money { color: #00b894; font-weight: bold; font-size: 24px; }
+        
+        .btn {
+            background: #2d3436; color: white; border: 1px solid #444;
+            padding: 15px; width: 100%; margin-bottom: 10px; border-radius: 10px;
+            display: flex; align-items: center; gap: 15px; cursor: pointer; text-align: left;
+        }
+        .btn:active { transform: scale(0.98); background: #333; }
+        .icon { font-size: 24px; color: #a29bfe; }
+
+        /* Tabs */
+        .tab { display: none; }
+        .tab.active { display: block; }
+        
+        /* Nav */
+        .nav { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; padding: 15px 0; border-top: 1px solid #333; }
+        .nav-btn { flex: 1; background: none; border: none; font-size: 24px; color: #555; }
+        .nav-btn.active { color: #a29bfe; }
+    </style>
 </head>
 <body>
 
     <div class="scene-container">
+        <div id="item-pc" class="room-item">🖥️</div>
+        <div id="item-bed" class="room-item">🛏️</div>
         
-        <div id="visual-pc" class="room-item item-placeholder" style="right: 20px; bottom: 50px;">🖥️</div>
-        <div id="visual-bed" class="room-item item-placeholder" style="left: 20px; bottom: 50px;">🛏️</div>
         <div id="visual-hero">🧍</div>
     </div>
 
-    <div class="ui-container">
-        
+    <div class="ui">
         <div class="header">
-            <div>
-                <div style="font-size:12px; color:#888;">Баланс</div>
-                <div class="money"><span id="money">0</span> $</div>
-            </div>
-            <div>
-                <div style="font-size:12px; color:#888; text-align:right;">Статус</div>
-                <div id="status-text" style="font-weight:bold; color:var(--accent)">Вільний</div>
-            </div>
+            <div>Баланс: <span id="money" class="money">0</span> $</div>
+            <div>Енергія: <span id="energy">100</span>%</div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-box">
-                <i class="ri-heart-pulse-fill" style="color:var(--red)"></i> 
-                <span id="health">100</span>%
-            </div>
-            <div class="stat-box">
-                <i class="ri-flashlight-fill" style="color:#ffeaa7"></i> 
-                <span id="energy">100</span>%
-            </div>
-        </div>
-
-        <div id="tab-home" class="tab-content active">
-            <div class="section-title">Робота</div>
-            <button class="action-btn" onclick="startAction('work')">
-                <div class="btn-icon"><i class="ri-macbook-line"></i></div>
+        <div id="tab-home" class="tab active">
+            <h3>Дії</h3>
+            <button class="btn" onclick="doAction('work')">
+                <i class="ri-computer-line icon"></i>
                 <div>
-                    <div class="btn-title">Фріланс</div>
-                    <div class="btn-desc">3 сек | +15$ | <span style="color:var(--red)">-10 Енергії</span></div>
+                    <b>Фріланс</b><br>
+                    <small>+15$ | -10 Енергії</small>
                 </div>
             </button>
-
-            <div class="section-title">Відпочинок</div>
-            <button class="action-btn" onclick="startAction('sleep')">
-                <div class="btn-icon"><i class="ri-hotel-bed-line"></i></div>
+            <button class="btn" onclick="doAction('sleep')">
+                <i class="ri-hotel-bed-line icon"></i>
                 <div>
-                    <div class="btn-title">Подрімати</div>
-                    <div class="btn-desc">3 сек | <span style="color:var(--green)">+20 Енергії</span></div>
+                    <b>Відпочити</b><br>
+                    <small>+20 Енергії</small>
                 </div>
             </button>
         </div>
 
-        <div id="tab-shop" class="tab-content">
-            <div class="section-title">Меблі</div>
-            
-            <button class="action-btn" onclick="buyItem('pc')">
-                <div class="btn-icon"><i class="ri-computer-line"></i></div>
-                <div>
-                    <div class="btn-title">Потужний ПК (200$)</div>
-                    <div class="btn-desc">З'явиться в кімнаті</div>
-                </div>
+        <div id="tab-shop" class="tab">
+            <h3>Магазин</h3>
+            <button class="btn" onclick="buy('pc')">
+                <i class="ri-macbook-line icon"></i>
+                <div><b>Купити ПК</b> (100$)<br><small>З'явиться в кімнаті</small></div>
             </button>
-
-            <button class="action-btn" onclick="buyItem('bed')">
-                <div class="btn-icon"><i class="ri-home-heart-line"></i></div>
-                <div>
-                    <div class="btn-title">Королівське ліжко (150$)</div>
-                    <div class="btn-desc">З'явиться в кімнаті</div>
-                </div>
+            <button class="btn" onclick="buy('bed')">
+                <i class="ri-home-heart-line icon"></i>
+                <div><b>Купити Ліжко</b> (100$)<br><small>З'явиться в кімнаті</small></div>
             </button>
-
-            <div class="section-title">Їжа</div>
-             <button class="action-btn" onclick="buyFood()">
-                <div class="btn-icon"><i class="ri-restaurant-2-line"></i></div>
-                <div>
-                    <div class="btn-title">Піца (20$)</div>
-                    <div class="btn-desc">+10 Енергії | +5 Здоров'я</div>
-                </div>
+            <button class="btn" onclick="buyFood()">
+                <i class="ri-restaurant-line icon"></i>
+                <div><b>Купити Піцу</b> (20$)<br><small>+10 Енергії</small></div>
             </button>
         </div>
     </div>
 
     <div class="nav">
-        <button class="nav-item active" onclick="switchTab('home', this)">
-            <i class="ri-home-5-line"></i>
-        </button>
-        <button class="nav-item" onclick="switchTab('shop', this)">
-            <i class="ri-shopping-cart-2-line"></i>
-        </button>
+        <button class="nav-btn active" onclick="switchTab('home', this)"><i class="ri-home-5-line"></i></button>
+        <button class="nav-btn" onclick="switchTab('shop', this)"><i class="ri-shopping-cart-2-line"></i></button>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // --- ДАНІ ---
+        let game = {
+            money: 300, 
+            energy: 100,
+            inventory: [],
+            isBusy: false
+        };
+
+        // Завантаження
+        if(localStorage.getItem('simFix')) {
+            game = JSON.parse(localStorage.getItem('simFix'));
+        }
+
+        // --- ОНОВЛЕННЯ ---
+        function render() {
+            document.getElementById('money').innerText = game.money;
+            document.getElementById('energy').innerText = game.energy;
+
+            // Показуємо меблі, якщо купили
+            if(game.inventory.includes('pc')) document.getElementById('item-pc').style.display = 'block';
+            if(game.inventory.includes('bed')) document.getElementById('item-bed').style.display = 'block';
+        }
+
+        // --- ДІЇ ---
+        function doAction(type) {
+            if(game.isBusy) return alert("Зачекай, дія виконується!");
+
+            const hero = document.getElementById('visual-hero');
+
+            if (type === 'work') {
+                if (game.energy < 10) return alert("Мало енергії!");
+                
+                // Анімація
+                game.isBusy = true;
+                hero.className = 'state-work'; // Їде вправо
+                hero.innerText = "👨‍💻";
+
+                setTimeout(() => {
+                    game.money += 15;
+                    game.energy -= 10;
+                    finishAction();
+                }, 2000);
+            }
+
+            if (type === 'sleep') {
+                // Анімація
+                game.isBusy = true;
+                hero.className = 'state-sleep'; // Їде вліво і лягає
+                hero.innerText = "😴";
+
+                setTimeout(() => {
+                    game.energy = Math.min(100, game.energy + 20);
+                    finishAction();
+                }, 2000);
+            }
+        }
+
+        function finishAction() {
+            game.isBusy = false;
+            const hero = document.getElementById('visual-hero');
+            hero.className = ''; // Повертається в центр
+            hero.innerText = "🧍";
+            save();
+            render();
+        }
+
+        // --- МАГАЗИН ---
+        function buy(item) {
+            if(game.inventory.includes(item)) return alert("Вже є!");
+            if(game.money < 100) return alert("Нема грошей!");
+
+            game.money -= 100;
+            game.inventory.push(item);
+            alert("Куплено! Глянь у кімнату.");
+            save();
+            render();
+        }
+
+        function buyFood() {
+            if(game.money < 20) return alert("Нема грошей!");
+            game.money -= 20;
+            game.energy = Math.min(100, game.energy + 10);
+            alert("Ням-ням!");
+            save();
+            render();
+        }
+
+        // --- НАВІГАЦІЯ ---
+        window.switchTab = function(tab, btn) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-'+tab).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function save() { localStorage.setItem('simFix', JSON.stringify(game)); }
+
+        // Запуск
+        render();
+
+    </script>
 </body>
 </html>

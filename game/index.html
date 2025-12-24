@@ -3,35 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS: Active Timer</title>
+    <title>Life OS v14</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
     <style>
-        :root { 
-            --bg: #000; --card: #1c1c1e; --accent: #0a84ff; 
-            --text: #fff; --red: #ff453a; --green: #30d158; --gray: #8e8e93;
-            --purple: #bf5af2; --teal: #64d2ff;
-        }
-        body { 
-            background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; 
-            margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; 
-        }
+        :root { --bg: #000; --card: #1c1c1e; --accent: #0a84ff; --text: #fff; --green: #30d158; --red: #ff453a; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; }
 
-        /* КНОПКА СКИДАННЯ */
+        /* АВАРІЙНА КНОПКА */
         .reset-btn {
-            position: fixed; top: 10px; right: 10px; z-index: 1000;
-            background: rgba(255, 69, 58, 0.2); color: white; border: 1px solid var(--red);
-            padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; opacity: 0.5;
+            position: fixed; top: 10px; right: 10px; z-index: 9999;
+            background: rgba(255, 69, 58, 0.3); color: white; border: 1px solid var(--red);
+            padding: 5px 10px; border-radius: 8px; font-size: 10px; cursor: pointer;
         }
 
-        /* --- СЦЕНА --- */
-        .scene-container { 
-            position: relative; width: 100%; height: 260px; 
-            background-color: #2c2c2e; border-bottom: 1px solid #3a3a3c; 
-            overflow: hidden; 
-        }
-
+        /* СЦЕНА */
+        .scene-container { position: relative; width: 100%; height: 260px; background-color: #2c2c2e; border-bottom: 1px solid #333; overflow: hidden; }
         #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
         .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
         #item-pc { right: 30px; bottom: 40px; }
@@ -41,124 +29,88 @@
         /* ШТОРКА СЦЕНИ */
         #scene-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
             display: none; flex-direction: column; justify-content: center; align-items: center;
             z-index: 100; color: white;
         }
-        .overlay-loader { font-size: 60px; animation: pulse 1s infinite; margin-bottom: 10px; }
-        .overlay-text { font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .overlay-emoji { font-size: 60px; margin-bottom: 10px; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         /* UI */
         .ui { padding: 20px; }
-        
-        .widget-header {
-            background: #1c1c1e; padding: 20px; border-radius: 20px; margin-bottom: 25px;
-            display: flex; justify-content: space-between; align-items: center; border: 1px solid #333;
-        }
-        .widget-money { font-size: 28px; font-weight: 800; color: var(--text); }
+        .widget-header { background: #1c1c1e; padding: 20px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; border: 1px solid #333; }
+        .money { font-size: 28px; font-weight: 800; color: var(--green); }
 
-        /* APP GRID */
-        .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 5px; }
-        .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; }
+        /* ГРІД */
+        .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .app-card:active .icon-wrapper { transform: scale(0.95); }
 
-        .icon-wrapper {
-            position: relative; width: 68px; height: 68px;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .app-bg {
-            width: 58px; height: 58px; background: var(--card); border-radius: 16px;
-            display: flex; justify-content: center; align-items: center; z-index: 1;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid #333;
-        }
+        .icon-wrapper { position: relative; width: 68px; height: 68px; display: flex; justify-content: center; align-items: center; }
+        .app-bg { width: 58px; height: 58px; background: var(--card); border-radius: 16px; display: flex; justify-content: center; align-items: center; z-index: 1; border: 1px solid #333; }
         .app-emoji { font-size: 28px; }
+        
+        /* SVG АНІМАЦІЯ */
+        .progress-svg { position: absolute; top: 0; left: 0; width: 68px; height: 68px; transform: rotate(-90deg); z-index: 2; pointer-events: none; }
+        .progress-ring { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.1s linear; }
 
-        /* SVG RINGS (Анімація) */
-        .progress-svg {
-            position: absolute; top: 0; left: 0; width: 68px; height: 68px;
-            transform: rotate(-90deg); z-index: 2; pointer-events: none;
-        }
-        .progress-ring { fill: none; stroke-width: 3; stroke-linecap: round; }
-
-        /* Кольори рамок */
-        .ring-work { stroke: var(--teal); }
-        .ring-sleep { stroke: var(--purple); }
-        .ring-bank { stroke: var(--green); }
-        .ring-hosp { stroke: var(--red); }
-
-        .app-label { font-size: 11px; color: #fff; margin-top: 8px; text-align: center; font-weight: 500;}
-        .app-badge {
-            position: absolute; bottom: -5px; right: -5px; z-index: 3;
-            font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 6px;
-            background: #333; color: white; border: 2px solid var(--bg);
-            min-width: 15px; text-align: center;
-        }
+        .app-label { font-size: 11px; margin-top: 8px; color: #fff; }
+        .app-badge { position: absolute; bottom: -5px; right: -5px; z-index: 3; font-size: 9px; font-weight: bold; padding: 2px 5px; background: #333; border-radius: 6px; border: 2px solid var(--bg); }
 
         /* ACTION SHEET */
-        #action-sheet {
-            position: fixed; bottom: -100%; left: 0; width: 100%;
-            background: #1c1c1e; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 25px; box-sizing: border-box; transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            z-index: 1000; border-top: 1px solid #333; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-        }
+        #action-sheet { position: fixed; bottom: -100%; left: 0; width: 100%; background: #1c1c1e; padding: 25px; box-sizing: border-box; transition: bottom 0.3s; z-index: 1000; border-top: 1px solid #333; }
         #action-sheet.open { bottom: 0; }
-        .sheet-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .sheet-btn { width: 100%; padding: 15px; margin-top: 10px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
 
         /* NAV */
         .tab { display: none; } .tab.active { display: block; }
-        .nav { position: fixed; bottom: 0; width: 100%; background: rgba(20,20,20,0.9); backdrop-filter: blur(20px); display: flex; padding: 10px 0; border-top: 1px solid #333; z-index: 300; }
-        .nav-btn { flex: 1; background: none; border: none; font-size: 26px; color: #666; transition: 0.2s; }
+        .nav { position: fixed; bottom: 0; width: 100%; background: rgba(20,20,20,0.9); backdrop-filter: blur(10px); display: flex; padding: 10px 0; border-top: 1px solid #333; z-index: 300; }
+        .nav-btn { flex: 1; background: none; border: none; font-size: 26px; color: #666; }
         .nav-btn.active { color: var(--accent); }
     </style>
 </head>
 <body>
 
-    <button class="reset-btn" onclick="resetGame()">RESET</button>
+    <button class="reset-btn" onclick="hardReset()">RESET GAME</button>
 
     <div id="action-sheet"><div id="sheet-content"></div></div>
 
     <div class="scene-container">
         <div id="scene-overlay">
-            <div class="overlay-loader" id="overlay-icon">⏳</div>
-            <div id="overlay-text" class="overlay-text">Дія...</div>
+            <div class="overlay-emoji" id="overlay-icon">⏳</div>
+            <div style="font-weight:bold" id="overlay-text">ДІЯ...</div>
         </div>
         <div id="item-pc" class="room-item">🖥️</div>
         <div id="item-bed" class="room-item">🛏️</div>
         <div id="visual-hero">🧍</div>
     </div>
 
-    <div class="ui" id="ui-layer">
+    <div class="ui">
         <div class="widget-header">
-            <div>
-                <div class="widget-money"><span id="money">0</span> $</div>
-                <div style="font-size:12px; color:#666">Фінанси</div>
-            </div>
-            <div>
-                <div style="font-weight:bold; color:var(--green)">⚡ <span id="energy">100</span>%</div>
-            </div>
+            <div><div class="money"><span id="money">0</span> $</div><div style="font-size:12px;color:#666">Фінанси</div></div>
+            <div style="font-weight:bold;color:var(--green)">⚡ <span id="energy">100</span>%</div>
         </div>
 
         <div id="tab-home" class="tab active">
-            <div style="color:#666; font-size:12px; margin-bottom:10px; text-transform:uppercase;">Додатки</div>
+            <div style="color:#666;font-size:12px;margin-bottom:10px">ДОДАТКИ</div>
             <div class="app-grid">
                 
-                <div class="app-card" id="btn-work" onclick="work()">
+                <div class="app-card" onclick="work(this)">
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">💻</span></div>
                         <svg class="progress-svg" viewBox="0 0 72 72">
-                            <rect class="progress-ring ring-work" x="4" y="4" width="64" height="64" rx="14" stroke-dasharray="200" stroke-dashoffset="0" />
+                            <rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#64d2ff" stroke-dasharray="200" stroke-dashoffset="0" />
                         </svg>
                         <div class="app-badge">3с</div>
                     </div>
                     <div class="app-label">Фріланс</div>
                 </div>
 
-                <div class="app-card" id="btn-sleep" onclick="sleep()">
+                <div class="app-card" onclick="sleep(this)">
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">😴</span></div>
                         <svg class="progress-svg" viewBox="0 0 72 72">
-                            <rect class="progress-ring ring-sleep" x="4" y="4" width="64" height="64" rx="14" stroke-dasharray="200" stroke-dashoffset="0" />
+                            <rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#bf5af2" stroke-dasharray="200" stroke-dashoffset="0" />
                         </svg>
                         <div class="app-badge">3с</div>
                     </div>
@@ -166,28 +118,25 @@
                 </div>
 
                 <div class="app-card" onclick="openBank()">
-                    <div class="icon-wrapper">
-                        <div class="app-bg"><span class="app-emoji">🏦</span></div>
-                        <div class="app-badge" style="background:green">$$$</div>
-                    </div>
+                    <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">🏦</span></div><div class="app-badge" style="background:green">$$$</div></div>
                     <div class="app-label">Банк</div>
                 </div>
             </div>
         </div>
 
         <div id="tab-inv" class="tab">
-            <div style="color:#666; font-size:12px; margin-bottom:10px; text-transform:uppercase;">Мої Речі</div>
+            <div style="color:#666;font-size:12px;margin-bottom:10px">МОЇ РЕЧІ</div>
             <div id="inventory-grid" class="app-grid"></div>
         </div>
 
         <div id="tab-shop" class="tab">
-            <div style="color:#666; font-size:12px; margin-bottom:10px; text-transform:uppercase;">Магазин</div>
+            <div style="color:#666;font-size:12px;margin-bottom:10px">МАГАЗИН</div>
             <div class="app-grid">
                 <div class="app-card" onclick="buyItem('pc', 150)">
                     <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">🖥️</span></div><div class="app-badge">150$</div></div>
                     <div class="app-label">iMac</div>
                 </div>
-                 <div class="app-card" onclick="buyItem('bed', 100)">
+                <div class="app-card" onclick="buyItem('bed', 100)">
                     <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">🛏️</span></div><div class="app-badge">100$</div></div>
                     <div class="app-label">Ліжко</div>
                 </div>
@@ -200,27 +149,32 @@
     </div>
 
     <div class="nav">
-        <button class="nav-btn active" onclick="switchTab('home', this)"><i class="ri-home-4-fill"></i></button>
-        <button class="nav-btn" onclick="switchTab('inv', this)"><i class="ri-apps-2-fill"></i></button>
-        <button class="nav-btn" onclick="switchTab('shop', this)"><i class="ri-shopping-bag-3-fill"></i></button>
+        <button class="nav-btn active" onclick="switchTab('home', this)"><i class="ri-home-fill"></i></button>
+        <button class="nav-btn" onclick="switchTab('inv', this)"><i class="ri-apps-fill"></i></button>
+        <button class="nav-btn" onclick="switchTab('shop', this)"><i class="ri-shopping-bag-fill"></i></button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        let game = { money: 300, energy: 100, inventory: [], debt: 0 };
-        try {
-            if(localStorage.getItem('lifeSim_v13')) game = JSON.parse(localStorage.getItem('lifeSim_v13'));
-            if(!game.inventory) game.inventory = [];
-        } catch(e) { localStorage.clear(); }
+        // 1. ЧИСТИЙ СТАРТ
+        const defaultGame = { money: 300, energy: 100, inventory: [], debt: 0 };
+        let game = { ...defaultGame };
 
-        // LOOP
+        // Спроба завантаження
+        try {
+            const saved = localStorage.getItem('lifeSim_v14_clean'); // НОВИЙ КЛЮЧ
+            if(saved) game = JSON.parse(saved);
+            if(!game.inventory) game.inventory = [];
+        } catch(e) { console.log('Save reset'); }
+
+        // LOOP (Псування їжі)
         setInterval(() => {
             const now = Date.now();
             let saveNeeded = false;
             game.inventory.forEach(item => {
-                if (item.category === 'food' && !item.isSpoiled && now > item.expireTime) {
+                if(item.category==='food' && !item.isSpoiled && now > item.expireTime) {
                     item.isSpoiled = true; saveNeeded = true;
                 }
             });
@@ -228,52 +182,59 @@
             if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
         }, 1000);
 
+        // ГОЛОВНИЙ РЕНДЕР
         function render() {
             document.getElementById('money').innerText = game.money;
             document.getElementById('energy').innerText = game.energy;
 
+            // Сцена
             const pc = game.inventory.find(i => i.id === 'pc');
             const bed = game.inventory.find(i => i.id === 'bed');
             
-            document.getElementById('item-pc').style.display = pc ? 'block' : 'none';
-            if(pc) document.getElementById('item-pc').className = pc.hp <= 0 ? 'room-item broken-visual' : 'room-item';
-            
-            document.getElementById('item-bed').style.display = bed ? 'block' : 'none';
-            if(bed) document.getElementById('item-bed').className = bed.hp <= 0 ? 'room-item broken-visual' : 'room-item';
+            const pcEl = document.getElementById('item-pc');
+            if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; }
+            else { pcEl.style.display='none'; }
+
+            const bedEl = document.getElementById('item-bed');
+            if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; }
+            else { bedEl.style.display='none'; }
         }
 
+        // РЕНДЕР ІНВЕНТАРЮ
         function renderGrid() {
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = "";
             const now = Date.now();
-            
-            if (game.inventory.length === 0) {
+
+            if(game.inventory.length === 0) {
                 grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;color:#555;'>Пусто</div>";
                 return;
             }
 
             game.inventory.forEach((item, index) => {
-                let emoji = "📦", percent = 100, color = "#30d158", badge = "";
-
-                if (item.category === 'device') {
+                let emoji = "📦", color = "#30d158", badge = "", offset = 0;
+                
+                // DEVICE
+                if(item.category === 'device') {
                     emoji = item.id === 'pc' ? "🖥️" : "🛏️";
-                    percent = item.hp;
-                    if(item.hp<=0) { color="#ff453a"; badge="ЗЛАМ."; }
-                    else if(item.hp<50) { color="#ff9f0a"; badge="🛠️"; }
-                    else { badge=item.hp+"%"; }
-                }
-
-                if (item.category === 'food') {
-                    emoji = item.id === 'pizza' ? "🍕" : "🍣";
-                    if(item.isSpoiled) { emoji="🤢"; percent=0; color="#555"; badge="🗑️"; }
-                    else {
-                        const timeLeft = Math.max(0, item.expireTime - now);
-                        percent = (timeLeft / 30000) * 100;
-                        color = "#0a84ff"; badge = Math.ceil(timeLeft/1000)+"с";
+                    if(item.hp <= 0) { color="#ff453a"; badge="ЗЛАМ."; offset=200; }
+                    else { 
+                        if(item.hp < 50) color="#ff9f0a";
+                        badge = item.hp + "%"; 
+                        offset = 200 - (200 * item.hp / 100);
                     }
                 }
-
-                const offset = 200 - (200 * percent / 100);
+                // FOOD
+                if(item.category === 'food') {
+                    emoji = item.id === 'pizza' ? "🍕" : "🍣";
+                    if(item.isSpoiled) { emoji="🤢"; color="#555"; badge="🗑️"; offset=200; }
+                    else {
+                        const left = Math.max(0, item.expireTime - now);
+                        badge = Math.ceil(left/1000)+"с";
+                        color = "#0a84ff";
+                        offset = 200 - (200 * (left/30000));
+                    }
+                }
 
                 grid.innerHTML += `
                 <div class="app-card" onclick="openSheet(${index})">
@@ -289,45 +250,39 @@
             });
         }
 
-        // --- ЛОГІКА АНІМАЦІЇ КНОПОК ---
+        // --- ЛОГІКА ТА АНІМАЦІЯ ---
         let isBusy = false;
 
-        function animateButton(btnId, duration) {
-            const btn = document.getElementById(btnId);
-            const ring = btn.querySelector('.progress-ring');
-            const badge = btn.querySelector('.app-badge');
-            const originalBadge = "3с"; // Скинемо потім
-            
-            let startTime = Date.now();
+        function animateBtn(btnElement, duration) {
+            const ring = btnElement.querySelector('.progress-ring');
+            const badge = btnElement.querySelector('.app-badge');
+            const start = Date.now();
             
             const interval = setInterval(() => {
-                let passed = Date.now() - startTime;
-                let remaining = Math.max(0, duration - passed);
-                let percent = remaining / duration; // від 1 до 0
-
-                // 200 - повна довжина. offset 0 - повно. offset 200 - пусто.
-                // Ми хочемо зменшувати: значить offset росте від 0 до 200.
-                let offset = 200 - (200 * percent);
+                const passed = Date.now() - start;
+                const left = Math.max(0, duration - passed);
+                const pct = left / duration;
                 
-                ring.style.strokeDashoffset = offset;
-                badge.innerText = (remaining / 1000).toFixed(1) + 'с';
+                // 200 -> 0 (зникає)
+                ring.style.strokeDashoffset = 200 - (200 * pct); 
+                badge.innerText = (left/1000).toFixed(1) + 'с';
 
-                if (remaining <= 0) {
+                if(left <= 0) {
                     clearInterval(interval);
-                    badge.innerText = originalBadge;
+                    badge.innerText = "3с";
                     ring.style.strokeDashoffset = 0;
                 }
-            }, 50);
+            }, 30);
         }
 
-        function startSceneAction(icon, text, btnId, callback) {
+        function runSceneAction(icon, text, btnElement, callback) {
             if(isBusy) return;
             isBusy = true;
-            
-            // 1. Анімуємо кнопку (Таймер і Кільце)
-            animateButton(btnId, 3000);
 
-            // 2. Показуємо шторку на сцені
+            // Анімація на кнопці
+            if(btnElement) animateBtn(btnElement, 3000);
+
+            // Анімація на сцені
             const overlay = document.getElementById('scene-overlay');
             document.getElementById('overlay-icon').innerText = icon;
             document.getElementById('overlay-text').innerText = text;
@@ -341,72 +296,71 @@
             }, 3000);
         }
 
-        function work() {
+        function work(btn) {
             const pc = game.inventory.find(i => i.id === 'pc');
-            if (!pc || pc.hp <= 0) return alert("Потрібен робочий ПК!");
-            if (game.energy < 10) return alert("Мало енергії!");
-            
-            // Передаємо ID кнопки 'btn-work'
-            startSceneAction("👨‍💻", "КОДИНГ...", "btn-work", () => {
+            if(!pc || pc.hp <= 0) return alert("Немає робочого ПК!");
+            if(game.energy < 10) return alert("Втома!");
+
+            runSceneAction("👨‍💻", "КОДИНГ", btn, () => {
                 game.money += 20; game.energy -= 10; pc.hp -= 20;
             });
         }
 
-        function sleep() {
+        function sleep(btn) {
             const bed = game.inventory.find(i => i.id === 'bed');
-            if (!bed || bed.hp <= 0) return alert("Потрібне ліжко!");
-            
-            // Передаємо ID кнопки 'btn-sleep'
-            startSceneAction("😴", "СОН...", "btn-sleep", () => {
+            if(!bed || bed.hp <= 0) return alert("Немає ліжка!");
+
+            runSceneAction("😴", "СОН", btn, () => {
                 game.energy = Math.min(100, game.energy + 30); bed.hp -= 5;
             });
         }
 
-        // BANK & HELPERS
-        function openBank() {
-            openCustomSheet(`
-                <span class="sheet-emoji">🏦</span>
-                <div style="text-align:center;font-weight:bold;margin-bottom:10px">Банк</div>
-                <div style="text-align:center;margin-bottom:20px">Борг: ${game.debt}$</div>
-                <button class="sheet-btn" style="background:#0a84ff;color:white" onclick="takeLoan()">Взяти 100$</button>
-                <button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>
-            `);
-        }
-        function takeLoan() { game.money+=100; game.debt+=120; closeSheet(); save(); render(); }
-        
+        // ІНШІ ФУНКЦІЇ
         function buyItem(id, p) {
             if(game.inventory.some(i=>i.id===id)) return alert("Вже є!");
             if(game.money<p) return alert("Нема грошей");
             game.money-=p; game.inventory.push({id, name:id==='pc'?'iMac':'Ліжко', category:'device', hp:100});
             save(); render(); alert("Куплено!");
         }
-
         function buyFood(id, p) {
             if(game.money<p) return alert("Нема грошей");
             game.money-=p; game.inventory.push({id, name:'Піца', category:'food', expireTime:Date.now()+30000, isSpoiled:false});
             save(); render(); alert("Куплено!");
         }
 
-        function openSheet(index) {
-            const item = game.inventory[index];
+        // SHEET
+        function openSheet(i) {
+            const item = game.inventory[i];
             let btn = "";
-            if(item.category==='device') {
-                btn = item.hp<100 ? `<button class="sheet-btn" style="background:#ff9f0a;color:white" onclick="repair(${index})">Ремонт (50$)</button>` : `<button class="sheet-btn" style="background:#333;color:#777">Все ок</button>`;
-            } else {
-                btn = item.isSpoiled ? `<button class="sheet-btn" style="background:#ff453a;color:white" onclick="trash(${index})">Викинути</button>` : `<button class="sheet-btn" style="background:#30d158;color:white" onclick="eat(${index})">З'їсти</button>`;
-            }
-            openCustomSheet(`<span class="sheet-emoji">${item.name}</span><div style="text-align:center;font-weight:bold">${item.name}</div>${btn}<button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>`);
+            if(item.category==='device') btn = item.hp<100 ? `<button class="sheet-btn" style="background:#ff9f0a;color:white" onclick="repair(${i})">Ремонт (50$)</button>` : `<button class="sheet-btn" style="background:#333;color:#777">Все ок</button>`;
+            else btn = item.isSpoiled ? `<button class="sheet-btn" style="background:red;color:white" onclick="trash(${i})">Викинути</button>` : `<button class="sheet-btn" style="background:#30d158;color:white" onclick="eat(${i})">З'їсти</button>`;
+            
+            document.getElementById('sheet-content').innerHTML = `<div style="font-size:50px;text-align:center">${item.name==='iMac'?'🖥️':'🍕'}</div><div style="text-align:center;font-weight:bold;margin-bottom:10px">${item.name}</div>${btn}<button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>`;
+            document.getElementById('action-sheet').classList.add('open');
         }
+        
+        function openBank() {
+            document.getElementById('sheet-content').innerHTML = `<div style="text-align:center;font-weight:bold">БАНК</div><div style="text-align:center">Борг: ${game.debt}$</div><button class="sheet-btn" style="background:#0a84ff;color:white" onclick="loan()">Кредит 100$</button><button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>`;
+            document.getElementById('action-sheet').classList.add('open');
+        }
+        function loan() { game.money+=100; game.debt+=120; closeSheet(); save(); render(); }
 
-        function openCustomSheet(html) { document.getElementById('sheet-content').innerHTML=html; document.getElementById('action-sheet').classList.add('open'); }
-        function closeSheet() { document.getElementById('action-sheet').classList.remove('open'); }
-        function repair(i) { if(game.money<50)return alert("Треба 50$"); game.money-=50; game.inventory[i].hp=100; closeSheet(); save(); render(); renderGrid(); }
+        function repair(i) { if(game.money<50) return alert("Треба 50$"); game.money-=50; game.inventory[i].hp=100; closeSheet(); save(); render(); renderGrid(); }
         function eat(i) { game.inventory.splice(i,1); game.energy+=20; closeSheet(); save(); render(); renderGrid(); }
         function trash(i) { game.inventory.splice(i,1); closeSheet(); save(); render(); renderGrid(); }
+        function closeSheet() { document.getElementById('action-sheet').classList.remove('open'); }
 
-        function save() { localStorage.setItem('lifeSim_v13', JSON.stringify(game)); }
-        function resetGame() { localStorage.clear(); location.reload(); }
+        function save() { localStorage.setItem('lifeSim_v14_clean', JSON.stringify(game)); }
+        function hardReset() { localStorage.clear(); location.reload(); }
         
         window.switchTab = function(tab, btn) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-'+ta
+            document.getElementById('tab-'+tab).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if(tab==='inv') renderGrid();
+        }
+        render();
+    </script>
+</body>
+</html>

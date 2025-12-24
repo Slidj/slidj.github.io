@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS: Scene Focus</title>
+    <title>Life OS: Active Timer</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
@@ -25,43 +25,33 @@
             padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; opacity: 0.5;
         }
 
-        /* --- СЦЕНА (КОНТЕЙНЕР) --- */
+        /* --- СЦЕНА --- */
         .scene-container { 
-            position: relative; /* ВАЖЛИВО для шторки */
-            width: 100%; height: 260px; 
+            position: relative; width: 100%; height: 260px; 
             background-color: #2c2c2e; border-bottom: 1px solid #3a3a3c; 
             overflow: hidden; 
         }
 
-        /* ЕЛЕМЕНТИ СЦЕНИ */
         #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
         .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
         #item-pc { right: 30px; bottom: 40px; }
         #item-bed { left: 30px; bottom: 40px; }
         .broken-visual { filter: grayscale(1) opacity(0.5); }
 
-        /* --- ШТОРКА (OVERLAY) ТЕПЕР ВСЕРЕДИНІ СЦЕНИ --- */
+        /* ШТОРКА СЦЕНИ */
         #scene-overlay {
-            position: absolute; /* Абсолютно відносно сцени, а не екрану */
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8); /* Темна вуаль */
-            backdrop-filter: blur(4px);
-            display: none; /* Приховано */
-            flex-direction: column; justify-content: center; align-items: center;
-            z-index: 100; /* Поверх героя, але нижче меню */
-            color: white;
-            transition: opacity 0.3s;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px);
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; color: white;
         }
         .overlay-loader { font-size: 60px; animation: pulse 1s infinite; margin-bottom: 10px; }
         .overlay-text { font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         /* UI */
-        .ui { padding: 20px; transition: opacity 0.3s; }
+        .ui { padding: 20px; }
         
-        /* Якщо гравець зайнятий, інтерфейс трохи тьмяніє, але ВИДИМИЙ */
-        .ui.busy { opacity: 0.6; pointer-events: none; /* Блокуємо кліки, але бачимо */ }
-
         .widget-header {
             background: #1c1c1e; padding: 20px; border-radius: 20px; margin-bottom: 25px;
             display: flex; justify-content: space-between; align-items: center; border: 1px solid #333;
@@ -84,14 +74,14 @@
         }
         .app-emoji { font-size: 28px; }
 
-        /* SVG RINGS */
+        /* SVG RINGS (Анімація) */
         .progress-svg {
             position: absolute; top: 0; left: 0; width: 68px; height: 68px;
             transform: rotate(-90deg); z-index: 2; pointer-events: none;
         }
-        .progress-ring { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.5s; }
+        .progress-ring { fill: none; stroke-width: 3; stroke-linecap: round; }
 
-        /* Colors for Rings */
+        /* Кольори рамок */
         .ring-work { stroke: var(--teal); }
         .ring-sleep { stroke: var(--purple); }
         .ring-bank { stroke: var(--green); }
@@ -102,6 +92,7 @@
             position: absolute; bottom: -5px; right: -5px; z-index: 3;
             font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 6px;
             background: #333; color: white; border: 2px solid var(--bg);
+            min-width: 15px; text-align: center;
         }
 
         /* ACTION SHEET */
@@ -128,12 +119,10 @@
     <div id="action-sheet"><div id="sheet-content"></div></div>
 
     <div class="scene-container">
-        
         <div id="scene-overlay">
             <div class="overlay-loader" id="overlay-icon">⏳</div>
             <div id="overlay-text" class="overlay-text">Дія...</div>
         </div>
-
         <div id="item-pc" class="room-item">🖥️</div>
         <div id="item-bed" class="room-item">🛏️</div>
         <div id="visual-hero">🧍</div>
@@ -154,7 +143,7 @@
             <div style="color:#666; font-size:12px; margin-bottom:10px; text-transform:uppercase;">Додатки</div>
             <div class="app-grid">
                 
-                <div class="app-card" onclick="work()">
+                <div class="app-card" id="btn-work" onclick="work()">
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">💻</span></div>
                         <svg class="progress-svg" viewBox="0 0 72 72">
@@ -165,7 +154,7 @@
                     <div class="app-label">Фріланс</div>
                 </div>
 
-                <div class="app-card" onclick="sleep()">
+                <div class="app-card" id="btn-sleep" onclick="sleep()">
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">😴</span></div>
                         <svg class="progress-svg" viewBox="0 0 72 72">
@@ -220,10 +209,9 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // СТАН
         let game = { money: 300, energy: 100, inventory: [], debt: 0 };
         try {
-            if(localStorage.getItem('lifeSim_v12')) game = JSON.parse(localStorage.getItem('lifeSim_v12'));
+            if(localStorage.getItem('lifeSim_v13')) game = JSON.parse(localStorage.getItem('lifeSim_v13'));
             if(!game.inventory) game.inventory = [];
         } catch(e) { localStorage.clear(); }
 
@@ -301,26 +289,53 @@
             });
         }
 
-        // ACTIONS
+        // --- ЛОГІКА АНІМАЦІЇ КНОПОК ---
         let isBusy = false;
 
-        function startSceneAction(icon, text, callback) {
+        function animateButton(btnId, duration) {
+            const btn = document.getElementById(btnId);
+            const ring = btn.querySelector('.progress-ring');
+            const badge = btn.querySelector('.app-badge');
+            const originalBadge = "3с"; // Скинемо потім
+            
+            let startTime = Date.now();
+            
+            const interval = setInterval(() => {
+                let passed = Date.now() - startTime;
+                let remaining = Math.max(0, duration - passed);
+                let percent = remaining / duration; // від 1 до 0
+
+                // 200 - повна довжина. offset 0 - повно. offset 200 - пусто.
+                // Ми хочемо зменшувати: значить offset росте від 0 до 200.
+                let offset = 200 - (200 * percent);
+                
+                ring.style.strokeDashoffset = offset;
+                badge.innerText = (remaining / 1000).toFixed(1) + 'с';
+
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    badge.innerText = originalBadge;
+                    ring.style.strokeDashoffset = 0;
+                }
+            }, 50);
+        }
+
+        function startSceneAction(icon, text, btnId, callback) {
             if(isBusy) return;
             isBusy = true;
             
-            // 1. Показуємо шторку тільки в сцені
+            // 1. Анімуємо кнопку (Таймер і Кільце)
+            animateButton(btnId, 3000);
+
+            // 2. Показуємо шторку на сцені
             const overlay = document.getElementById('scene-overlay');
             document.getElementById('overlay-icon').innerText = icon;
             document.getElementById('overlay-text').innerText = text;
             overlay.style.display = 'flex';
 
-            // 2. Блокуємо UI (візуально)
-            document.getElementById('ui-layer').classList.add('busy');
-
             setTimeout(() => {
                 callback();
                 overlay.style.display = 'none';
-                document.getElementById('ui-layer').classList.remove('busy');
                 isBusy = false;
                 save(); render();
             }, 3000);
@@ -331,7 +346,8 @@
             if (!pc || pc.hp <= 0) return alert("Потрібен робочий ПК!");
             if (game.energy < 10) return alert("Мало енергії!");
             
-            startSceneAction("👨‍💻", "КОДИНГ...", () => {
+            // Передаємо ID кнопки 'btn-work'
+            startSceneAction("👨‍💻", "КОДИНГ...", "btn-work", () => {
                 game.money += 20; game.energy -= 10; pc.hp -= 20;
             });
         }
@@ -340,12 +356,13 @@
             const bed = game.inventory.find(i => i.id === 'bed');
             if (!bed || bed.hp <= 0) return alert("Потрібне ліжко!");
             
-            startSceneAction("😴", "СОН...", () => {
+            // Передаємо ID кнопки 'btn-sleep'
+            startSceneAction("😴", "СОН...", "btn-sleep", () => {
                 game.energy = Math.min(100, game.energy + 30); bed.hp -= 5;
             });
         }
 
-        // BANK & OTHER
+        // BANK & HELPERS
         function openBank() {
             openCustomSheet(`
                 <span class="sheet-emoji">🏦</span>
@@ -356,8 +373,7 @@
             `);
         }
         function takeLoan() { game.money+=100; game.debt+=120; closeSheet(); save(); render(); }
-
-        // HELPERS
+        
         function buyItem(id, p) {
             if(game.inventory.some(i=>i.id===id)) return alert("Вже є!");
             if(game.money<p) return alert("Нема грошей");
@@ -379,27 +395,18 @@
             } else {
                 btn = item.isSpoiled ? `<button class="sheet-btn" style="background:#ff453a;color:white" onclick="trash(${index})">Викинути</button>` : `<button class="sheet-btn" style="background:#30d158;color:white" onclick="eat(${index})">З'їсти</button>`;
             }
-            openCustomSheet(`<span class="sheet-emoji">${item.name==='iMac'?'🖥️':(item.category==='food'?(item.isSpoiled?'🤢':'🍕'):'🛏️')}</span><div style="text-align:center;font-weight:bold">${item.name}</div>${btn}<button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>`);
+            openCustomSheet(`<span class="sheet-emoji">${item.name}</span><div style="text-align:center;font-weight:bold">${item.name}</div>${btn}<button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>`);
         }
 
         function openCustomSheet(html) { document.getElementById('sheet-content').innerHTML=html; document.getElementById('action-sheet').classList.add('open'); }
         function closeSheet() { document.getElementById('action-sheet').classList.remove('open'); }
-        
         function repair(i) { if(game.money<50)return alert("Треба 50$"); game.money-=50; game.inventory[i].hp=100; closeSheet(); save(); render(); renderGrid(); }
         function eat(i) { game.inventory.splice(i,1); game.energy+=20; closeSheet(); save(); render(); renderGrid(); }
         function trash(i) { game.inventory.splice(i,1); closeSheet(); save(); render(); renderGrid(); }
 
-        function save() { localStorage.setItem('lifeSim_v12', JSON.stringify(game)); }
+        function save() { localStorage.setItem('lifeSim_v13', JSON.stringify(game)); }
         function resetGame() { localStorage.clear(); location.reload(); }
         
         window.switchTab = function(tab, btn) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-'+tab).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            if(tab==='inv') renderGrid();
-        }
-        render();
-    </script>
-</body>
-</html>
+            document.getElementById('tab-'+ta

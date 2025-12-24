@@ -3,91 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life Sim: Durability</title>
+    <title>Life Sim: Spoilage</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #7b61ff; --text: #fff; --red: #ff4757; --green: #2ecc71; --orange: #e67e22; }
-        body { 
-            background: var(--bg); color: var(--text); font-family: sans-serif; 
-            margin: 0; padding-bottom: 90px; user-select: none;
-        }
+        :root { --bg: #121212; --card: #1e1e1e; --accent: #7b61ff; --text: #fff; --red: #ff4757; --green: #2ecc71; --yellow: #f1c40f; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-bottom: 90px; user-select: none; }
 
-        /* --- СЦЕНА --- */
-        .scene-container {
-            position: relative; width: 100%; height: 280px;
-            background-color: #333; border-bottom: 8px solid #555; overflow: hidden;
-        }
-        #visual-hero {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            font-size: 80px; z-index: 10;
-        }
+        /* СЦЕНА */
+        .scene-container { position: relative; width: 100%; height: 260px; background-color: #333; border-bottom: 8px solid #555; overflow: hidden; }
+        #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 80px; z-index: 10; }
         .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
         #item-pc { right: 30px; bottom: 40px; }
         #item-bed { left: 30px; bottom: 40px; }
 
-        /* ЗЛАМАНІ РЕЧІ (Візуал) */
-        .broken-visual { filter: grayscale(100%) opacity(0.5); transform: rotate(10deg); }
-
-        /* --- ШИРМА ДІЇ --- */
-        #action-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 200; color: white;
-        }
-        #action-overlay.active { display: flex; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .overlay-icon { font-size: 80px; margin-bottom: 10px; }
-        .overlay-text { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-
-        /* --- UI --- */
+        /* UI */
         .ui { padding: 15px; }
         .header { display: flex; justify-content: space-between; background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
-        .money { color: var(--green); font-weight: 800; font-size: 20px; }
+        .money { color: var(--green); font-weight: bold; font-size: 20px; }
 
-        .btn {
-            background: var(--card); color: white; border: 1px solid #333;
-            padding: 15px; width: 100%; margin-bottom: 10px; border-radius: 12px;
-            display: flex; align-items: center; gap: 15px; cursor: pointer; text-align: left;
-        }
+        .btn { background: var(--card); color: white; border: 1px solid #333; padding: 15px; width: 100%; margin-bottom: 10px; border-radius: 12px; display: flex; align-items: center; gap: 15px; cursor: pointer; text-align: left; }
         .btn:active { transform: scale(0.98); background: #333; }
         .btn-icon { font-size: 24px; color: var(--accent); background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; }
 
         /* КАРТКИ ІНВЕНТАРЮ */
-        .inv-card {
-            background: var(--card); border: 1px solid #333; padding: 15px; 
-            border-radius: 12px; margin-bottom: 10px;
-        }
-        .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .inv-name { font-weight: bold; }
-        .repair-tag { font-size: 10px; background: #333; padding: 2px 6px; border-radius: 4px; color: #888; }
+        .inv-card { background: var(--card); border: 1px solid #333; padding: 12px; border-radius: 12px; margin-bottom: 10px; position: relative; }
+        .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .inv-name { font-weight: bold; font-size: 14px; }
         
-        /* Смужка міцності */
-        .hp-bar-bg { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
-        .hp-bar-fill { height: 100%; transition: width 0.3s; }
+        /* Смужки */
+        .bar-bg { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 5px; }
+        .bar-fill { height: 100%; transition: width 0.3s; }
+        
+        /* Стиль для їжі */
+        .food-spoiled { border: 1px solid var(--red); opacity: 0.7; }
+        .food-fresh { border: 1px solid var(--green); }
 
-        .repair-btn {
-            width: 100%; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
-            background: var(--accent); color: white;
-        }
-        .repair-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .action-btn-small { padding: 8px 15px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
 
-        /* TABS & NAV */
+        /* TABS */
         .tab { display: none; } .tab.active { display: block; }
         .nav { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; padding: 15px 0; border-top: 1px solid #333; z-index: 300; }
         .nav-btn { flex: 1; background: none; border: none; font-size: 24px; color: #555; }
         .nav-btn.active { color: var(--accent); }
+        
+        /* Overlay */
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 999; color: white; flex-direction: column; }
+        .overlay-emoji { font-size: 80px; }
     </style>
 </head>
 <body>
 
+    <div id="overlay"><div class="overlay-emoji" id="overlay-emoji">🍔</div><h2 id="overlay-text">...</h2></div>
+
     <div class="scene-container">
-        <div id="action-overlay">
-            <div id="overlay-icon" class="overlay-icon">⚙️</div>
-            <div id="overlay-text" class="overlay-text">Дія...</div>
-        </div>
         <div id="item-pc" class="room-item">🖥️</div>
         <div id="item-bed" class="room-item">🛏️</div>
         <div id="visual-hero">🧍</div>
@@ -95,45 +65,53 @@
 
     <div class="ui">
         <div class="header">
-            <div>💵 <span id="money" class="money">0</span></div>
-            <div>⚡ <span id="energy">100</span>%</div>
+            <div>💵 <span id="money">0</span></div>
+            <div>⚡ <span id="energy">100</span>% ❤️ <span id="health">100</span>%</div>
         </div>
 
         <div id="tab-home" class="tab active">
             <h3>Дії</h3>
-            <button class="btn" onclick="doAction('work')">
+            <button class="btn" onclick="work()">
                 <div class="btn-icon"><i class="ri-macbook-line"></i></div>
-                <div><b>Фріланс</b><br><small>+15$ | -10 Енергії | <span style="color:orange">-10% ПК</span></small></div>
+                <div><b>Фріланс</b><br><small>+15$ | -10 Енергії | Знос ПК</small></div>
             </button>
-            <button class="btn" onclick="doAction('sleep')">
+            <button class="btn" onclick="sleep()">
                 <div class="btn-icon"><i class="ri-hotel-bed-line"></i></div>
-                <div><b>Відпочити</b><br><small>+20 Енергії | <span style="color:orange">-5% Ліжко</span></small></div>
+                <div><b>Сон</b><br><small>+20 Енергії | Знос ліжка</small></div>
             </button>
         </div>
 
         <div id="tab-inv" class="tab">
-            <h3>Мої речі (Стан)</h3>
-            <div id="inventory-list">
-                <div style="color:gray; text-align:center; padding:20px;">Поки що пусто</div>
-            </div>
+            <h3>Мій Інвентар</h3>
+            <div id="inventory-list"></div>
         </div>
 
         <div id="tab-shop" class="tab">
-            <h3>Магазин</h3>
-            <button class="btn" onclick="buy('pc')">
+            <h3>Техніка</h3>
+            <button class="btn" onclick="buyItem('pc', 150)">
                 <div class="btn-icon"><i class="ri-computer-line"></i></div>
-                <div><b>Новий ПК</b> (150$)<br><small>Потрібен для роботи</small></div>
+                <div><b>ПК</b> (150$)<br><small>Для роботи</small></div>
             </button>
-            <button class="btn" onclick="buy('bed')">
+            <button class="btn" onclick="buyItem('bed', 100)">
                 <div class="btn-icon"><i class="ri-home-heart-line"></i></div>
-                <div><b>Нове Ліжко</b> (100$)<br><small>Потрібне для сну</small></div>
+                <div><b>Ліжко</b> (100$)<br><small>Для сну</small></div>
+            </button>
+            
+            <h3>Їжа (Псується!)</h3>
+            <button class="btn" onclick="buyFood('pizza', 20)">
+                <div class="btn-icon">🍕</div>
+                <div><b>Піца</b> (20$)<br><small>Термін: 30 сек</small></div>
+            </button>
+            <button class="btn" onclick="buyFood('sushi', 35)">
+                <div class="btn-icon">🍣</div>
+                <div><b>Суші</b> (35$)<br><small>Термін: 15 сек (Швидко псується!)</small></div>
             </button>
         </div>
     </div>
 
     <div class="nav">
         <button class="nav-btn active" onclick="switchTab('home', this)"><i class="ri-home-5-line"></i></button>
-        <button class="nav-btn" onclick="switchTab('inv', this)"><i class="ri-tools-line"></i></button>
+        <button class="nav-btn" onclick="switchTab('inv', this)"><i class="ri-backpack-line"></i></button>
         <button class="nav-btn" onclick="switchTab('shop', this)"><i class="ri-shopping-cart-2-line"></i></button>
     </div>
 
@@ -141,233 +119,210 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // СТАН ГРИ
         let game = {
-            money: 400,
-            energy: 100,
-            isBusy: false,
-            // Тепер інвентар це масив об'єктів!
-            inventory: [] 
+            money: 300, energy: 100, health: 100,
+            inventory: [] // Тут тепер і їжа, і техніка
         };
 
-        // Завантаження
-        if(localStorage.getItem('lifeSimDurability')) {
-            game = JSON.parse(localStorage.getItem('lifeSimDurability'));
-        }
+        if(localStorage.getItem('simSpoil')) game = JSON.parse(localStorage.getItem('simSpoil'));
 
-        // --- ГОЛОВНИЙ РЕНДЕР ---
+        // --- ЛОГІКА ПСУВАННЯ ---
+        setInterval(() => {
+            // Перевіряємо кожну секунду стан їжі
+            let needsRender = false;
+            const now = Date.now();
+
+            game.inventory.forEach(item => {
+                if (item.category === 'food' && !item.isSpoiled) {
+                    // Якщо час вийшов - їжа псується
+                    if (now > item.expireTime) {
+                        item.isSpoiled = true;
+                        item.name = "Зіпсовано (" + item.originalName + ")";
+                        tg.showAlert(`🤮 Твій ${item.originalName} зіпсувався!`);
+                        needsRender = true;
+                    }
+                }
+            });
+
+            if(needsRender) { render(); save(); }
+            
+            // Якщо ми на вкладці інвентарю - оновлюємо смужки часу в реальному часі
+            if(document.getElementById('tab-inv').classList.contains('active')) {
+                renderInventory();
+            }
+        }, 1000);
+
         function render() {
             document.getElementById('money').innerText = game.money;
             document.getElementById('energy').innerText = game.energy;
+            document.getElementById('health').innerText = game.health;
 
-            // 1. ВІЗУАЛІЗАЦІЯ В КІМНАТІ
-            const pc = getItem('pc');
-            const bed = getItem('bed');
-
-            const pcEl = document.getElementById('item-pc');
-            const bedEl = document.getElementById('item-bed');
-
-            // Логіка відображення ПК
-            if (pc) {
-                pcEl.style.display = 'block';
-                // Якщо зламаний - робимо його сірим і кривим
-                pcEl.className = pc.hp <= 0 ? 'room-item broken-visual' : 'room-item';
-            } else {
-                pcEl.style.display = 'none';
-            }
-
-            // Логіка відображення Ліжка
-            if (bed) {
-                bedEl.style.display = 'block';
-                bedEl.className = bed.hp <= 0 ? 'room-item broken-visual' : 'room-item';
-            } else {
-                bedEl.style.display = 'none';
-            }
-
-            // 2. РЕНДЕР ІНВЕНТАРЮ (Для вкладки Ремонт)
-            renderInventoryTab();
+            // Візуал кімнати (тільки техніка)
+            const hasPC = game.inventory.some(i => i.id === 'pc' && i.hp > 0);
+            const hasBed = game.inventory.some(i => i.id === 'bed' && i.hp > 0);
+            
+            document.getElementById('item-pc').style.display = hasPC ? 'block' : 'none';
+            document.getElementById('item-bed').style.display = hasBed ? 'block' : 'none';
         }
 
-        function renderInventoryTab() {
+        function renderInventory() {
             const list = document.getElementById('inventory-list');
             list.innerHTML = "";
+            const now = Date.now();
 
-            if (game.inventory.length === 0) {
-                list.innerHTML = "<div style='color:gray; text-align:center;'>Пусто</div>";
-                return;
-            }
+            if (game.inventory.length === 0) list.innerHTML = "<div style='text-align:center;color:gray'>Пусто</div>";
 
-            game.inventory.forEach(item => {
-                // Колір смужки: Зелений > Жовтий > Червоний
-                let barColor = item.hp > 50 ? '#2ecc71' : (item.hp > 20 ? '#f1c40f' : '#e74c3c');
-                let statusText = item.hp <= 0 ? "ЗЛАМАНО" : `${item.hp}%`;
-                
-                // Вартість ремонту = 30% від ціни (умовно 50$)
-                let repairCost = 50; 
-                let canRepair = item.hp < 100 && item.repairs < 3;
-                let btnText = "";
+            game.inventory.forEach((item, index) => {
+                let cardHTML = "";
 
-                if (item.repairs >= 3 && item.hp <= 0) {
-                    btnText = "💀 НЕ ПІДЛЯГАЄ РЕМОНТУ (Викинути)";
-                    canRepair = true; // Спеціальний стан для видалення
-                } else if (item.hp <= 0) {
-                    btnText = `🛠️ РЕМОНТ (${repairCost}$)`;
-                } else if (item.repairs >= 3) {
-                     btnText = `⚠️ Межа ремонтів`;
-                     canRepair = false;
-                } else {
-                     btnText = `🔧 Підлатати (${repairCost}$)`;
+                // --- 1. ТЕХНІКА (Знос) ---
+                if (item.category === 'device') {
+                    const barColor = item.hp > 50 ? '#2ecc71' : '#e74c3c';
+                    let btn = item.hp <= 0 
+                        ? `<button class="action-btn-small" style="background:#e67e22" onclick="repair(${index})">🔧 Ремонт (50$)</button>`
+                        : `<div style="font-size:10px; color:gray; margin-top:5px;">Використовується...</div>`;
+                    
+                    cardHTML = `
+                        <div class="inv-card">
+                            <div class="inv-header"><div>${item.name}</div><div>${item.hp}%</div></div>
+                            <div class="bar-bg"><div class="bar-fill" style="width:${item.hp}%; background:${barColor}"></div></div>
+                            ${btn}
+                        </div>`;
                 }
 
-                list.innerHTML += `
-                <div class="inv-card">
-                    <div class="inv-header">
-                        <div class="inv-name">${item.name}</div>
-                        <div class="repair-tag">Ремонтів: ${item.repairs}/3</div>
-                    </div>
-                    <div class="hp-bar-bg">
-                        <div class="hp-bar-fill" style="width:${item.hp}%; background:${barColor};"></div>
-                    </div>
-                    <div style="font-size:12px; margin-bottom:10px;">Стан: ${statusText}</div>
-                    
-                    <button class="repair-btn" 
-                        onclick="repairItem('${item.id}')" 
-                        ${canRepair ? '' : 'disabled'}
-                        style="${item.repairs >= 3 && item.hp <= 0 ? 'background:red' : ''}">
-                        ${btnText}
-                    </button>
-                </div>
-                `;
+                // --- 2. ЇЖА (Час) ---
+                if (item.category === 'food') {
+                    if (item.isSpoiled) {
+                        // ЗІПСОВАНА
+                        cardHTML = `
+                        <div class="inv-card food-spoiled">
+                            <div class="inv-header"><div>🤢 ${item.name}</div><div style="color:red">Сміття</div></div>
+                            <button class="action-btn-small" style="background:#444" onclick="trash(${index})">🗑️ Викинути</button>
+                        </div>`;
+                    } else {
+                        // СВІЖА
+                        const totalLife = item.totalLife;
+                        const timeLeft = Math.max(0, item.expireTime - now);
+                        const percent = (timeLeft / totalLife) * 100;
+                        
+                        cardHTML = `
+                        <div class="inv-card food-fresh">
+                            <div class="inv-header"><div>🥣 ${item.name}</div><div>${Math.ceil(timeLeft/1000)} сек</div></div>
+                            <div class="bar-bg"><div class="bar-fill" style="width:${percent}%; background:#3498db"></div></div>
+                            <button class="action-btn-small" style="background:#2ecc71" onclick="eat(${index})">🍽️ З'їсти</button>
+                        </div>`;
+                    }
+                }
+                list.innerHTML += cardHTML;
             });
         }
 
-        // --- ДІЇ ---
-        function doAction(type) {
-            if(game.isBusy) return;
-
-            const overlay = document.getElementById('action-overlay');
-            const icon = document.getElementById('overlay-icon');
-            const text = document.getElementById('overlay-text');
-
-            if (type === 'work') {
-                const pc = getItem('pc');
-                if (!pc) return alert("Немає ПК!");
-                if (pc.hp <= 0) return alert("ПК зламався! Відремонтуй його в інвентарі.");
-                if (game.energy < 10) return alert("Мало енергії!");
-
-                runOverlay("👨‍💻", "КОДИНГ...");
-                
-                setTimeout(() => {
-                    game.money += 15;
-                    game.energy -= 10;
-                    // ЗНОС ПК
-                    damageItem('pc', 10);
-                    finishAction();
-                }, 2000);
-            }
-
-            if (type === 'sleep') {
-                const bed = getItem('bed');
-                if (!bed) return alert("Немає ліжка!");
-                if (bed.hp <= 0) return alert("Ліжко розвалилось! Купи нове.");
-
-                runOverlay("😴", "СОН...");
-
-                setTimeout(() => {
-                    game.energy = Math.min(100, game.energy + 20);
-                    // ЗНОС ЛІЖКА
-                    damageItem('bed', 5);
-                    finishAction();
-                }, 2000);
-            }
+        // --- ACTIONS ---
+        function work() {
+            const pc = game.inventory.find(i => i.id === 'pc');
+            if (!pc || pc.hp <= 0) return alert("Потрібен робочий ПК!");
+            if (game.energy < 10) return alert("Втомився!");
+            
+            showOverlay("👨‍💻", "КОДИНГ...");
+            setTimeout(() => {
+                game.money += 15; game.energy -= 10;
+                pc.hp -= 10; // Знос
+                finishAction();
+            }, 2000);
         }
 
-        function runOverlay(emoji, title) {
-            game.isBusy = true;
-            document.getElementById('overlay-icon').innerText = emoji;
-            document.getElementById('overlay-text').innerText = title;
-            document.getElementById('action-overlay').classList.add('active');
+        function sleep() {
+            const bed = game.inventory.find(i => i.id === 'bed');
+            if (!bed || bed.hp <= 0) return alert("Потрібне ціле ліжко!");
+            
+            showOverlay("😴", "СОН...");
+            setTimeout(() => {
+                game.energy = Math.min(100, game.energy + 20);
+                bed.hp -= 5; // Знос
+                finishAction();
+            }, 2000);
+        }
+
+        function showOverlay(emoji, text) {
+            document.getElementById('overlay-emoji').innerText = emoji;
+            document.getElementById('overlay-text').innerText = text;
+            document.getElementById('overlay').style.display = 'flex';
         }
 
         function finishAction() {
-            game.isBusy = false;
-            document.getElementById('action-overlay').classList.remove('active');
-            save();
-            render();
+            document.getElementById('overlay').style.display = 'none';
+            save(); render();
         }
 
-        // --- ЛОГІКА ПРЕДМЕТІВ ---
-        
-        // Знайти предмет в інвентарі
-        function getItem(id) {
-            return game.inventory.find(i => i.id === id);
-        }
-
-        // Завдати шкоди предмету
-        function damageItem(id, amount) {
-            const item = getItem(id);
-            if (item) {
-                item.hp -= amount;
-                if (item.hp < 0) item.hp = 0;
-            }
-        }
-
-        // Купити предмет
-        function buy(id) {
-            if (getItem(id)) return alert("У тебе вже є цей предмет (або зламаний). Відремонтуй або викинь його!");
-            if (game.money < 150 && id === 'pc') return alert("Бракує грошей!");
-            if (game.money < 100 && id === 'bed') return alert("Бракує грошей!");
-
-            let cost = id === 'pc' ? 150 : 100;
-            let name = id === 'pc' ? 'Потужний ПК' : 'М\'яке ліжко';
-
-            game.money -= cost;
+        // --- SHOP & ITEMS ---
+        function buyItem(id, price) {
+            if (game.inventory.some(i => i.id === id)) return alert("Вже є!");
+            if (game.money < price) return alert("Нема грошей");
             
-            // Додаємо НОВИЙ об'єкт
+            game.money -= price;
             game.inventory.push({
-                id: id,
-                name: name,
-                hp: 100,
-                repairs: 0
+                id: id, name: id === 'pc' ? 'ПК' : 'Ліжко',
+                category: 'device', hp: 100
             });
-            
-            alert("Куплено!");
-            save(); render();
+            save(); render(); alert("Куплено!");
         }
 
-        // Ремонт
-        function repairItem(id) {
-            const item = getItem(id);
-            if (!item) return;
-
-            // Якщо предмет повністю вбитий (межа ремонтів) -> ВИКИДАЄМО
-            if (item.repairs >= 3 && item.hp <= 0) {
-                game.inventory = game.inventory.filter(i => i.id !== id);
-                alert("Річ розсипалась у руках... Довелося викинути.");
-                save(); render();
-                return;
-            }
-
-            // Звичайний ремонт
-            if (game.money < 50) return alert("Бракує 50$ на ремонт!");
+        function buyFood(type, price) {
+            if (game.money < price) return alert("Нема грошей");
             
+            game.money -= price;
+            
+            // Налаштування часу життя (в секундах)
+            let lifeSeconds = type === 'pizza' ? 30 : 15; 
+            
+            game.inventory.push({
+                id: type, 
+                name: type === 'pizza' ? 'Піца' : 'Суші',
+                originalName: type === 'pizza' ? 'Піца' : 'Суші',
+                category: 'food',
+                expireTime: Date.now() + (lifeSeconds * 1000), // Час смерті
+                totalLife: lifeSeconds * 1000,
+                isSpoiled: false
+            });
+            save(); render(); alert("Куплено! Їж швидше!");
+        }
+
+        // --- FOOD LOGIC ---
+        function eat(index) {
+            const item = game.inventory[index];
+            game.inventory.splice(index, 1); // Видаляємо з інвентарю
+            
+            game.energy = Math.min(100, game.energy + 20);
+            game.health = Math.min(100, game.health + 5);
+            alert("Смачно! +Енергія");
+            
+            save(); render(); renderInventory();
+        }
+
+        function trash(index) {
+            game.inventory.splice(index, 1);
+            alert("Викинуто у смітник.");
+            save(); render(); renderInventory();
+        }
+
+        function repair(index) {
+            if(game.money < 50) return alert("Треба 50$");
             game.money -= 50;
-            item.hp = 100;
-            item.repairs++;
-            
-            alert("Відремонтовано! Річ як нова.");
-            save(); render();
+            game.inventory[index].hp = 100;
+            alert("Відремонтовано!");
+            save(); render(); renderInventory();
         }
 
+        // NAV
         window.switchTab = function(tab, btn) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-'+tab).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            render(); // Перемалювати при перемиканні
+            if(tab === 'inv') renderInventory();
         }
 
-        function save() { localStorage.setItem('lifeSimDurability', JSON.stringify(game)); }
+        function save() { localStorage.setItem('simSpoil', JSON.stringify(game)); }
         render();
 
     </script>

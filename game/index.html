@@ -3,398 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life Sim: Survival</title>
+    <title>Visual Life Sim</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    
-    <style>
-        :root { 
-            --bg: #0f0f13; --card: #1c1c24; --accent: #7b61ff; 
-            --green: #00b894; --red: #ff4757; --text: #fff; --gray: #a0a0a0;
-        }
-        body { margin: 0; padding: 15px; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding-bottom: 90px; user-select: none; }
-        
-        /* HEADER: Гроші та Борг */
-        .header { 
-            background: linear-gradient(135deg, #2d3436, #000); 
-            padding: 20px; border-radius: 16px; margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .money-block { font-size: 28px; font-weight: 800; color: var(--green); }
-        .rent-timer { font-size: 12px; color: var(--red); text-align: right; }
-        .rent-amount { font-size: 14px; font-weight: bold; }
-
-        /* STATS: Здоров'я та Енергія */
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: var(--card); padding: 10px; border-radius: 12px; display: flex; align-items: center; gap: 10px; }
-        .icon-box { 
-            width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;
-        }
-        .hp-icon { background: rgba(255, 71, 87, 0.2); color: var(--red); }
-        .en-icon { background: rgba(255, 234, 167, 0.2); color: #ffeaa7; }
-        .stat-val { font-weight: bold; font-size: 16px; }
-        .stat-label { font-size: 11px; color: var(--gray); }
-
-        /* ACTIVE TASK PANEL */
-        #busy-panel {
-            display: none; background: var(--card); border: 2px solid var(--accent);
-            padding: 15px; border-radius: 16px; margin-bottom: 20px; text-align: center;
-        }
-        .timer-big { font-size: 32px; font-weight: bold; margin: 5px 0; color: var(--accent); }
-        .progress-bar { height: 4px; background: #333; border-radius: 2px; margin-top: 10px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
-
-        /* ACTIONS GRID */
-        .section-title { font-size: 14px; color: var(--gray); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px; }
-        
-        .action-btn {
-            background: var(--card); border: 1px solid #333; padding: 15px;
-            border-radius: 14px; text-align: left; cursor: pointer; position: relative;
-            transition: all 0.2s;
-        }
-        .action-btn:active { transform: scale(0.98); background: #252530; }
-        .btn-icon { font-size: 24px; margin-bottom: 5px; color: var(--accent); }
-        .btn-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
-        .btn-desc { font-size: 11px; color: var(--gray); }
-        .badge-bad { color: var(--red); font-size: 10px; }
-        .badge-good { color: var(--green); font-size: 10px; }
-
-        /* FOOD MENU (Trade-offs) */
-        .food-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background: var(--card); padding: 12px; margin-bottom: 8px; border-radius: 12px;
-        }
-        .food-stats { font-size: 11px; display: flex; gap: 10px; margin-top: 2px; }
-
-        /* BOTTOM NAV */
-        .nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(28, 28, 36, 0.95);
-            backdrop-filter: blur(10px); border-top: 1px solid #333;
-            display: flex; justify-content: space-around; padding: 15px 0; z-index: 100;
-        }
-        .nav-item { color: var(--gray); font-size: 24px; background: none; border: none; cursor: pointer; }
-        .nav-item.active { color: var(--accent); }
-
-        /* TABS */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="header">
-        <div>
-            <div style="font-size:12px; color:#888;">Баланс</div>
-            <div class="money-block"><span id="money">50</span> $</div>
-        </div>
-        <div>
-            <div class="rent-timer">Оренда через <span id="rent-time">10:00</span></div>
-            <div class="rent-amount">До сплати: <span style="color:var(--red)">-100$</span></div>
-        </div>
-    </div>
-
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="icon-box hp-icon"><i class="ri-heart-pulse-fill"></i></div>
-            <div>
-                <div class="stat-val"><span id="health">100</span>%</div>
-                <div class="stat-label">Здоров'я</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="icon-box en-icon"><i class="ri-flashlight-fill"></i></div>
-            <div>
-                <div class="stat-val"><span id="energy">100</span>%</div>
-                <div class="stat-label">Енергія</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="busy-panel">
-        <div style="color:#888; font-size:12px;">Поточна дія</div>
-        <div id="busy-task-name" style="font-weight:bold; margin-bottom:5px;">Робота</div>
-        <div class="timer-big" id="busy-timer">00:00</div>
-        <div class="progress-bar"><div class="progress-fill" id="busy-bar"></div></div>
-    </div>
-
-    <div id="tab-home" class="tab-content active">
-        <div class="section-title">Заробіток</div>
-        <div class="action-grid">
-            <button class="action-btn" onclick="startAction('work_cheap')">
-                <div class="btn-icon"><i class="ri-computer-line"></i></div>
-                <div class="btn-title">Фріланс</div>
-                <div class="btn-desc">10 сек | +10$ | <span class="badge-bad">-10 Енергії</span></div>
-            </button>
-            <button class="action-btn" onclick="startAction('work_hard')">
-                <div class="btn-icon"><i class="ri-building-4-line"></i></div>
-                <div class="btn-title">Зміна на заводі</div>
-                <div class="btn-desc">60 сек | +80$ | <span class="badge-bad">-40 Енергії</span></div>
-            </button>
-        </div>
-
-        <div class="section-title">Відновлення</div>
-        <div class="action-grid">
-            <button class="action-btn" onclick="startAction('sleep_short')">
-                <div class="btn-icon"><i class="ri-zzz-line"></i></div>
-                <div class="btn-title">Подрімати</div>
-                <div class="btn-desc">20 сек | <span class="badge-good">+15 Енергії</span></div>
-            </button>
-            <button class="action-btn" onclick="startAction('hospital')">
-                <div class="btn-icon"><i class="ri-hospital-line"></i></div>
-                <div class="btn-title">Лікарня</div>
-                <div class="btn-desc">30 сек | <span class="badge-bad">-50$</span> | <span class="badge-good">+100 HP</span></div>
-            </button>
-        </div>
-    </div>
-
-    <div id="tab-food" class="tab-content">
-        <div class="section-title">Їжа (Вплив на здоров'я)</div>
+    <div class="scene-container" id="game-scene">
+        <img src="assets/item-pc.png" id="visual-pc" class="room-item" alt="PC">
+        <img src="assets/item-bed.png" id="visual-bed" class="room-item" alt="Bed">
         
-        <div class="food-item" onclick="buyFood('trash')">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div class="icon-box" style="background:#333;">🍜</div>
-                <div>
-                    <div style="font-weight:bold;">Мівіна / Фастфуд</div>
-                    <div class="food-stats">
-                        <span class="badge-good">+20 Енергії</span>
-                        <span class="badge-bad">-5 Здоров'я</span>
-                    </div>
-                </div>
-            </div>
-            <button class="action-btn" style="padding:8px 15px;">2$</button>
+        <div id="visual-hero" class="room-item" style="display:block; font-size:80px; text-align:center;">
+            🧍
+        </div>
+    </div>
+
+    <div class="ui-container">
+        <div class="header">
+            <div class="money"><span id="money">0</span> $</div>
+            <div style="font-size:12px; color:#888;">День 1</div>
         </div>
 
-        <div class="food-item" onclick="buyFood('normal')">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div class="icon-box" style="background:#333;">🍲</div>
-                <div>
-                    <div style="font-weight:bold;">Бізнес-ланч</div>
-                    <div class="food-stats">
-                        <span class="badge-good">+30 Енергії</span>
-                        <span style="color:gray;">0 Здоров'я</span>
-                    </div>
-                </div>
-            </div>
-            <button class="action-btn" style="padding:8px 15px;">15$</button>
+        <div class="stats-grid">
+            <div class="stat-box">❤️ <span id="health">100</span></div>
+            <div class="stat-box">⚡ <span id="energy">100</span></div>
         </div>
 
-        <div class="food-item" onclick="buyFood('healthy')">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div class="icon-box" style="background:#333;">🥩</div>
+        <div id="tab-home" class="tab-content active">
+            <button class="action-btn" onclick="startAction('work')">
+                <i class="ri-computer-line btn-icon"></i>
                 <div>
-                    <div class="icon-title" style="font-weight:bold;">Стейк та овочі</div>
-                    <div class="food-stats">
-                        <span class="badge-good">+40 Енергії</span>
-                        <span class="badge-good">+5 Здоров'я</span>
-                    </div>
+                    <div><b>Фріланс</b></div>
+                    <div style="font-size:12px; color:#888;">+15$ | -10 Енергії</div>
                 </div>
-            </div>
-            <button class="action-btn" style="padding:8px 15px;">40$</button>
+            </button>
+        </div>
+
+        <div id="tab-shop" class="tab-content">
+            <button class="action-btn" onclick="buyItem('pc')">
+                <i class="ri-macbook-line btn-icon"></i>
+                <div>
+                    <div><b>Ігровий ПК</b> (200$)</div>
+                    <div style="font-size:12px; color:#888;">З'явиться в кімнаті!</div>
+                </div>
+            </button>
+             <button class="action-btn" onclick="buyItem('bed')">
+                <i class="ri-hotel-bed-line btn-icon"></i>
+                <div>
+                    <div><b>М'яке ліжко</b> (100$)</div>
+                    <div style="font-size:12px; color:#888;">Краще відновлює сон</div>
+                </div>
+            </button>
         </div>
     </div>
 
     <div class="nav">
-        <button class="nav-item active" onclick="setTab('home', this)"><i class="ri-home-5-line"></i></button>
-        <button class="nav-item" onclick="setTab('food', this)"><i class="ri-restaurant-2-line"></i></button>
-        <button class="nav-item"><i class="ri-shopping-bag-3-line"></i></button>
-        <button class="nav-item"><i class="ri-user-3-line"></i></button>
+        <button class="nav-btn active" onclick="switchTab('home')"><i class="ri-home-line"></i></button>
+        <button class="nav-btn" onclick="switchTab('shop')"><i class="ri-shopping-cart-2-line"></i></button>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        // --- CORE STATE ---
-        let game = {
-            money: 50,
-            health: 100,
-            energy: 100,
-            rentDue: Date.now() + (10 * 60 * 1000), // Оренда через 10 хвилин (для тесту)
-            rentCost: 100,
-            busyUntil: 0,
-            busyTask: null,
-            maxTime: 0 // Для прогрес бару
-        };
-
-        // Load State
-        const saved = localStorage.getItem('lifeSimEco');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            game = { ...game, ...parsed }; // Merge to keep new fields
-        }
-
-        function save() { localStorage.setItem('lifeSimEco', JSON.stringify(game)); }
-
-        // --- ACTIONS ---
-        function startAction(type) {
-            if (game.busyUntil > Date.now()) return tg.showAlert("Ти зайнятий!");
-
-            let duration = 0;
-            let cost = 0;
-            let energyCost = 0;
-
-            if (type === 'work_cheap') { duration = 10; energyCost = 10; }
-            if (type === 'work_hard')  { duration = 60; energyCost = 40; }
-            if (type === 'sleep_short') { duration = 20; }
-            if (type === 'hospital') { duration = 30; cost = 50; }
-
-            // Checks
-            if (game.money < cost) return tg.showAlert("Нема грошей!");
-            if (type.includes('work') && game.energy < energyCost) return tg.showAlert("Втомився! Поїж або поспи.");
-            if (type.includes('work') && game.health < 20) return tg.showAlert("Ти надто хворий! Йди в лікарню.");
-
-            // Apply Costs Instantly
-            game.money -= cost;
-            game.energy -= energyCost;
-            
-            // Start Timer
-            game.busyUntil = Date.now() + (duration * 1000);
-            game.maxTime = duration;
-            game.busyTask = type;
-            
-            save();
-            render();
-        }
-
-        function finishAction() {
-            const type = game.busyTask;
-            let msg = "";
-
-            if (type === 'work_cheap') { game.money += 10; msg = "+10$"; }
-            if (type === 'work_hard') { game.money += 80; msg = "+80$"; }
-            if (type === 'sleep_short') { game.energy = Math.min(100, game.energy + 15); msg = "Трішки відпочив"; }
-            if (type === 'hospital') { game.health = 100; msg = "Здоровий як бик!"; }
-
-            tg.showAlert(msg);
-            game.busyUntil = 0;
-            game.busyTask = null;
-            save();
-            render();
-        }
-
-        // --- FOOD SYSTEM ---
-        function buyFood(tier) {
-            if (game.busyUntil > Date.now()) return tg.showAlert("Спочатку закінчи роботу!");
-            
-            let cost = 0;
-            if (tier === 'trash') cost = 2;
-            if (tier === 'normal') cost = 15;
-            if (tier === 'healthy') cost = 40;
-
-            if (game.money < cost) return tg.showAlert("Бракує грошей!");
-
-            game.money -= cost;
-            
-            // ЕФЕКТИ ЇЖІ
-            if (tier === 'trash') {
-                game.energy = Math.min(100, game.energy + 20);
-                game.health = Math.max(0, game.health - 5); // Шкода здоров'ю
-                tg.showAlert("Смачно, але шкідливо...");
-            }
-            if (tier === 'normal') {
-                game.energy = Math.min(100, game.energy + 30);
-            }
-            if (tier === 'healthy') {
-                game.energy = Math.min(100, game.energy + 40);
-                game.health = Math.min(100, game.health + 5); // Лікує
-                tg.showAlert("Корисно!");
-            }
-            save();
-            render();
-        }
-
-        // --- RENT SYSTEM ---
-        function checkRent() {
-            if (Date.now() > game.rentDue) {
-                // Час платити!
-                if (game.money >= game.rentCost) {
-                    game.money -= game.rentCost;
-                    game.rentDue = Date.now() + (10 * 60 * 1000); // Наступна оплата через 10 хв
-                    tg.showAlert(`💸 Списано оренду: -${game.rentCost}$`);
-                } else {
-                    // Банкрут
-                    game.rentCost += 10; // Пеня
-                    tg.showAlert(`🚨 БОРГ! Нема чим платити за хату. Пеня +10$`);
-                    game.rentDue = Date.now() + (60 * 1000); // Даємо 1 хвилину на пошук грошей
-                }
-                save();
-            }
-        }
-
-        // --- UI LOOP ---
-        setInterval(() => {
-            const now = Date.now();
-            
-            // Check Action Timer
-            if (game.busyUntil > 0) {
-                if (now >= game.busyUntil) finishAction();
-            }
-
-            // Check Rent
-            checkRent();
-
-            render();
-        }, 1000);
-
-        function render() {
-            // Stats
-            document.getElementById('money').innerText = game.money;
-            document.getElementById('health').innerText = game.health;
-            document.getElementById('energy').innerText = game.energy;
-
-            // Health Color Logic
-            const hpEl = document.getElementById('health');
-            hpEl.style.color = game.health < 30 ? 'var(--red)' : 'var(--text)';
-
-            // Rent Timer
-            const rentDiff = Math.max(0, Math.ceil((game.rentDue - Date.now()) / 1000));
-            const rm = Math.floor(rentDiff / 60);
-            const rs = rentDiff % 60;
-            document.getElementById('rent-time').innerText = `${rm}:${rs < 10 ? '0'+rs : rs}`;
-
-            // Busy Panel
-            const isBusy = game.busyUntil > Date.now();
-            document.getElementById('busy-panel').style.display = isBusy ? 'block' : 'none';
-            
-            if (isBusy) {
-                const left = Math.ceil((game.busyUntil - Date.now()) / 1000);
-                document.getElementById('busy-timer').innerText = `00:${left < 10 ? '0'+left : left}`;
-                document.getElementById('busy-task-name').innerText = getTaskName(game.busyTask);
-                
-                const total = game.maxTime * 1000;
-                const elapsed = total - (game.busyUntil - Date.now());
-                const pct = (elapsed / total) * 100;
-                document.getElementById('busy-bar').style.width = pct + "%";
-                
-                // Disable buttons
-                document.querySelectorAll('.action-btn').forEach(b => b.style.opacity = 0.5);
-            } else {
-                document.querySelectorAll('.action-btn').forEach(b => b.style.opacity = 1);
-            }
-        }
-
-        function getTaskName(key) {
-            if(key === 'work_cheap') return "Фріланс";
-            if(key === 'work_hard') return "Завод";
-            if(key === 'hospital') return "Лікування";
-            if(key === 'sleep_short') return "Сон";
-            return "Дія";
-        }
-
-        function setTab(name, btn) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-' + name).classList.add('active');
-            
-            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-
-        render();
-
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

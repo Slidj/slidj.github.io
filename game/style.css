@@ -1,0 +1,63 @@
+:root { 
+    --bg: #0f0f13; --card: #1c1c24; --accent: #7b61ff; 
+    --green: #00b894; --red: #ff4757; --text: #fff;
+}
+body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; user-select: none; padding-bottom: 80px; }
+
+/* --- ВІЗУАЛЬНА СЦЕНА (КІМНАТА) --- */
+.scene-container {
+    position: relative;
+    width: 100%;
+    height: 300px; /* Висота кімнати */
+    background-color: #2d3436; /* Колір, поки нема картинки */
+    background-size: cover;
+    background-position: center;
+    border-bottom: 4px solid var(--accent);
+    overflow: hidden;
+    transition: background-image 0.5s;
+}
+
+/* Предмети в кімнаті (спочатку приховані) */
+.room-item {
+    position: absolute;
+    display: none; /* Приховано за замовчуванням */
+    transition: transform 0.3s;
+}
+/* Позиції предметів (налаштуєш під свої картинки) */
+#visual-pc { bottom: 50px; right: 20px; width: 100px; }
+#visual-bed { bottom: 20px; left: 10px; width: 120px; }
+#visual-hero { bottom: 10px; left: 50%; transform: translateX(-50%); height: 120px; }
+
+/* Інтерфейс під кімнатою */
+.ui-container { padding: 15px; }
+
+/* HEADER & STATS */
+.header { 
+    background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.money { color: var(--green); font-weight: 800; font-size: 24px; }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.stat-box { background: var(--card); padding: 10px; border-radius: 8px; text-align: center; }
+
+/* TABS & BUTTONS */
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.action-btn {
+    width: 100%; background: var(--card); border: 1px solid #333; 
+    padding: 15px; margin-bottom: 10px; border-radius: 12px; 
+    color: white; text-align: left; display: flex; align-items: center; gap: 15px;
+}
+.action-btn:active { transform: scale(0.98); background: #252530; }
+.btn-icon { font-size: 24px; color: var(--accent); }
+
+/* NAV */
+.nav {
+    position: fixed; bottom: 0; width: 100%; background: rgba(28,28,36,0.95);
+    display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333;
+}
+.nav-btn { background: none; border: none; font-size: 24px; color: #666; }
+.nav-btn.active { color: var(--accent); transform: scale(1.2); }

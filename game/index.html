@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v18: Fixed Shop</title>
+    <title>Life OS v19</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
@@ -11,9 +11,10 @@
         :root { --bg: #000; --card: #1c1c1e; --accent: #0a84ff; --text: #fff; --green: #30d158; --red: #ff453a; --orange: #ff9f0a; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 120px; user-select: none; -webkit-tap-highlight-color: transparent; }
 
+        /* КНОПКА СКИДАННЯ */
         .reset-btn { position: fixed; top: 10px; right: 10px; z-index: 9999; background: rgba(255, 69, 58, 0.3); color: white; border: 1px solid var(--red); padding: 5px 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
 
-        /* SCENE */
+        /* СЦЕНА */
         .scene-container { position: relative; width: 100%; height: 260px; background-color: #2c2c2e; border-bottom: 1px solid #333; overflow: hidden; }
         #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
         .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
@@ -38,7 +39,9 @@
 
         /* GRIDS */
         .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .shop-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        
+        /* SHOP LIST (Vertical) */
+        .shop-list { display: flex; flex-direction: column; gap: 15px; }
 
         /* APP CARD */
         .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
@@ -51,33 +54,33 @@
         .app-label { font-size: 11px; margin-top: 8px; color: #fff; }
         .app-badge { position: absolute; bottom: -5px; right: -5px; z-index: 3; font-size: 9px; font-weight: bold; padding: 2px 5px; background: #333; border-radius: 6px; border: 2px solid var(--bg); }
 
-        /* SHOP CARD */
+        /* SHOP CARD (RICH) */
         .shop-card {
             background: var(--card); border-radius: 16px; border: 1px solid #333;
-            display: flex; overflow: hidden; min-height: 120px;
+            display: flex; overflow: hidden; min-height: 110px;
         }
         .shop-visual {
-            width: 100px; background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            width: 90px; background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
             display: flex; justify-content: center; align-items: center;
-            font-size: 50px; border-right: 1px solid #333;
+            font-size: 40px; border-right: 1px solid #333;
         }
-        .shop-info { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
-        .shop-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-        .shop-title { font-weight: bold; font-size: 16px; }
-        .shop-price { font-weight: bold; color: var(--green); font-size: 16px; }
-        .shop-desc { font-size: 12px; color: #888; margin-bottom: 10px; line-height: 1.3; }
+        .shop-info { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; }
+        .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .shop-title { font-weight: bold; font-size: 15px; }
+        .shop-price { font-weight: bold; color: var(--green); font-size: 14px; }
+        .shop-desc { font-size: 11px; color: #888; margin-bottom: 8px; line-height: 1.3; }
         
-        .shop-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-        .tag { font-size: 10px; padding: 4px 8px; border-radius: 6px; background: #333; color: #ccc; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+        .shop-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        .tag { font-size: 9px; padding: 3px 6px; border-radius: 4px; background: #333; color: #ccc; font-weight: 500; }
         .tag-green { color: var(--green); background: rgba(48, 209, 88, 0.1); }
         .tag-blue { color: var(--accent); background: rgba(10, 132, 255, 0.1); }
         .tag-orange { color: var(--orange); background: rgba(255, 159, 10, 0.1); }
         .tag-red { color: var(--red); background: rgba(255, 69, 58, 0.1); }
 
         .shop-btn {
-            background: #333; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
-            margin-top: auto;
+            background: var(--accent); color: white; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 13px;
         }
+        .shop-btn:disabled { background: #333; color: #555; }
 
         /* TABS */
         .tab { display: none; } .tab.active { display: block; animation: fade 0.2s; } @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -90,7 +93,7 @@
 </head>
 <body>
 
-    <button class="reset-btn" onclick="hardReset()">RESET</button>
+    <button class="reset-btn" onclick="hardReset()">RESET (v19)</button>
 
     <div class="scene-container">
         <div id="scene-overlay">
@@ -127,7 +130,7 @@
 
         <div id="tab-shop" class="tab">
             <div style="color:#666;font-size:12px;margin-bottom:10px">МАРКЕТПЛЕЙС</div>
-            <div id="shop-container" class="shop-grid"></div>
+            <div id="shop-container" class="shop-list"></div>
         </div>
     </div>
 
@@ -138,64 +141,264 @@
     </div>
 
     <script>
-        // --- DATA ---
+        // --- ЗАХИСТ ВІД ПОМИЛОК ---
+        window.onerror = function(msg, url, line) {
+            alert("Помилка: " + msg + "\nРядок: " + line);
+        };
+
+        // --- БАЗА ТОВАРІВ ---
         const shopItems = [
             { 
                 id: 'pc', type: 'device', name: 'iMac Pro', price: 150, icon: '🖥️', 
-                desc: 'Потужний ПК для роботи.',
-                specs: [ {t:'⚡ -10 Енергії', c:'tag-red'}, {t:'💰 +20$/клік', c:'tag-green'} ]
+                desc: 'Робоча станція. Необхідна для заробітку.',
+                specs: [ {t:'⚡ -10 Ен', c:'tag-red'}, {t:'💰 Дохід', c:'tag-green'} ]
             },
             { 
                 id: 'bed', type: 'device', name: 'Smart Bed', price: 100, icon: '🛏️', 
-                desc: 'Для відновлення сил.',
-                specs: [ {t:'⚡ +30 Енергії', c:'tag-green'}, {t:'💤 Сон 3 сек', c:'tag-orange'} ]
+                desc: 'М\'яке ліжко для ефективного сну.',
+                specs: [ {t:'⚡ +30 Ен', c:'tag-green'}, {t:'💤 3 сек', c:'tag-blue'} ]
             },
             { 
                 id: 'pizza', type: 'food', name: 'Pepperoni', price: 20, icon: '🍕', 
-                desc: 'Гаряча піца. Дає енергію.',
-                specs: [ {t:'⚡ +20 Енергії', c:'tag-green'}, {t:'⏳ Свіжість: 30с', c:'tag-orange'} ]
+                desc: 'Ситна піца. Дає енергію, але холоне.',
+                specs: [ {t:'⚡ +20 Ен', c:'tag-green'}, {t:'⏳ 30 сек', c:'tag-orange'} ]
             },
             { 
                 id: 'sushi', type: 'food', name: 'Sushi Set', price: 45, icon: '🍣', 
-                desc: 'Риба. Швидко псується.',
-                specs: [ {t:'⚡ +35 Енергії', c:'tag-green'}, {t:'⏳ Свіжість: 15с', c:'tag-red'} ]
+                desc: 'Свіжа риба. Дуже швидко псується!',
+                specs: [ {t:'⚡ +35 Ен', c:'tag-green'}, {t:'⏳ 15 сек', c:'tag-red'} ]
             }
         ];
 
-        // --- INIT ---
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        let game;
 
-        let game = { money: 300, energy: 100, inventory: [] };
-        
-        try {
-            const saved = localStorage.getItem('lifeSim_v18');
-            if(saved) game = JSON.parse(saved);
-            if(!game.inventory) game.inventory = [];
-        } catch(e) { console.log('Err'); }
+        // --- ЗАПУСК ---
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("System Starting...");
+            
+            // Завантаження або Скидання
+            try {
+                const saved = localStorage.getItem('lifeSim_v19_final');
+                if(saved) {
+                    game = JSON.parse(saved);
+                } else {
+                    game = { money: 300, energy: 100, inventory: [] };
+                }
+                if(!game.inventory) game.inventory = [];
+            } catch(e) {
+                game = { money: 300, energy: 100, inventory: [] };
+            }
 
-        // --- LOOPS ---
-        setInterval(() => {
+            const tg = window.Telegram.WebApp;
+            tg.expand();
+
+            // Перший рендер
+            render();
+            renderShop(); // Одразу малюємо магазин!
+
+            // Запуск циклу
+            setInterval(gameLoop, 1000);
+        });
+
+        // --- GAME LOOP ---
+        function gameLoop() {
             const now = Date.now();
             let saveNeeded = false;
+            
+            // Перевірка їжі
             game.inventory.forEach(item => {
                 if(item.category==='food' && !item.isSpoiled && now > item.expireTime) {
                     item.isSpoiled = true; saveNeeded = true;
                 }
             });
+
             if(saveNeeded) { save(); render(); }
             
-            // Якщо відкритий інвентар - малюємо грід
+            // Оновлення активної вкладки
             if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
-            
-            // Оновлюємо кнопки магазину (наприклад, якщо гроші змінилися)
             if(document.getElementById('tab-shop').classList.contains('active')) renderShop();
-        }, 1000);
+        }
 
-        // --- RENDERS ---
+        // --- RENDERING ---
         function render() {
             document.getElementById('money').innerText = game.money;
             document.getElementById('energy').innerText = game.energy;
 
             const pc = game.inventory.find(i => i.id === 'pc');
-            const bed =
+            const bed = game.inventory.find(i => i.id === 'bed');
+            
+            // Показ в кімнаті
+            const pcEl = document.getElementById('item-pc');
+            if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; } 
+            else { pcEl.style.display='none'; }
+            
+            const bedEl = document.getElementById('item-bed');
+            if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; } 
+            else { bedEl.style.display='none'; }
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shop-container');
+            container.innerHTML = ""; // Очистка
+
+            shopItems.forEach(item => {
+                // Генеруємо теги
+                let tagsHTML = item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('');
+                
+                // Перевірка кнопки
+                let btnText = `Купити ${item.price}$`;
+                let btnDisabled = false;
+                let btnStyle = "";
+
+                const hasItem = game.inventory.some(i => i.id === item.id);
+
+                if (item.type === 'device' && hasItem) {
+                    btnText = "Вже є"; btnDisabled = true;
+                } else if (game.money < item.price) {
+                    btnText = `Нема грошей (${item.price}$)`; btnDisabled = true;
+                }
+
+                container.innerHTML += `
+                <div class="shop-card">
+                    <div class="shop-visual">${item.icon}</div>
+                    <div class="shop-info">
+                        <div class="shop-header">
+                            <span class="shop-title">${item.name}</span>
+                        </div>
+                        <div class="shop-desc">${item.desc}</div>
+                        <div class="shop-tags">${tagsHTML}</div>
+                        <button class="shop-btn" onclick="buy('${item.id}')" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = "";
+            const now = Date.now();
+
+            if(game.inventory.length === 0) {
+                grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;color:#555;padding:20px;'>Інвентар пустий</div>";
+                return;
+            }
+
+            game.inventory.forEach((item, index) => {
+                let emoji = "📦", color = "#30d158", badge = "", offset = 0;
+                
+                if(item.category === 'device') {
+                    const meta = shopItems.find(x => x.id === item.id);
+                    emoji = meta ? meta.icon : "📦";
+                    if(item.hp <= 0) { color="#ff453a"; badge="ЗЛАМ."; offset=200; }
+                    else { badge = item.hp + "%"; offset = 200 - (200 * item.hp / 100); }
+                } else {
+                    const meta = shopItems.find(x => x.id === item.id);
+                    emoji = meta ? meta.icon : "🍔";
+                    if(item.isSpoiled) { emoji="🤢"; color="#555"; badge="🗑️"; offset=200; }
+                    else {
+                        const left = Math.max(0, item.expireTime - now);
+                        badge = Math.ceil(left/1000)+"с"; color="#0a84ff";
+                        offset = 200 - (200 * (left/item.totalLife));
+                    }
+                }
+
+                grid.innerHTML += `
+                <div class="app-card" onclick="useItem(${index})">
+                    <div class="icon-wrapper">
+                        <div class="app-bg"><span class="app-emoji">${emoji}</span></div>
+                        <svg class="progress-svg" viewBox="0 0 72 72"><rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="${color}" stroke-dasharray="200" stroke-dashoffset="${offset}" /></svg>
+                        <div class="app-badge">${badge}</div>
+                    </div>
+                    <div class="app-label">${item.name}</div>
+                </div>`;
+            });
+        }
+
+        // --- ACTIONS ---
+        window.buy = function(id) {
+            const meta = shopItems.find(x => x.id === id);
+            if(game.money < meta.price) return;
+            
+            if(meta.type === 'device') {
+                game.inventory.push({id: meta.id, name: meta.name, category: 'device', hp: 100});
+            } else {
+                let time = id==='pizza' ? 30000 : 15000;
+                game.inventory.push({id: meta.id, name: meta.name, category: 'food', expireTime: Date.now()+time, totalLife:time, isSpoiled:false});
+            }
+            game.money -= meta.price;
+            save(); render(); renderShop();
+            alert("Куплено!");
+        };
+
+        window.useItem = function(index) {
+            const item = game.inventory[index];
+            if(item.category === 'device') {
+                if(item.hp < 100 && game.money >= 50) {
+                    if(confirm("Ремонт за 50$?")) { game.money-=50; item.hp=100; render(); renderGrid(); }
+                } else { alert("Стан: " + item.hp + "%"); }
+            } else {
+                if(item.isSpoiled) {
+                    game.inventory.splice(index, 1); renderGrid();
+                } else {
+                    game.inventory.splice(index, 1); game.energy+=20; render(); renderGrid();
+                }
+            }
+        };
+
+        // --- ANIMATIONS ---
+        let isBusy = false;
+        function runAction(icon, text, btn, cb) {
+            if(isBusy) return; isBusy = true;
+            
+            // Anim Button
+            const ring = btn.querySelector('.progress-ring');
+            const badge = btn.querySelector('.app-badge');
+            let start = Date.now();
+            let int = setInterval(() => {
+                let p = Date.now() - start;
+                let left = Math.max(0, 3000 - p);
+                ring.style.strokeDashoffset = 200 - (200 * left / 3000);
+                badge.innerText = (left/1000).toFixed(1) + 's';
+                if(left<=0) { clearInterval(int); badge.innerText="3s"; ring.style.strokeDashoffset=0; }
+            }, 30);
+
+            // Anim Scene
+            const ov = document.getElementById('scene-overlay');
+            document.getElementById('overlay-icon').innerText = icon;
+            document.getElementById('overlay-text').innerText = text;
+            ov.style.display = 'flex';
+            
+            setTimeout(() => {
+                cb();
+                ov.style.display = 'none';
+                isBusy = false;
+                save(); render();
+            }, 3000);
+        }
+
+        window.work = function(btn) {
+            const pc = game.inventory.find(i => i.id === 'pc');
+            if(!pc || pc.hp <= 0) return alert("Потрібен ПК! Купи в магазині.");
+            runAction("👨‍💻", "КОДИНГ", btn, () => { game.money+=20; game.energy-=10; pc.hp-=20; });
+        };
+
+        window.sleep = function(btn) {
+            const bed = game.inventory.find(i => i.id === 'bed');
+            if(!bed || bed.hp <= 0) return alert("Потрібне ліжко! Купи в магазині.");
+            runAction("😴", "СОН", btn, () => { game.energy+=30; bed.hp-=5; });
+        };
+
+        window.switchTab = function(tab, btn) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-'+tab).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if(tab === 'shop') renderShop();
+            if(tab === 'inv') renderGrid();
+        };
+
+        function save() { localStorage.setItem('lifeSim_v19_final', JSON.stringify(game)); }
+        window.hardReset = function() { localStorage.clear(); location.reload(); }
+    </script>
+</body>
+</html>

@@ -3,203 +3,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Real-Time Life</title>
+    <title>Life Sim: Logistics</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --green: #00b894; --text: #fff; }
-        body { margin: 0; padding: 20px; background: var(--bg); color: var(--text); font-family: sans-serif; user-select: none; }
+        :root { --bg: #121212; --card: #1e1e1e; --green: #00b894; --blue: #0984e3; --text: #fff; }
+        body { margin: 0; padding: 20px; background: var(--bg); color: var(--text); font-family: sans-serif; padding-bottom: 80px; }
         
-        /* Головний таймер */
-        #active-task-panel {
-            display: none; /* Приховано, коли нічого не робиш */
-            background: #2d3436; border: 2px solid #0984e3;
-            padding: 20px; border-radius: 16px; margin-bottom: 20px;
-            text-align: center;
+        /* Верхня панель */
+        .header { display: flex; justify-content: space-between; margin-bottom: 15px; background: #2d3436; padding: 10px; border-radius: 12px;}
+        .stat { font-weight: bold; }
+
+        /* Таймер зайнятості */
+        #busy-panel {
+            display: none; background: #d63031; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center;
         }
-        .timer-big { font-size: 48px; font-weight: bold; font-variant-numeric: tabular-nums; }
-        .task-name { color: #aaa; font-size: 14px; margin-bottom: 5px; text-transform: uppercase; }
-        
-        /* Звичайна статистика */
-        .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .money { background: var(--green); color: #000; padding: 5px 15px; border-radius: 15px; font-weight: bold; }
-        
-        /* Кнопки */
-        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        button {
-            background: var(--card); color: white; border: 1px solid #333;
-            padding: 20px; border-radius: 12px; font-size: 16px; cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        .timer-big { font-size: 32px; font-weight: bold; margin: 10px 0; }
+
+        /* Панель доставок (Фонова) */
+        #delivery-panel {
+            display: none; background: #0984e3; padding: 10px; border-radius: 12px; margin-bottom: 20px;
         }
-        button:disabled { opacity: 0.3; filter: grayscale(100%); cursor: not-allowed; }
-        button:active { transform: scale(0.98); }
-        .duration { font-size: 12px; color: #888; }
+        .delivery-item { background: rgba(0,0,0,0.2); padding: 5px; margin-top: 5px; border-radius: 5px; font-size: 14px; display: flex; justify-content: space-between;}
+
+        /* Секції (Таби) */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Грід кнопок */
+        .grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
         
-        /* Індикатор прогресу */
-        .progress-bar { height: 6px; background: #444; border-radius: 3px; margin-top: 10px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #0984e3; width: 0%; transition: width 1s linear; }
+        /* Картки магазину */
+        .shop-card {
+            background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #444;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .shop-btn-group { display: flex; gap: 5px; flex-direction: column; }
+        .btn-buy {
+            padding: 8px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px;
+        }
+        .btn-delivery { background: #6c5ce7; color: white; }
+        .btn-pickup { background: #fdcb6e; color: black; }
+
+        /* Картки інвентарю */
+        .inv-item { background: #333; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 4px solid var(--green); }
+
+        /* Нижнє меню */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #2d3436;
+            display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #444;
+        }
+        .nav-btn { background: none; border: none; color: #888; font-size: 24px; cursor: pointer; }
+        .nav-btn.active { color: var(--green); transform: scale(1.2); }
+
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div>Мій Статус: <b id="status">Вільний</b></div>
-        <div class="money"><span id="money">0</span> $</div>
+        <div class="stat">⚡ <span id="energy">100</span></div>
+        <div class="stat">💵 <span id="money">200</span> $</div>
     </div>
 
-    <div id="active-task-panel">
-        <div class="task-name" id="task-title">Працюю...</div>
-        <div class="timer-big" id="timer-display">00:00</div>
-        <div class="progress-bar"><div class="progress-fill" id="timer-bar"></div></div>
-        <div style="margin-top:10px; font-size:12px; color:#666;">Можна згорнути додаток</div>
+    <div id="busy-panel">
+        <div>⛔ Я зайнятий: <span id="busy-task">Нічим</span></div>
+        <div class="timer-big" id="busy-timer">00:00</div>
     </div>
 
-    <div class="actions" id="buttons-container">
-        
-        <button onclick="startAction('work_fast')">
-            <span>⚡ Фріланс</span>
-            <span class="duration">10 секунд (Тест)</span>
-            <span style="color:var(--green)">+10$</span>
-        </button>
+    <div id="delivery-panel">
+        <b>📦 Очікуються посилки:</b>
+        <div id="delivery-list"></div>
+    </div>
 
-        <button onclick="startAction('work_hard')">
-            <span>🏢 Офіс</span>
-            <span class="duration">1 Година (Реал)</span>
-            <span style="color:var(--green)">+150$</span>
-        </button>
+    <div id="tab-home" class="section active">
+        <h3>🏠 Мій Дім</h3>
+        <div class="grid">
+            <button class="shop-card" onclick="startAction('work', 10, 0, 15)">
+                <div>💼 <b>Фріланс (10 сек)</b><br><small>+15$ | -10 Енергії</small></div>
+            </button>
+            <button class="shop-card" onclick="startAction('sleep', 20, 0, 0, true)">
+                <div>😴 <b>Подрімати (20 сек)</b><br><small>Відновлення енергії</small></div>
+            </button>
+        </div>
+    </div>
 
-        <button onclick="startAction('gym')">
-            <span>🏋️ Спортзал</span>
-            <span class="duration">30 хвилин</span>
-            <span style="color:#fdcb6e">+Сила</span>
-        </button>
+    <div id="tab-shop" class="section">
+        <h3>🛒 Amazon / eBay</h3>
+        <div id="shop-container" class="grid">
+            </div>
+    </div>
 
-        <button onclick="startAction('sleep')">
-            <span>😴 Спати</span>
-            <span class="duration">8 годин</span>
-            <span style="color:#74b9ff">Відновлення</span>
-        </button>
+    <div id="tab-inv" class="section">
+        <h3>🎒 Мої речі</h3>
+        <div id="inventory-list">
+            <div style="color:#666">Поки що пусто...</div>
+        </div>
+    </div>
 
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="switchTab('home')">🏠</button>
+        <button class="nav-btn" onclick="switchTab('shop')">🛒</button>
+        <button class="nav-btn" onclick="switchTab('inv')">🎒</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Стан гри
+        // --- ДАНІ ГРИ ---
         let game = {
-            money: 0,
-            busyUntil: 0, // Timestamp: коли закінчиться дія (0 якщо вільний)
-            currentTask: null // Назва дії
+            money: 200,
+            energy: 100,
+            inventory: [],
+            deliveries: [], // Список посилок, що їдуть { name, arrivalTime }
+            busyUntil: 0,   // Коли звільниться гравець
+            busyTask: ""
         };
 
-        // Завантаження збереження
-        function loadGame() {
-            const saved = localStorage.getItem('lifeSimSave');
-            if (saved) {
-                game = JSON.parse(saved);
-                updateUI();
-                checkTimer(); // Одразу перевіряємо, чи не пройшов час поки нас не було
-            }
-        }
+        const itemsDB = [
+            { id: 'iphone', name: 'iPhone 15', price: 100 },
+            { id: 'sneakers', name: 'Кросівки Nike', price: 50 },
+            { id: 'ps5', name: 'PlayStation 5', price: 150 }
+        ];
 
-        // Збереження гри
-        function saveGame() {
-            localStorage.setItem('lifeSimSave', JSON.stringify(game));
-        }
+        // --- СИСТЕМА ЧАСУ І ДІЙ ---
 
-        // --- ГОЛОВНА ЛОГІКА ТАЙМЕРА ---
-        
-        function startAction(type) {
-            let durationSeconds = 0;
-            let title = "";
+        function startAction(taskName, durationSec, costMoney, earnings, isSleep=false) {
+            // Перевірки
+            if (game.busyUntil > Date.now()) return tg.showAlert("Ти зайнятий!");
+            if (game.money < costMoney) return tg.showAlert("Нема грошей!");
+            if (!isSleep && game.energy < 10) return tg.showAlert("Мало енергії! Треба поспати.");
 
-            // НАЛАШТУВАННЯ ЧАСУ (в секундах)
-            if (type === 'work_fast') { durationSeconds = 10; title = "Швидке замовлення"; }
-            if (type === 'work_hard') { durationSeconds = 3600; title = "Робота в офісі"; } // 1 година
-            if (type === 'gym')       { durationSeconds = 1800; title = "Тренування"; }      // 30 хв
-            if (type === 'sleep')     { durationSeconds = 28800; title = "Сон"; }            // 8 годин
-
-            // Встановлюємо час закінчення
-            const now = Date.now();
-            game.busyUntil = now + (durationSeconds * 1000);
-            game.currentTask = type;
-            game.taskName = title;
-            game.totalDuration = durationSeconds; // Запам'ятовуємо, щоб малювати прогрес-бар
+            // Витрати
+            game.money -= costMoney;
+            if (!isSleep) game.energy -= 10;
             
+            // Старт таймера
+            game.busyUntil = Date.now() + (durationSec * 1000);
+            game.busyTask = taskName;
+            
+            // Збереження результату дії (що буде, коли закінчиться)
+            game.pendingReward = { earnings, isSleep };
+
             saveGame();
             updateUI();
-            checkTimer(); // Запускаємо цокання
         }
 
-        function checkTimer() {
+        // Купівля (Вибір способу)
+        function buyItem(itemId, method) {
+            const item = itemsDB.find(i => i.id === itemId);
+            if (game.money < item.price) return tg.showAlert("Нема грошей!");
+
+            if (method === 'pickup') {
+                // САМОВИВІЗ: Швидко, але блокує гравця і жере енергію
+                if (game.energy < 20) return tg.showAlert("Ти надто втомлений йти в магазин!");
+                
+                game.money -= item.price;
+                game.energy -= 20; // Втома
+                
+                // Блокуємо гравця на 15 секунд (типу пішов у магазин)
+                game.busyUntil = Date.now() + (15 * 1000); 
+                game.busyTask = `Іду за ${item.name}...`;
+                game.pendingReward = { item: item.name }; // Отримаємо річ
+                
+                tg.showAlert(`Пішов у магазин. Буду через 15 сек.`);
+            } 
+            else if (method === 'delivery') {
+                // ДОСТАВКА: Довго, але не блокує гравця
+                game.money -= (item.price + 10); // +10$ за доставку
+                
+                // Додаємо в чергу доставок (наприклад, 60 секунд)
+                game.deliveries.push({
+                    name: item.name,
+                    arrivalTime: Date.now() + (60 * 1000) 
+                });
+                
+                tg.showAlert(`Замовлено! Кур'єр буде через 60 сек.`);
+            }
+            saveGame();
+            updateUI();
+        }
+
+        // --- ЦИКЛ ОНОВЛЕННЯ (Game Loop) ---
+        setInterval(() => {
             const now = Date.now();
 
-            if (game.busyUntil > now) {
-                // Дія ще триває
-                const leftInfo = getTimeLeft(game.busyUntil);
-                document.getElementById('timer-display').innerText = leftInfo.text;
-                document.getElementById('task-title').innerText = game.taskName;
-                
-                // Прогрес бар
-                const elapsed = (game.totalDuration * 1000) - (game.busyUntil - now);
-                const percent = (elapsed / (game.totalDuration * 1000)) * 100;
-                document.getElementById('timer-bar').style.width = percent + '%';
-
-                // Запускаємо наступний кадр перевірки
-                requestAnimationFrame(checkTimer);
-            } 
-            else if (game.busyUntil !== 0) {
-                // Дія ЗАВЕРШИЛАСЬ саме зараз (або поки нас не було)
-                finishAction();
+            // 1. Перевірка зайнятості
+            if (game.busyUntil > 0) {
+                if (now >= game.busyUntil) {
+                    // Дія закінчилась
+                    finishAction();
+                }
             }
-        }
+
+            // 2. Перевірка доставок
+            if (game.deliveries.length > 0) {
+                // Фільтруємо ті, що приїхали
+                const arrived = game.deliveries.filter(d => d.arrivalTime <= now);
+                const waiting = game.deliveries.filter(d => d.arrivalTime > now);
+
+                if (arrived.length > 0) {
+                    arrived.forEach(pkg => {
+                        game.inventory.push(pkg.name);
+                        tg.showAlert(`📦 Дзинь-дзинь! Приїхала посилка: ${pkg.name}`);
+                    });
+                    game.deliveries = waiting; // Оновлюємо список
+                    saveGame();
+                    renderInventory();
+                }
+            }
+            updateUI();
+        }, 1000);
 
         function finishAction() {
-            // Видаємо нагороду
-            if (game.currentTask === 'work_fast') { game.money += 10; tg.showAlert("Замовлення готове! +10$"); }
-            if (game.currentTask === 'work_hard') { game.money += 150; tg.showAlert("Робочий день закінчено! +150$"); }
-            if (game.currentTask === 'gym')       { tg.showAlert("Ти став сильнішим! 💪"); }
-            if (game.currentTask === 'sleep')     { tg.showAlert("Ти виспався! ☀️"); }
+            const reward = game.pendingReward || {};
+            if (reward.earnings) game.money += reward.earnings;
+            if (reward.isSleep) game.energy = 100;
+            if (reward.item) {
+                game.inventory.push(reward.item);
+                tg.showAlert(`Купив: ${reward.item}`);
+            }
 
-            // Скидаємо таймер
             game.busyUntil = 0;
-            game.currentTask = null;
+            game.busyTask = "";
+            game.pendingReward = null;
             saveGame();
             updateUI();
         }
 
-        // Форматування часу (01:05:20)
-        function getTimeLeft(endTime) {
-            const totalSeconds = Math.floor((endTime - Date.now()) / 1000);
-            const h = Math.floor(totalSeconds / 3600);
-            const m = Math.floor((totalSeconds % 3600) / 60);
-            const s = totalSeconds % 60;
-            
-            // Красивий формат 00:00:00
-            const text = 
-                (h > 0 ? h + ":" : "") + 
-                (m < 10 ? "0" + m : m) + ":" + 
-                (s < 10 ? "0" + s : s);
-            
-            return { text, totalSeconds };
-        }
-
+        // --- ІНТЕРФЕЙС ---
         function updateUI() {
             document.getElementById('money').innerText = game.money;
+            document.getElementById('energy').innerText = game.energy;
 
+            // Панель зайнятості
             const isBusy = game.busyUntil > Date.now();
+            document.getElementById('busy-panel').style.display = isBusy ? 'block' : 'none';
             
-            // Показуємо або ховаємо панель таймера
-            document.getElementById('active-task-panel').style.display = isBusy ? 'block' : 'none';
-            document.getElementById('status').innerText = isBusy ? 'Зайнятий' : 'Вільний';
+            if (isBusy) {
+                document.getElementById('busy-task').innerText = game.busyTask;
+                const secondsLeft = Math.ceil((game.busyUntil - Date.now()) / 1000);
+                document.getElementById('busy-timer').innerText = `00:${secondsLeft < 10 ? '0'+secondsLeft : secondsLeft}`;
+                // Блокуємо кнопки
+                document.querySelectorAll('button').forEach(b => b.disabled = true);
+            } else {
+                document.querySelectorAll('button').forEach(b => b.disabled = false);
+            }
 
-            // Блокуємо кнопки, якщо зайняті
-            const buttons = document.querySelectorAll('#buttons-container button');
-            buttons.forEach(btn => btn.disabled = isBusy);
+            // Панель доставок
+            const delList = document.getElementById('delivery-list');
+            if (game.deliveries.length > 0) {
+                document.getElementById('delivery-panel').style.display = 'block';
+                delList.innerHTML = game.deliveries.map(d => {
+                    const sec = Math.ceil((d.arrivalTime - Date.now()) / 1000);
+                    return `<div class="delivery-item"><span>🛵 ${d.name}</span> <span>${sec} сек</span></div>`;
+                }).join('');
+            } else {
+                document.getElementById('delivery-panel').style.display = 'none';
+            }
+            renderInventory();
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shop-container');
+            container.innerHTML = itemsDB.map(item => `
+                <div class="shop-card">
+                    <div><b>${item.name}</b><br>${item.price}$</div>
+                    <div class="shop-btn-group">
+                        <button class="btn-buy btn-pickup" onclick="buyItem('${item.id}', 'pickup')">
+                            🏃 Заберу сам<br><small>15с | -20⚡ | 0$</small>
+                        </button>
+                        <button class="btn-buy btn-delivery" onclick="buyItem('${item.id}', 'delivery')">
+                            🛵 Доставка<br><small>60с | 0⚡ | +10$</small>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderInventory() {
+            const list = document.getElementById('inventory-list');
+            if (game.inventory.length === 0) {
+                list.innerHTML = '<div style="color:#666; text-align:center">Пусто</div>';
+                return;
+            }
+            list.innerHTML = game.inventory.map(i => `<div class="inv-item">✅ ${i}</div>`).join('');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            
+            // Підсвітка кнопки (це можна зробити краще через ID, але поки так)
+            if(tab === 'home') document.querySelectorAll('.nav-btn')[0].classList.add('active');
+            if(tab === 'shop') document.querySelectorAll('.nav-btn')[1].classList.add('active');
+            if(tab === 'inv') document.querySelectorAll('.nav-btn')[2].classList.add('active');
         }
 
         // Старт
-        loadGame();
+        const saved = localStorage.getItem('lifeSimLogistics');
+        if (saved) {
+            game = JSON.parse(saved);
+            // Фікс для старих сейвів
+            if(!game.deliveries) game.deliveries = [];
+            if(!game.inventory) game.inventory = [];
+        }
+        
+        function saveGame() { localStorage.setItem('lifeSimLogistics', JSON.stringify(game)); }
+        
+        renderShop();
+        updateUI();
+
     </script>
 </body>
 </html>

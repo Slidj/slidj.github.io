@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v14</title>
+    <title>Life OS v15: Shop</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
     <style>
-        :root { --bg: #000; --card: #1c1c1e; --accent: #0a84ff; --text: #fff; --green: #30d158; --red: #ff453a; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; }
-
-        /* АВАРІЙНА КНОПКА */
-        .reset-btn {
-            position: fixed; top: 10px; right: 10px; z-index: 9999;
-            background: rgba(255, 69, 58, 0.3); color: white; border: 1px solid var(--red);
-            padding: 5px 10px; border-radius: 8px; font-size: 10px; cursor: pointer;
+        :root { 
+            --bg: #000; --card: #1c1c1e; --accent: #0a84ff; 
+            --text: #fff; --green: #30d158; --red: #ff453a; --orange: #ff9f0a; --gray: #8e8e93;
         }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        /* КНОПКА СКИДАННЯ */
+        .reset-btn { position: fixed; top: 10px; right: 10px; z-index: 9999; background: rgba(255, 69, 58, 0.3); color: white; border: 1px solid var(--red); padding: 5px 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
 
         /* СЦЕНА */
         .scene-container { position: relative; width: 100%; height: 260px; background-color: #2c2c2e; border-bottom: 1px solid #333; overflow: hidden; }
@@ -29,7 +28,7 @@
         /* ШТОРКА СЦЕНИ */
         #scene-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
             display: none; flex-direction: column; justify-content: center; align-items: center;
             z-index: 100; color: white;
         }
@@ -41,7 +40,50 @@
         .widget-header { background: #1c1c1e; padding: 20px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; border: 1px solid #333; }
         .money { font-size: 28px; font-weight: 800; color: var(--green); }
 
-        /* ГРІД */
+        /* --- НОВИЙ МАГАЗИН (POSTER STYLE) --- */
+        .shop-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); /* 2 картки в ряд */
+            gap: 15px;
+        }
+
+        .shop-card {
+            background: var(--card); border-radius: 16px; overflow: hidden;
+            display: flex; flex-direction: column;
+            border: 1px solid #333; position: relative;
+        }
+
+        .poster-visual {
+            height: 100px; background: linear-gradient(180deg, #2c2c2e 0%, #1c1c1e 100%);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 50px;
+        }
+
+        .poster-info { padding: 12px; display: flex; flex-direction: column; gap: 5px; flex-grow: 1; }
+        
+        .poster-title { font-weight: bold; font-size: 15px; }
+        .poster-desc { font-size: 11px; color: #888; line-height: 1.2; margin-bottom: 5px; height: 26px; overflow: hidden; }
+
+        /* Бейджі характеристик */
+        .specs-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+        .spec-pill { 
+            font-size: 10px; padding: 3px 6px; border-radius: 4px; background: #333; color: #ccc; 
+            display: flex; align-items: center; gap: 3px;
+        }
+        .spec-green { color: var(--green); background: rgba(48, 209, 88, 0.1); }
+        .spec-blue { color: var(--accent); background: rgba(10, 132, 255, 0.1); }
+        .spec-orange { color: var(--orange); background: rgba(255, 159, 10, 0.1); }
+
+        .buy-btn {
+            margin-top: auto; /* Притискає кнопку до низу */
+            background: #333; color: white; border: none;
+            padding: 10px; border-radius: 8px; font-weight: bold; font-size: 14px;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.2s;
+        }
+        .buy-btn:active { transform: scale(0.98); }
+        .buy-btn.can-buy { background: var(--accent); }
+
+        /* --- APP GRID (ДЛЯ ІНВЕНТАРЯ І ДОМУ) --- */
         .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .app-card:active .icon-wrapper { transform: scale(0.95); }
@@ -50,7 +92,6 @@
         .app-bg { width: 58px; height: 58px; background: var(--card); border-radius: 16px; display: flex; justify-content: center; align-items: center; z-index: 1; border: 1px solid #333; }
         .app-emoji { font-size: 28px; }
         
-        /* SVG АНІМАЦІЯ */
         .progress-svg { position: absolute; top: 0; left: 0; width: 68px; height: 68px; transform: rotate(-90deg); z-index: 2; pointer-events: none; }
         .progress-ring { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.1s linear; }
 
@@ -71,8 +112,7 @@
 </head>
 <body>
 
-    <button class="reset-btn" onclick="hardReset()">RESET GAME</button>
-
+    <button class="reset-btn" onclick="hardReset()">RESET</button>
     <div id="action-sheet"><div id="sheet-content"></div></div>
 
     <div class="scene-container">
@@ -94,29 +134,22 @@
         <div id="tab-home" class="tab active">
             <div style="color:#666;font-size:12px;margin-bottom:10px">ДОДАТКИ</div>
             <div class="app-grid">
-                
                 <div class="app-card" onclick="work(this)">
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">💻</span></div>
-                        <svg class="progress-svg" viewBox="0 0 72 72">
-                            <rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#64d2ff" stroke-dasharray="200" stroke-dashoffset="0" />
-                        </svg>
+                        <svg class="progress-svg" viewBox="0 0 72 72"><rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#64d2ff" stroke-dasharray="200" stroke-dashoffset="0" /></svg>
                         <div class="app-badge">3с</div>
                     </div>
                     <div class="app-label">Фріланс</div>
                 </div>
-
                 <div class="app-card" onclick="sleep(this)">
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">😴</span></div>
-                        <svg class="progress-svg" viewBox="0 0 72 72">
-                            <rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#bf5af2" stroke-dasharray="200" stroke-dashoffset="0" />
-                        </svg>
+                        <svg class="progress-svg" viewBox="0 0 72 72"><rect class="progress-ring" x="4" y="4" width="64" height="64" rx="14" stroke="#bf5af2" stroke-dasharray="200" stroke-dashoffset="0" /></svg>
                         <div class="app-badge">3с</div>
                     </div>
                     <div class="app-label">Сон</div>
                 </div>
-
                 <div class="app-card" onclick="openBank()">
                     <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">🏦</span></div><div class="app-badge" style="background:green">$$$</div></div>
                     <div class="app-label">Банк</div>
@@ -130,21 +163,9 @@
         </div>
 
         <div id="tab-shop" class="tab">
-            <div style="color:#666;font-size:12px;margin-bottom:10px">МАГАЗИН</div>
-            <div class="app-grid">
-                <div class="app-card" onclick="buyItem('pc', 150)">
-                    <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">🖥️</span></div><div class="app-badge">150$</div></div>
-                    <div class="app-label">iMac</div>
+            <div style="color:#666;font-size:12px;margin-bottom:10px">МАРКЕТПЛЕЙС</div>
+            <div id="shop-grid" class="shop-grid">
                 </div>
-                <div class="app-card" onclick="buyItem('bed', 100)">
-                    <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">🛏️</span></div><div class="app-badge">100$</div></div>
-                    <div class="app-label">Ліжко</div>
-                </div>
-                <div class="app-card" onclick="buyFood('pizza', 20)">
-                    <div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">🍕</span></div><div class="app-badge">20$</div></div>
-                    <div class="app-label">Піца</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -158,18 +179,38 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // 1. ЧИСТИЙ СТАРТ
-        const defaultGame = { money: 300, energy: 100, inventory: [], debt: 0 };
-        let game = { ...defaultGame };
+        // 1. БАЗА ДАНИХ ТОВАРІВ (Щоб легко додавати нові)
+        const shopItems = [
+            { 
+                id: 'pc', type: 'device', name: 'iMac Pro', price: 150, icon: '🖥️', 
+                desc: 'Потужний ПК для фрілансу та розробки ігор.',
+                specs: ['⚡ -10 Енергії', '💰 +20$/клік']
+            },
+            { 
+                id: 'bed', type: 'device', name: 'Smart Bed', price: 100, icon: '🛏️', 
+                desc: 'Ортопедичне ліжко для швидкого сну.',
+                specs: ['⚡ +30 Енергії', '💤 3 сек']
+            },
+            { 
+                id: 'pizza', type: 'food', name: 'Pepperoni', price: 20, icon: '🍕', 
+                desc: 'Свіжа піца. Швидко псується!',
+                specs: ['⚡ +20 Енергії', '⏳ Термін: 30с']
+            },
+            { 
+                id: 'sushi', type: 'food', name: 'Sushi Set', price: 40, icon: '🍣', 
+                desc: 'Преміум набір. Відновлює здоров\'я.',
+                specs: ['⚡ +35 Енергії', '⏳ Термін: 20с']
+            }
+        ];
 
-        // Спроба завантаження
+        let game = { money: 300, energy: 100, inventory: [], debt: 0 };
         try {
-            const saved = localStorage.getItem('lifeSim_v14_clean'); // НОВИЙ КЛЮЧ
+            const saved = localStorage.getItem('lifeSim_v15'); 
             if(saved) game = JSON.parse(saved);
             if(!game.inventory) game.inventory = [];
-        } catch(e) { console.log('Save reset'); }
+        } catch(e) { console.log('Reset'); }
 
-        // LOOP (Псування їжі)
+        // RENDER LOOP
         setInterval(() => {
             const now = Date.now();
             let saveNeeded = false;
@@ -180,27 +221,90 @@
             });
             if(saveNeeded) { save(); render(); }
             if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
+            
+            // Оновлюємо кнопки магазину (якщо раптом гроші змінилися, щоб кнопка стала активною/неактивною)
+            if(document.getElementById('tab-shop').classList.contains('active')) renderShop();
         }, 1000);
 
-        // ГОЛОВНИЙ РЕНДЕР
         function render() {
             document.getElementById('money').innerText = game.money;
             document.getElementById('energy').innerText = game.energy;
 
-            // Сцена
             const pc = game.inventory.find(i => i.id === 'pc');
             const bed = game.inventory.find(i => i.id === 'bed');
             
             const pcEl = document.getElementById('item-pc');
-            if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; }
-            else { pcEl.style.display='none'; }
-
+            if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; } else { pcEl.style.display='none'; }
+            
             const bedEl = document.getElementById('item-bed');
-            if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; }
-            else { bedEl.style.display='none'; }
+            if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; } else { bedEl.style.display='none'; }
         }
 
-        // РЕНДЕР ІНВЕНТАРЮ
+        // RENDER SHOP (НОВА ФУНКЦІЯ)
+        function renderShop() {
+            const container = document.getElementById('shop-grid');
+            // Перемальовуємо тільки якщо змінилась кількість (оптимізація)
+            // Але для простоти зараз просто оновимо статус кнопок
+            
+            if(container.innerHTML === "") { // Перший рендер
+                shopItems.forEach(item => {
+                    let specsHTML = item.specs.map(s => {
+                        let colorClass = s.includes('Енергії') ? 'spec-blue' : (s.includes('Термін') ? 'spec-orange' : 'spec-green');
+                        return `<div class="spec-pill ${colorClass}">${s}</div>`;
+                    }).join('');
+
+                    container.innerHTML += `
+                    <div class="shop-card">
+                        <div class="poster-visual">${item.icon}</div>
+                        <div class="poster-info">
+                            <div class="poster-title">${item.name}</div>
+                            <div class="poster-desc">${item.desc}</div>
+                            <div class="specs-row">${specsHTML}</div>
+                            <button class="buy-btn" id="btn-buy-${item.id}" onclick="buy('${item.id}')">
+                                <span>Купити</span> <span>${item.price}$</span>
+                            </button>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            // Оновлюємо кнопки (активна/неактивна)
+            shopItems.forEach(item => {
+                const btn = document.getElementById(`btn-buy-${item.id}`);
+                if(btn) {
+                    const hasItem = game.inventory.some(i => i.id === item.id);
+                    if(hasItem) {
+                        btn.style.background = "#333";
+                        btn.style.color = "#777";
+                        btn.innerHTML = "<span>Вже є</span>";
+                        btn.disabled = true;
+                    } else if (game.money >= item.price) {
+                        btn.style.background = "var(--accent)";
+                        btn.style.color = "white";
+                        btn.disabled = false;
+                    } else {
+                        btn.style.background = "#333";
+                        btn.style.color = "#777";
+                        btn.disabled = true;
+                    }
+                    
+                    // Їжу можна купувати завжди
+                    if(item.type === 'food') {
+                         if (game.money >= item.price) {
+                            btn.style.background = "var(--accent)";
+                            btn.innerHTML = `<span>Купити</span> <span>${item.price}$</span>`;
+                            btn.style.color = "white";
+                            btn.disabled = false;
+                         } else {
+                            btn.style.background = "#333";
+                            btn.disabled = true;
+                         }
+                    }
+                }
+            });
+        }
+
+        // RENDER INVENTORY
         function renderGrid() {
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = "";
@@ -214,9 +318,10 @@
             game.inventory.forEach((item, index) => {
                 let emoji = "📦", color = "#30d158", badge = "", offset = 0;
                 
-                // DEVICE
                 if(item.category === 'device') {
-                    emoji = item.id === 'pc' ? "🖥️" : "🛏️";
+                    const meta = shopItems.find(x => x.id === item.id);
+                    emoji = meta ? meta.icon : "📦";
+                    
                     if(item.hp <= 0) { color="#ff453a"; badge="ЗЛАМ."; offset=200; }
                     else { 
                         if(item.hp < 50) color="#ff9f0a";
@@ -224,15 +329,17 @@
                         offset = 200 - (200 * item.hp / 100);
                     }
                 }
-                // FOOD
                 if(item.category === 'food') {
-                    emoji = item.id === 'pizza' ? "🍕" : "🍣";
+                    const meta = shopItems.find(x => x.id === item.id);
+                    emoji = meta ? meta.icon : "🍔";
+
                     if(item.isSpoiled) { emoji="🤢"; color="#555"; badge="🗑️"; offset=200; }
                     else {
+                        const maxTime = item.totalLife;
                         const left = Math.max(0, item.expireTime - now);
                         badge = Math.ceil(left/1000)+"с";
                         color = "#0a84ff";
-                        offset = 200 - (200 * (left/30000));
+                        offset = 200 - (200 * (left/maxTime));
                     }
                 }
 
@@ -250,117 +357,44 @@
             });
         }
 
-        // --- ЛОГІКА ТА АНІМАЦІЯ ---
+        // LOGIC
+        function buy(id) {
+            const meta = shopItems.find(x => x.id === id);
+            if(game.money < meta.price) return alert("Нема грошей");
+
+            if(meta.type === 'device') {
+                if(game.inventory.some(i => i.id === id)) return alert("Вже є!");
+                game.inventory.push({id: meta.id, name: meta.name, category: 'device', hp: 100});
+            } else {
+                // Food
+                let lifeTime = id === 'pizza' ? 30000 : 20000;
+                game.inventory.push({
+                    id: meta.id, name: meta.name, category: 'food', 
+                    expireTime: Date.now() + lifeTime, totalLife: lifeTime, isSpoiled: false
+                });
+            }
+            game.money -= meta.price;
+            save(); render(); renderShop();
+        }
+
+        // ANIMATIONS & ACTIONS
         let isBusy = false;
-
-        function animateBtn(btnElement, duration) {
-            const ring = btnElement.querySelector('.progress-ring');
-            const badge = btnElement.querySelector('.app-badge');
+        function animateBtn(btn, dur) {
+            const ring = btn.querySelector('.progress-ring');
+            const badge = btn.querySelector('.app-badge');
             const start = Date.now();
-            
-            const interval = setInterval(() => {
+            const int = setInterval(() => {
                 const passed = Date.now() - start;
-                const left = Math.max(0, duration - passed);
-                const pct = left / duration;
-                
-                // 200 -> 0 (зникає)
-                ring.style.strokeDashoffset = 200 - (200 * pct); 
+                const left = Math.max(0, dur - passed);
+                ring.style.strokeDashoffset = 200 - (200 * (left/dur));
                 badge.innerText = (left/1000).toFixed(1) + 'с';
-
-                if(left <= 0) {
-                    clearInterval(interval);
-                    badge.innerText = "3с";
-                    ring.style.strokeDashoffset = 0;
-                }
+                if(left<=0) { clearInterval(int); badge.innerText = "3с"; ring.style.strokeDashoffset = 0; }
             }, 30);
         }
 
-        function runSceneAction(icon, text, btnElement, callback) {
-            if(isBusy) return;
-            isBusy = true;
-
-            // Анімація на кнопці
-            if(btnElement) animateBtn(btnElement, 3000);
-
-            // Анімація на сцені
-            const overlay = document.getElementById('scene-overlay');
+        function runSceneAction(icon, text, btn, cb) {
+            if(isBusy) return; isBusy = true;
+            if(btn) animateBtn(btn, 3000);
+            const ov = document.getElementById('scene-overlay');
             document.getElementById('overlay-icon').innerText = icon;
-            document.getElementById('overlay-text').innerText = text;
-            overlay.style.display = 'flex';
-
-            setTimeout(() => {
-                callback();
-                overlay.style.display = 'none';
-                isBusy = false;
-                save(); render();
-            }, 3000);
-        }
-
-        function work(btn) {
-            const pc = game.inventory.find(i => i.id === 'pc');
-            if(!pc || pc.hp <= 0) return alert("Немає робочого ПК!");
-            if(game.energy < 10) return alert("Втома!");
-
-            runSceneAction("👨‍💻", "КОДИНГ", btn, () => {
-                game.money += 20; game.energy -= 10; pc.hp -= 20;
-            });
-        }
-
-        function sleep(btn) {
-            const bed = game.inventory.find(i => i.id === 'bed');
-            if(!bed || bed.hp <= 0) return alert("Немає ліжка!");
-
-            runSceneAction("😴", "СОН", btn, () => {
-                game.energy = Math.min(100, game.energy + 30); bed.hp -= 5;
-            });
-        }
-
-        // ІНШІ ФУНКЦІЇ
-        function buyItem(id, p) {
-            if(game.inventory.some(i=>i.id===id)) return alert("Вже є!");
-            if(game.money<p) return alert("Нема грошей");
-            game.money-=p; game.inventory.push({id, name:id==='pc'?'iMac':'Ліжко', category:'device', hp:100});
-            save(); render(); alert("Куплено!");
-        }
-        function buyFood(id, p) {
-            if(game.money<p) return alert("Нема грошей");
-            game.money-=p; game.inventory.push({id, name:'Піца', category:'food', expireTime:Date.now()+30000, isSpoiled:false});
-            save(); render(); alert("Куплено!");
-        }
-
-        // SHEET
-        function openSheet(i) {
-            const item = game.inventory[i];
-            let btn = "";
-            if(item.category==='device') btn = item.hp<100 ? `<button class="sheet-btn" style="background:#ff9f0a;color:white" onclick="repair(${i})">Ремонт (50$)</button>` : `<button class="sheet-btn" style="background:#333;color:#777">Все ок</button>`;
-            else btn = item.isSpoiled ? `<button class="sheet-btn" style="background:red;color:white" onclick="trash(${i})">Викинути</button>` : `<button class="sheet-btn" style="background:#30d158;color:white" onclick="eat(${i})">З'їсти</button>`;
-            
-            document.getElementById('sheet-content').innerHTML = `<div style="font-size:50px;text-align:center">${item.name==='iMac'?'🖥️':'🍕'}</div><div style="text-align:center;font-weight:bold;margin-bottom:10px">${item.name}</div>${btn}<button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>`;
-            document.getElementById('action-sheet').classList.add('open');
-        }
-        
-        function openBank() {
-            document.getElementById('sheet-content').innerHTML = `<div style="text-align:center;font-weight:bold">БАНК</div><div style="text-align:center">Борг: ${game.debt}$</div><button class="sheet-btn" style="background:#0a84ff;color:white" onclick="loan()">Кредит 100$</button><button class="sheet-btn" style="background:#333;color:white" onclick="closeSheet()">Закрити</button>`;
-            document.getElementById('action-sheet').classList.add('open');
-        }
-        function loan() { game.money+=100; game.debt+=120; closeSheet(); save(); render(); }
-
-        function repair(i) { if(game.money<50) return alert("Треба 50$"); game.money-=50; game.inventory[i].hp=100; closeSheet(); save(); render(); renderGrid(); }
-        function eat(i) { game.inventory.splice(i,1); game.energy+=20; closeSheet(); save(); render(); renderGrid(); }
-        function trash(i) { game.inventory.splice(i,1); closeSheet(); save(); render(); renderGrid(); }
-        function closeSheet() { document.getElementById('action-sheet').classList.remove('open'); }
-
-        function save() { localStorage.setItem('lifeSim_v14_clean', JSON.stringify(game)); }
-        function hardReset() { localStorage.clear(); location.reload(); }
-        
-        window.switchTab = function(tab, btn) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-'+tab).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            if(tab==='inv') renderGrid();
-        }
-        render();
-    </script>
-</body>
-</html>
+            document.getElementByI

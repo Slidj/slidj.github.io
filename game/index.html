@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v19</title>
+    <title>Life OS v20: Home BG</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
@@ -11,15 +11,29 @@
         :root { --bg: #000; --card: #1c1c1e; --accent: #0a84ff; --text: #fff; --green: #30d158; --red: #ff453a; --orange: #ff9f0a; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 120px; user-select: none; -webkit-tap-highlight-color: transparent; }
 
-        /* КНОПКА СКИДАННЯ */
         .reset-btn { position: fixed; top: 10px; right: 10px; z-index: 9999; background: rgba(255, 69, 58, 0.3); color: white; border: 1px solid var(--red); padding: 5px 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
 
-        /* СЦЕНА */
-        .scene-container { position: relative; width: 100%; height: 260px; background-color: #2c2c2e; border-bottom: 1px solid #333; overflow: hidden; }
+        /* --- СЦЕНА З ФОНОМ --- */
+        .scene-container { 
+            position: relative; width: 100%; height: 260px; 
+            
+            /* ФОН КІМНАТИ */
+            background-color: #2c2c2e; /* Колір, поки вантажиться картинка */
+            background-image: url('images/bg-home.svg'); /* Твій файл */
+            background-size: cover; /* Розтягнути на весь блок */
+            background-position: center bottom; /* Притиснути до низу */
+            background-repeat: no-repeat;
+            
+            border-bottom: 1px solid #333; overflow: hidden; 
+        }
+
         #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
+        
         .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
+        /* Розміщення меблів поверх фону */
         #item-pc { right: 30px; bottom: 40px; }
         #item-bed { left: 30px; bottom: 40px; }
+        
         .broken-visual { filter: grayscale(1) opacity(0.5); }
 
         /* OVERLAY */
@@ -39,8 +53,6 @@
 
         /* GRIDS */
         .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        
-        /* SHOP LIST (Vertical) */
         .shop-list { display: flex; flex-direction: column; gap: 15px; }
 
         /* APP CARD */
@@ -54,7 +66,7 @@
         .app-label { font-size: 11px; margin-top: 8px; color: #fff; }
         .app-badge { position: absolute; bottom: -5px; right: -5px; z-index: 3; font-size: 9px; font-weight: bold; padding: 2px 5px; background: #333; border-radius: 6px; border: 2px solid var(--bg); }
 
-        /* SHOP CARD (RICH) */
+        /* SHOP CARD */
         .shop-card {
             background: var(--card); border-radius: 16px; border: 1px solid #333;
             display: flex; overflow: hidden; min-height: 110px;
@@ -93,7 +105,7 @@
 </head>
 <body>
 
-    <button class="reset-btn" onclick="hardReset()">RESET (v19)</button>
+    <button class="reset-btn" onclick="hardReset()">RESET (v20)</button>
 
     <div class="scene-container">
         <div id="scene-overlay">
@@ -141,11 +153,6 @@
     </div>
 
     <script>
-        // --- ЗАХИСТ ВІД ПОМИЛОК ---
-        window.onerror = function(msg, url, line) {
-            alert("Помилка: " + msg + "\nРядок: " + line);
-        };
-
         // --- БАЗА ТОВАРІВ ---
         const shopItems = [
             { 
@@ -178,7 +185,7 @@
             
             // Завантаження або Скидання
             try {
-                const saved = localStorage.getItem('lifeSim_v19_final');
+                const saved = localStorage.getItem('lifeSim_v20');
                 if(saved) {
                     game = JSON.parse(saved);
                 } else {
@@ -194,7 +201,7 @@
 
             // Перший рендер
             render();
-            renderShop(); // Одразу малюємо магазин!
+            renderShop(); 
 
             // Запуск циклу
             setInterval(gameLoop, 1000);
@@ -205,7 +212,6 @@
             const now = Date.now();
             let saveNeeded = false;
             
-            // Перевірка їжі
             game.inventory.forEach(item => {
                 if(item.category==='food' && !item.isSpoiled && now > item.expireTime) {
                     item.isSpoiled = true; saveNeeded = true;
@@ -214,7 +220,6 @@
 
             if(saveNeeded) { save(); render(); }
             
-            // Оновлення активної вкладки
             if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
             if(document.getElementById('tab-shop').classList.contains('active')) renderShop();
         }
@@ -227,7 +232,6 @@
             const pc = game.inventory.find(i => i.id === 'pc');
             const bed = game.inventory.find(i => i.id === 'bed');
             
-            // Показ в кімнаті
             const pcEl = document.getElementById('item-pc');
             if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; } 
             else { pcEl.style.display='none'; }
@@ -239,16 +243,13 @@
 
         function renderShop() {
             const container = document.getElementById('shop-container');
-            container.innerHTML = ""; // Очистка
+            container.innerHTML = ""; 
 
             shopItems.forEach(item => {
-                // Генеруємо теги
                 let tagsHTML = item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('');
                 
-                // Перевірка кнопки
                 let btnText = `Купити ${item.price}$`;
                 let btnDisabled = false;
-                let btnStyle = "";
 
                 const hasItem = game.inventory.some(i => i.id === item.id);
 
@@ -345,12 +346,10 @@
             }
         };
 
-        // --- ANIMATIONS ---
         let isBusy = false;
         function runAction(icon, text, btn, cb) {
             if(isBusy) return; isBusy = true;
             
-            // Anim Button
             const ring = btn.querySelector('.progress-ring');
             const badge = btn.querySelector('.app-badge');
             let start = Date.now();
@@ -362,7 +361,6 @@
                 if(left<=0) { clearInterval(int); badge.innerText="3s"; ring.style.strokeDashoffset=0; }
             }, 30);
 
-            // Anim Scene
             const ov = document.getElementById('scene-overlay');
             document.getElementById('overlay-icon').innerText = icon;
             document.getElementById('overlay-text').innerText = text;
@@ -397,7 +395,7 @@
             if(tab === 'inv') renderGrid();
         };
 
-        function save() { localStorage.setItem('lifeSim_v19_final', JSON.stringify(game)); }
+        function save() { localStorage.setItem('lifeSim_v20', JSON.stringify(game)); }
         window.hardReset = function() { localStorage.clear(); location.reload(); }
     </script>
 </body>

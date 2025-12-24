@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v22 Fix</title>
+    <title>Life OS v23: Squircle</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <style>
@@ -16,8 +16,9 @@
         .scene-container { 
             position: relative; width: 100%; height: 260px; 
             background-color: #2c2c2e; 
-            /* Спробуй поки без картинки, щоб перевірити роботу */
-            /* background-image: url('images/bg-home.svg'); background-size: cover; */
+            /* ПОВЕРНУЛИ ФОН */
+            background-image: url('images/bg-home.svg'); 
+            background-size: cover; background-position: center bottom;
             border-bottom: 1px solid #333; overflow: hidden; 
         }
         #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
@@ -46,19 +47,25 @@
         /* APP CARD */
         .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .app-card:active .icon-wrapper { transform: scale(0.95); }
-        .icon-wrapper { position: relative; width: 72px; height: 72px; display: flex; justify-content: center; align-items: center; }
-        .app-bg { width: 50px; height: 50px; background: var(--card); border-radius: 12px; display: flex; justify-content: center; align-items: center; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid #333; }
-        .app-emoji { font-size: 24px; }
         
-        /* RINGS */
-        .progress-svg { position: absolute; top: 0; left: 0; width: 72px; height: 72px; transform: rotate(-90deg); z-index: 2; pointer-events: none; }
+        /* Збільшили обгортку, щоб рамки влазили */
+        .icon-wrapper { position: relative; width: 76px; height: 76px; display: flex; justify-content: center; align-items: center; }
+        
+        /* Кнопка-квадрат із закругленням */
+        .app-bg { width: 54px; height: 54px; background: var(--card); border-radius: 14px; display: flex; justify-content: center; align-items: center; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid #333; }
+        .app-emoji { font-size: 26px; }
+        
+        /* SVG RINGS (SQUIRCLE) */
+        .progress-svg { position: absolute; top: 0; left: 0; width: 76px; height: 76px; transform: rotate(-90deg); z-index: 2; pointer-events: none; }
+        
+        /* Налаштування ліній */
         .ring-bg { fill: none; stroke: #333; stroke-width: 4; }
         .ring-hp { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.3s; }
         .ring-timer { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0; transition: opacity 0.2s; }
         .ring-timer.active { opacity: 1; }
 
-        .app-label { font-size: 11px; margin-top: 5px; color: #fff; font-weight: 500; }
-        .app-badge { position: absolute; bottom: -8px; z-index: 3; font-size: 9px; font-weight: bold; padding: 2px 6px; background: #333; border-radius: 10px; border: 2px solid var(--bg); color: #ccc; min-width: 20px; text-align: center; }
+        .app-label { font-size: 11px; margin-top: 2px; color: #fff; font-weight: 500; }
+        .app-badge { position: absolute; bottom: -6px; z-index: 3; font-size: 9px; font-weight: bold; padding: 2px 6px; background: #333; border-radius: 8px; border: 2px solid var(--bg); color: #ccc; min-width: 20px; text-align: center; }
 
         /* SHOP CARD */
         .shop-card { background: var(--card); border-radius: 16px; border: 1px solid #333; display: flex; overflow: hidden; min-height: 110px; }
@@ -74,30 +81,21 @@
         .tag-red { color: var(--red); background: rgba(255, 69, 58, 0.1); }
         .tag-orange { color: var(--orange); background: rgba(255, 159, 10, 0.1); }
         .tag-blue { color: var(--accent); background: rgba(10, 132, 255, 0.1); }
-        
         .shop-btn { background: var(--accent); color: white; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 13px; }
         .shop-btn:disabled { background: #333; color: #555; }
 
         /* TABS */
         .tab { display: none; } .tab.active { display: block; }
         
-        /* NAV - ВИПРАВЛЕНО Z-INDEX та ІКОНКИ */
-        .nav { 
-            position: fixed; bottom: 0; left: 0; width: 100%; 
-            background: #111; display: flex; padding: 15px 0; 
-            border-top: 1px solid #333; z-index: 9999; /* Максимальний шар */
-        }
-        .nav-btn { 
-            flex: 1; background: none; border: none; 
-            font-size: 28px; /* Емодзі більші */
-            cursor: pointer; opacity: 0.5; transition: 0.2s;
-        }
+        /* NAV */
+        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; padding: 15px 0; border-top: 1px solid #333; z-index: 9999; }
+        .nav-btn { flex: 1; background: none; border: none; font-size: 28px; cursor: pointer; opacity: 0.5; transition: 0.2s; }
         .nav-btn.active { opacity: 1; transform: scale(1.1); }
     </style>
 </head>
 <body>
 
-    <button class="reset-btn" onclick="hardReset()">RESET v22</button>
+    <button class="reset-btn" onclick="hardReset()">RESET v23</button>
 
     <div class="scene-container">
         <div id="scene-overlay">
@@ -150,7 +148,7 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             try {
-                const saved = localStorage.getItem('lifeSim_v22');
+                const saved = localStorage.getItem('lifeSim_v23');
                 if(saved) game = JSON.parse(saved);
                 else game = { money: 300, energy: 100, inventory: [] };
                 if(!game.inventory) game.inventory = [];
@@ -159,12 +157,7 @@
             const tg = window.Telegram.WebApp;
             tg.expand();
 
-            // ПРИМУСОВИЙ ПЕРШИЙ РЕНДЕР ВСЬОГО
-            render(); 
-            renderHome(); 
-            renderShop();
-            renderGrid();
-
+            render(); renderHome(); renderShop(); renderGrid();
             setInterval(gameLoop, 1000);
         });
 
@@ -178,7 +171,6 @@
             });
             if(saveNeeded) { save(); render(); renderGrid(); }
             
-            // Оновлюємо таймери на активній вкладці
             if(document.getElementById('tab-home').classList.contains('active')) renderHome();
             if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
         }
@@ -197,12 +189,10 @@
             if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; } else { bedEl.style.display='none'; }
         }
 
+        // --- RENDER HOME (SQUIRCLE RINGS) ---
         function renderHome() {
+            if(isBusy) return;
             const grid = document.getElementById('home-grid');
-            // Примітка: Повна перемальовка може збивати CSS анімацію якщо часто викликати, але для надійності поки так.
-            // Краще було б оновлювати тільки цифри, але це складніше.
-            if(isBusy) return; // Не перемальовуємо, якщо йде анімація дії, щоб не збити її
-
             grid.innerHTML = "";
             const devices = game.inventory.filter(i => i.category === 'device');
             
@@ -212,7 +202,11 @@
                 document.getElementById('empty-home-msg').style.display = 'none';
                 devices.forEach(item => {
                     let hpColor = item.hp > 50 ? '#30d158' : (item.hp > 20 ? '#ff9f0a' : '#ff453a');
-                    let hpOffset = 163 - (163 * item.hp / 100);
+                    
+                    // NEW MATH: pathLength="100". Full=0, Empty=100.
+                    // HP Offset: 100 - HP (e.g. 100 - 80 = 20 hidden)
+                    let hpOffset = 100 - item.hp;
+                    
                     let icon = item.id === 'pc' ? '🖥️' : '🛏️';
                     let action = item.id === 'pc' ? 'work' : 'sleep';
                     
@@ -220,11 +214,17 @@
                     <div class="app-card" onclick="startAction('${item.id}', '${action}')">
                         <div class="icon-wrapper">
                             <div class="app-bg"><span class="app-emoji">${icon}</span></div>
+                            
                             <svg class="progress-svg" viewBox="0 0 72 72">
-                                <circle class="ring-bg" cx="36" cy="36" r="26" opacity="0.3"></circle>
-                                <circle class="ring-hp" cx="36" cy="36" r="26" stroke="${hpColor}" stroke-dasharray="163" stroke-dashoffset="${hpOffset}"></circle>
-                                <circle class="ring-timer" id="timer-${item.id}" cx="36" cy="36" r="32" stroke-dasharray="200" stroke-dashoffset="0"></circle>
+                                <rect class="ring-bg" x="4" y="4" width="64" height="64" rx="18" opacity="0.3"></rect>
+                                
+                                <rect class="ring-hp" x="4" y="4" width="64" height="64" rx="18" 
+                                      stroke="${hpColor}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${hpOffset}"></rect>
+                                
+                                <rect class="ring-timer" id="timer-${item.id}" x="4" y="4" width="64" height="64" rx="18" 
+                                      pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></rect>
                             </svg>
+                            
                             <div class="app-badge" id="badge-${item.id}">${item.hp}%</div>
                         </div>
                         <div class="app-label">${item.name}</div>
@@ -256,6 +256,7 @@
             });
         }
 
+        // --- RENDER GRID (SQUIRCLE) ---
         function renderGrid() {
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = "";
@@ -268,11 +269,12 @@
                 let color = "#30d158";
                 let offset = 0;
 
-                if(item.isSpoiled) { emoji="🤢"; color="#555"; badge="🗑️"; offset=163; }
+                if(item.isSpoiled) { emoji="🤢"; color="#555"; badge="🗑️"; offset=100; }
                 else {
                     const left = Math.max(0, item.expireTime - Date.now());
                     badge = Math.ceil(left/1000)+"с"; color="#0a84ff";
-                    offset = 163 - (163 * (left/item.totalLife));
+                    // 100 - (100 * percentLeft)
+                    offset = 100 - (100 * (left/item.totalLife));
                 }
 
                 grid.innerHTML += `
@@ -280,7 +282,8 @@
                     <div class="icon-wrapper">
                         <div class="app-bg"><span class="app-emoji">${emoji}</span></div>
                         <svg class="progress-svg" viewBox="0 0 72 72">
-                            <circle cx="36" cy="36" r="26" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="${offset}"></circle>
+                            <rect x="4" y="4" width="64" height="64" rx="18" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" 
+                                  pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}"></rect>
                         </svg>
                         <div class="app-badge">${badge}</div>
                     </div>
@@ -315,9 +318,12 @@
             let int = setInterval(() => {
                 let p = Date.now() - start;
                 let left = Math.max(0, duration - p);
-                let offset = 200 - (200 * (left/duration));
                 
-                if(timerRing) timerRing.style.strokeDashoffset = -offset;
+                // Таймер: від 100 (пусто) до 0 (повно) або навпаки.
+                // Зробимо так: зникає. Було 0 -> Стало 100.
+                let offset = 100 * (p / duration); 
+                
+                if(timerRing) timerRing.style.strokeDashoffset = offset;
                 if(badge) badge.innerText = (left/1000).toFixed(1) + 'с';
                 
                 if(left <= 0) {
@@ -366,20 +372,9 @@
             alert("Куплено!");
         }
 
-        function save() { localStorage.setItem('lifeSim_v22', JSON.stringify(game)); }
+        function save() { localStorage.setItem('lifeSim_v23', JSON.stringify(game)); }
         window.hardReset = function() { localStorage.clear(); location.reload(); }
         
         window.switchTab = function(tabName, btn) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-'+tabName).classList.add('active');
-            
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            if(tabName === 'home') renderHome();
-            if(tabName === 'inv') renderGrid();
-            if(tabName === 'shop') renderShop();
-        };
-    </script>
-</body>
-</html>
+            document

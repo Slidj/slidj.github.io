@@ -3,85 +3,339 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life Sim</title>
-    <style>
-        /* touch-action: none - ВАЖЛИВО для джойстика */
-        body { 
-            margin: 0; padding: 0; background: #111; overflow: hidden; 
-            font-family: 'Segoe UI', sans-serif;
-            touch-action: none; user-select: none; -webkit-user-select: none;
-        }
-        #game-container { width: 100vw; height: 100vh; }
-        
-        /* UI Статистика */
-        #ui-layer {
-            position: fixed; top: 10px; left: 10px; right: 10px;
-            display: flex; gap: 10px; pointer-events: none; z-index: 10;
-        }
-        .stat-box {
-            background: rgba(0,0,0,0.8); color: white; padding: 5px 10px;
-            border-radius: 8px; flex: 1; border: 1px solid #555; font-size: 12px;
-        }
-        .bar-container {
-            width: 100%; height: 6px; background: #333; margin-top: 5px; border-radius: 3px;
-        }
-        .bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
-        #energy-fill { background: #ffcc00; width: 100%; }
-        #hunger-fill { background: #ff4444; width: 100%; }
-
-        /* Гроші */
-        #money-box {
-            position: fixed; top: 50px; right: 10px;
-            background: #28a745; color: white; padding: 5px 10px;
-            border-radius: 15px; font-weight: bold; border: 2px solid #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 10;
-        }
-
-        /* Кнопка дії */
-        #interact-btn {
-            display: none;
-            position: fixed; bottom: 140px; right: 20px;
-            background: white; color: black;
-            padding: 12px 25px; border-radius: 25px;
-            font-weight: bold; border: 4px solid #333;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            cursor: pointer; pointer-events: auto; z-index: 20;
-            transform-origin: center; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <title>Telegram Life Sim</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent: #6c5ce7;
+            --green: #00b894;
+            --red: #d63031;
+            --yellow: #fdcb6e;
+        }
+
+        body {
+            margin: 0; padding: 20px;
+            background-color: var(--bg-color);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent; /* Прибирає синій клік */
+        }
+
+        /* --- ВЕРХНЯ ПАНЕЛЬ --- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .money-badge {
+            background: var(--green); color: #000;
+            padding: 8px 16px; border-radius: 20px;
+            font-weight: 800; font-size: 18px;
+            box-shadow: 0 4px 10px rgba(0, 184, 148, 0.4);
+        }
+
+        /* --- ГЕРОЙ І СТАТУС --- */
+        .avatar-section {
+            text-align: center; margin-bottom: 30px;
+            position: relative;
+        }
+        .avatar {
+            font-size: 80px;
+            animation: bounce 2s infinite;
+            display: inline-block;
+        }
+        .status-text { color: #888; font-size: 14px; margin-top: 5px; }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* --- ШКАЛИ (ПРОГРЕС БАРИ) --- */
+        .stats-container {
+            background: var(--card-bg);
+            padding: 15px; border-radius: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-row {
+            display: flex; align-items: center; margin-bottom: 10px;
+        }
+        .stat-row:last-child { margin-bottom: 0; }
+        .stat-icon { width: 30px; font-size: 20px; }
+        .progress-bg {
+            flex-grow: 1; height: 10px; background: #333;
+            border-radius: 5px; overflow: hidden;
+        }
+        .progress-fill { height: 100%; width: 50%; transition: width 0.3s ease; }
+
+        /* --- КНОПКИ ДІЙ --- */
+        .grid-actions {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            margin-bottom: 25px;
+        }
+        .action-btn {
+            background: var(--card-bg);
+            border: 2px solid #333;
+            border-radius: 16px;
+            padding: 15px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.1s, border-color 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn.work { border-color: var(--accent); }
+        .action-btn.eat { border-color: var(--red); }
+        .action-btn.sleep { border-color: var(--yellow); }
+        
+        .btn-icon { font-size: 32px; }
+        .btn-cost { font-size: 12px; opacity: 0.7; }
+
+        /* --- МАГАЗИН (SHOP) --- */
+        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; opacity: 0.8; }
+        
+        .shop-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card-bg);
+            padding: 15px; border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+        }
+        .item-info { display: flex; align-items: center; gap: 10px; }
+        .item-icon { font-size: 24px; background: #333; padding: 10px; border-radius: 50%; }
+        .item-name { font-weight: bold; }
+        .item-desc { font-size: 12px; color: #888; }
+        
+        .buy-btn {
+            background: var(--green); color: #000;
+            border: none; padding: 8px 15px; border-radius: 8px;
+            font-weight: bold; cursor: pointer;
+        }
+        .buy-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+        /* Спливаючий текст */
+        .float-text {
+            position: fixed; pointer-events: none;
+            font-weight: bold; font-size: 20px;
+            animation: floatUp 1s forwards;
+            z-index: 100;
+        }
+        @keyframes floatUp {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-50px); opacity: 0; }
+        }
+    </style>
 </head>
 <body>
-    <div id="game-container"></div>
 
-    <div id="ui-layer">
-        <div class="stat-box">⚡ Енергія <div class="bar-container"><div id="energy-fill" class="bar-fill"></div></div></div>
-        <div class="stat-box">🍔 Їжа <div class="bar-container"><div id="hunger-fill" class="bar-fill"></div></div></div>
+    <div class="header">
+        <div>Day <span id="day-counter">1</span></div>
+        <div class="money-badge"><span id="money">0</span> $</div>
     </div>
-    <div id="money-box">50 $</div>
 
-    <div id="interact-btn" onclick="doInteraction()">Дія</div>
+    <div class="avatar-section">
+        <div class="avatar" id="player-emoji">👨‍💻</div>
+        <div class="status-text" id="job-title">Безробітний фрілансер</div>
+    </div>
 
-    <script src="game.js?v=fix20"></script>
+    <div class="stats-container">
+        <div class="stat-row">
+            <span class="stat-icon">⚡</span>
+            <div class="progress-bg"><div class="progress-fill" id="bar-energy" style="background: var(--yellow);"></div></div>
+        </div>
+        <div class="stat-row">
+            <span class="stat-icon">🍔</span>
+            <div class="progress-bg"><div class="progress-fill" id="bar-hunger" style="background: var(--red);"></div></div>
+        </div>
+        <div class="stat-row">
+            <span class="stat-icon">😄</span>
+            <div class="progress-bg"><div class="progress-fill" id="bar-mood" style="background: var(--accent);"></div></div>
+        </div>
+    </div>
+
+    <div class="section-title">Дії</div>
+    <div class="grid-actions">
+        <div class="action-btn work" onclick="doAction('work')">
+            <span class="btn-icon">💻</span>
+            <span>Кодити</span>
+            <span class="btn-cost">-15 Енергії | +20$</span>
+        </div>
+        <div class="action-btn eat" onclick="doAction('eat')">
+            <span class="btn-icon">🍕</span>
+            <span>Поїсти</span>
+            <span class="btn-cost">-10$ | +30 Їжі</span>
+        </div>
+        <div class="action-btn sleep" onclick="doAction('sleep')">
+            <span class="btn-icon">😴</span>
+            <span>Спати</span>
+            <span class="btn-cost">Відновити енергію</span>
+        </div>
+        <div class="action-btn" onclick="doAction('fun')">
+            <span class="btn-icon">🎮</span>
+            <span>Грати</span>
+            <span class="btn-cost">-10 Енергії | +Mood</span>
+        </div>
+    </div>
+
+    <div class="section-title">Магазин ("Sims" режим)</div>
+    <div id="shop-list">
+        </div>
 
     <script>
-        window.updateStats = (e, h, m) => {
-            document.getElementById('energy-fill').style.width = e + '%';
-            document.getElementById('hunger-fill').style.width = h + '%';
-            document.getElementById('money-box').innerText = m + ' $';
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // --- ДАНІ ГРИ ---
+        const game = {
+            money: 50,
+            stats: { energy: 100, hunger: 100, mood: 100 },
+            items: {
+                pc: 1, // Рівень компа
+                bed: 1, // Рівень ліжка
+                house: 1 // Рівень хати
+            }
         };
-        window.showButton = (txt, type) => {
-            const btn = document.getElementById('interact-btn');
-            btn.innerText = txt; btn.style.display = 'block'; window.currentAction = type;
-        };
-        window.hideButton = () => {
-            document.getElementById('interact-btn').style.display = 'none'; window.currentAction = null;
-        };
-        function doInteraction() {
-            if (window.gameScene && window.currentAction) window.gameScene.triggerAction(window.currentAction);
+
+        // --- ТОВАРИ ---
+        const shopItems = [
+            { id: 'coffee', name: 'Еспресо', icon: '☕', price: 5, effect: 'energy+10', desc: 'Швидкий буст' },
+            { id: 'pc2', name: 'Новий Монітор', icon: '🖥️', price: 200, effect: 'upgrade_pc', desc: 'Зарплата x1.5' },
+            { id: 'chair', name: 'Ігрове крісло', icon: '💺', price: 500, effect: 'upgrade_mood', desc: 'Настрій падає повільніше' },
+            { id: 'flat', name: 'Оренда офісу', icon: '🏢', price: 1000, effect: 'upgrade_house', desc: 'Новий статус' }
+        ];
+
+        // --- ЛОГІКА ---
+        function updateUI() {
+            // Оновлюємо числа
+            document.getElementById('money').innerText = game.money;
+            
+            // Оновлюємо смужки
+            document.getElementById('bar-energy').style.width = game.stats.energy + '%';
+            document.getElementById('bar-hunger').style.width = game.stats.hunger + '%';
+            document.getElementById('bar-mood').style.width = game.stats.mood + '%';
+
+            // Перевірка магазину (активні/неактивні кнопки)
+            renderShop();
         }
+
+        function doAction(type) {
+            const btn = event.currentTarget; // Кнопка, яку натиснули
+            
+            if (type === 'work') {
+                if (game.stats.energy >= 15 && game.stats.hunger >= 5) {
+                    game.stats.energy -= 15;
+                    game.stats.hunger -= 5;
+                    // Зарплата залежить від рівня ПК
+                    const salary = 20 * game.items.pc; 
+                    game.money += salary;
+                    showFloat(btn, `+${salary}$`, '#00b894');
+                } else {
+                    tg.HapticFeedback.notificationOccurred('error');
+                    showFloat(btn, 'Втомився...', '#d63031');
+                    return;
+                }
+            }
+            else if (type === 'eat') {
+                if (game.money >= 10) {
+                    game.money -= 10;
+                    game.stats.hunger = Math.min(100, game.stats.hunger + 30);
+                    showFloat(btn, 'Ням!', '#fab1a0');
+                } else {
+                    showFloat(btn, 'Нема грошей', '#888');
+                    return;
+                }
+            }
+            else if (type === 'sleep') {
+                // Сон відновлює все
+                game.stats.energy = 100;
+                game.stats.mood = Math.min(100, game.stats.mood + 10);
+                showFloat(btn, 'Zzz...', '#fff');
+            }
+            else if (type === 'fun') {
+                if (game.stats.energy >= 10) {
+                    game.stats.energy -= 10;
+                    game.stats.mood = Math.min(100, game.stats.mood + 25);
+                    showFloat(btn, 'Кайф!', '#a29bfe');
+                }
+            }
+
+            tg.HapticFeedback.impactOccurred('light'); // Вібрація
+            updateUI();
+        }
+
+        function buyItem(id) {
+            const item = shopItems.find(i => i.id === id);
+            if (game.money >= item.price) {
+                game.money -= item.price;
+                
+                // Ефекти покупок
+                if (item.effect === 'energy+10') game.stats.energy = Math.min(100, game.stats.energy + 10);
+                if (item.effect === 'upgrade_pc') { 
+                    game.items.pc += 0.5; 
+                    document.getElementById('job-title').innerText = "Мідл Розробник";
+                    document.getElementById('player-emoji').innerText = "😎";
+                }
+                
+                // Видаляємо унікальні предмети з магазину
+                if (item.effect.includes('upgrade')) {
+                    const index = shopItems.indexOf(item);
+                    shopItems.splice(index, 1);
+                }
+
+                tg.HapticFeedback.notificationOccurred('success');
+                updateUI();
+            }
+        }
+
+        function renderShop() {
+            const list = document.getElementById('shop-list');
+            list.innerHTML = '';
+            
+            shopItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'shop-item';
+                const canBuy = game.money >= item.price;
+                
+                div.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-icon">${item.icon}</div>
+                        <div>
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-desc">${item.desc}</div>
+                        </div>
+                    </div>
+                    <button class="buy-btn" onclick="buyItem('${item.id}')" ${canBuy ? '' : 'disabled'}>
+                        ${item.price}$
+                    </button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // Анімація тексту
+        function showFloat(element, text, color) {
+            const rect = element.getBoundingClientRect();
+            const floatDiv = document.createElement('div');
+            floatDiv.className = 'float-text';
+            floatDiv.innerText = text;
+            floatDiv.style.color = color;
+            floatDiv.style.left = (rect.left + rect.width / 2 - 20) + 'px';
+            floatDiv.style.top = rect.top + 'px';
+            document.body.appendChild(floatDiv);
+            setTimeout(() => floatDiv.remove(), 1000);
+        }
+
+        // Падіння голоду з часом
+        setInterval(() => {
+            game.stats.hunger = Math.max(0, game.stats.hunger - 1);
+            game.stats.mood = Math.max(0, game.stats.mood - 1);
+            updateUI();
+        }, 3000);
+
+        updateUI();
     </script>
 </body>
 </html>

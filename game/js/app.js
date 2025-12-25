@@ -1,105 +1,166 @@
-// js/app.js
+// --- IMPORT FIREBASE (CDN) ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, get, set, update } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// 🔥 РЕЖИМ РОЗРОБНИКА 🔥
-// Постав false, коли будеш публікувати гру для людей
-const DEV_MODE = true; 
+// 🔥 ТВОЇ КЛЮЧІ 🔥
+const firebaseConfig = {
+  apiKey: "AIzaSyBApfHQizLRlYhILiq9_4m9WPyUKUEqtVI",
+  authDomain: "lifeos-game.firebaseapp.com",
+  databaseURL: "https://lifeos-game-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "lifeos-game",
+  storageBucket: "lifeos-game.firebasestorage.app",
+  messagingSenderId: "347406442798",
+  appId: "1:347406442798:web:54edee1509017485545abf",
+  measurementId: "G-4KC3QSJG5H"
+};
 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// GLOBAL STATE
 let game;
+let gameData = { items: [], locations: [] }; 
+let userId = "test_user_local"; 
 let isBusy = false;
 
-document.addEventListener("DOMContentLoaded", () => {
-    // ... (Завантаження save/load без змін) ...
-    try {
-        const saved = localStorage.getItem('lifeSim_v31_map'); // Можна залишити той самий ключ
-        if(saved) game = JSON.parse(saved);
-        else game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
-        
-        if(!game.room) game.room = [];
-        if(!game.inventory) game.inventory = [];
-        if(!game.debt) game.debt = 0;
-    } catch(e) { 
-        game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 }; 
-    }
-
-    if(window.Telegram && window.Telegram.WebApp) {
+// --- STARTUP ---
+document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Telegram ID
+    if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.expand();
+        const user = window.Telegram.WebApp.initDataUnsafe.user;
+        if (user && user.id) {
+            userId = user.id.toString();
+            console.log("TG User:", userId);
+        } else {
+            console.log("No TG user, using test ID:", userId);
+        }
     }
 
-    // Додаємо слухача для Dev Mode на мапу
-    const mapEl = document.getElementById('game-map');
-    if(mapEl) {
-        mapEl.addEventListener('click', (e) => {
-            if(DEV_MODE && e.target === mapEl) { // Тільки якщо клік по фону, а не по піну
-                const rect = mapEl.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const top = Math.round((y / rect.height) * 100);
-                const left = Math.round((x / rect.width) * 100);
-                
-                // Копіюємо готовий об'єкт для data.js
-                const codeSnippet = `{ id: 'new_place', type: 'shop', name: 'Назва', top: ${top}, left: ${left}, icon: '📍' },`;
-                console.log(codeSnippet);
-                alert("Координати (скопіюй з консолі або запам'ятай):\n" + `Top: ${top}, Left: ${left}`);
-            }
-        });
-    }
+    // 2. Load Config & Player Data
+    await Promise.all([loadGameData(), loadPlayerProgress()]);
+    
+    // 3. Admin Check
+    checkAdminStatus();
 
-    render(); renderHome(); renderShop(); renderGrid(); 
-    renderMapPins(); // Малюємо мапу з data.js
+    // 4. Render
+    render(); 
+    renderHome(); 
+    renderShop(); 
+    renderGrid(); 
+    renderMapPins();
 
+    // 5. Start Loop
     setInterval(gameLoop, 1000);
 });
 
-// ... (GameLoop, Render - без змін) ...
+// --- FIREBASE FUNCTIONS ---
+
+async function checkAdminStatus() {
+    try {
+        // Перевіряємо, чи є ID в списку admins
+        const snap = await get(ref(db, 'admins/' + userId));
+        if (snap.exists() && snap.val() === true) {
+            document.querySelector('.admin-toggle').style.display = 'block';
+        }
+    } catch (e) { console.error("Admin check failed", e); }
+}
+
+async function loadGameData() {
+    try {
+        const snap = await get(ref(db, 'gameData'));
+        if (snap.exists()) {
+            gameData = snap.val();
+            // Safety checks
+            if(!gameData.items) gameData.items = [];
+            if(!gameData.locations) gameData.locations = [];
+        } else {
+            console.log("No gameData in DB!");
+        }
+    } catch (e) { console.error("Load Data Error", e); }
+}
+
+async function loadPlayerProgress() {
+    try {
+        const snap = await get(ref(db, 'users/' + userId));
+        if (snap.exists()) {
+            game = snap.val();
+            // Fix structure
+            if(!game.room) game.room = [];
+            if(!game.inventory) game.inventory = [];
+            if(!game.debt) game.debt = 0;
+        } else {
+            // New User
+            game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
+            save(); // Create in DB
+        }
+    } catch (e) { console.error("Load Player Error", e); }
+}
+
+function save() {
+    if (!game) return;
+    update(ref(db, 'users/' + userId), game);
+}
+
+// --- GAME LOOP ---
 function gameLoop() {
+    if (!game || !gameData) return;
     const now = Date.now();
     let saveNeeded = false;
+    
     game.inventory.forEach(item => {
+        const meta = gameData.items.find(x => x.id === item.id);
+        const expireTime = meta ? meta.expireTime : 30000;
         if(item.category==='food' && !item.isSpoiled && now > item.expireTime) {
             item.isSpoiled = true; saveNeeded = true;
         }
     });
+
     if(saveNeeded) { save(); render(); renderGrid(); }
+    
     if(document.getElementById('tab-home').classList.contains('active')) renderHome();
     if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
 }
 
 function render() {
+    if(!game) return;
     document.getElementById('money').innerText = game.money;
     document.getElementById('energy').innerText = game.energy;
 }
 
-// --- НОВА ФУНКЦІЯ: МАЛЮВАННЯ МАПИ З GAME_DATA ---
-function renderMapPins() {
-    const mapContainer = document.getElementById('game-map');
-    // Не очищаємо повністю, щоб не вбити Dev Mode listener, видаляємо тільки піни
-    const oldPins = mapContainer.querySelectorAll('.map-pin');
-    oldPins.forEach(p => p.remove());
+// --- RENDERERS ---
 
-    // Беремо дані з data.js (GAME_DATA.locations)
-    GAME_DATA.locations.forEach(loc => {
+function renderMapPins() {
+    const mapContainer = document.querySelector('.map-wrapper');
+    // Clear old pins only
+    mapContainer.querySelectorAll('.map-pin').forEach(p => p.remove());
+
+    if (!gameData.locations) return;
+
+    gameData.locations.forEach(loc => {
         const pin = document.createElement('div');
         pin.className = 'map-pin';
         pin.style.top = loc.top + '%';
         pin.style.left = loc.left + '%';
         
-        if (loc.type === 'shop') pin.onclick = () => openShopFromMap();
-        if (loc.type === 'bank') pin.onclick = () => openBank();
-        if (loc.type === 'work') pin.onclick = () => startWorkFromMap();
+        if (loc.type === 'shop') pin.onclick = () => window.openShopFromMap();
+        if (loc.type === 'bank') pin.onclick = () => window.openBank();
+        if (loc.type === 'work') pin.onclick = () => window.startWorkFromMap();
 
         pin.innerHTML = `<div class="pin-icon">${loc.icon}</div><div class="pin-label">${loc.name}</div>`;
         mapContainer.appendChild(pin);
     });
 }
 
-// --- RENDER SHOP (Бере дані з GAME_DATA) ---
 function renderShop() {
     const container = document.getElementById('shop-container');
     container.innerHTML = "";
-    
-    // Беремо дані з data.js (GAME_DATA.items)
-    GAME_DATA.items.forEach(item => {
-        let tags = item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('');
+    if (!gameData.items) return;
+
+    gameData.items.forEach(item => {
+        let tags = item.specs ? item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('') : '';
         let btnTxt = `Купити ${item.price}$`;
         let dis = false;
         
@@ -113,49 +174,195 @@ function renderShop() {
                 <div class="shop-header"><span class="shop-title">${item.name}</span><span class="shop-price">${item.price}$</span></div>
                 <div class="shop-desc">${item.desc}</div>
                 <div class="shop-tags">${tags}</div>
-                <button class="shop-btn" onclick="buy('${item.id}')" ${dis?'disabled':''}>${btnTxt}</button>
+                <button class="shop-btn" id="btn-buy-${item.id}">${btnTxt}</button>
             </div>
         </div>`;
+        
+        // Add listener
+        setTimeout(() => {
+            const btn = document.getElementById(`btn-buy-${item.id}`);
+            if(btn && !dis) btn.onclick = () => window.buy(item.id);
+        }, 0);
     });
 }
 
-// ... (Решта функцій Buy, UseFood, StartAction) ...
-// ВАЖЛИВО: Оновити buy() та startAction() щоб брали дані з GAME_DATA, а не зі старого масиву shopItems
+function renderHome() {
+    if(isBusy || !game) return;
+    const grid = document.getElementById('home-grid');
+    grid.innerHTML = "";
+    
+    if(game.room.length === 0) {
+        document.getElementById('empty-home-msg').style.display = 'block';
+    } else {
+        document.getElementById('empty-home-msg').style.display = 'none';
+        game.room.forEach(item => {
+            const meta = gameData.items.find(x => x.id === item.id) || item;
+            let hpColor = item.hp > 50 ? '#30d158' : '#ff453a';
+            let hpOffset = 100 - item.hp;
+            let action = item.id === 'pc' ? 'work' : 'sleep';
+            
+            const div = document.createElement('div');
+            div.className = 'app-card';
+            div.innerHTML = `
+                <div class="icon-wrapper">
+                    <div class="app-bg"><span class="app-emoji">${meta.icon}</span></div>
+                    <svg class="progress-svg" viewBox="0 0 76 76">
+                        <rect class="squircle ring-bg-inner" x="8" y="8" width="60" height="60" rx="16" opacity="0.3"></rect>
+                        <rect class="squircle ring-hp" x="8" y="8" width="60" height="60" rx="16" stroke="${hpColor}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${hpOffset}"></rect>
+                        <rect class="squircle ring-timer" id="timer-${item.id}" x="3" y="3" width="70" height="70" rx="20" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></rect>
+                    </svg>
+                    <div class="app-badge" id="badge-${item.id}">${item.hp}%</div>
+                </div>
+                <div class="app-label">${meta.name}</div>
+            `;
+            div.onclick = () => window.startAction(item.id, action);
+            grid.appendChild(div);
+        });
+    }
+}
 
-function buy(id) {
-    // Шукаємо в GAME_DATA
-    const meta = GAME_DATA.items.find(x => x.id === id);
+function renderGrid() {
+    const grid = document.getElementById('inventory-grid');
+    grid.innerHTML = "";
+    if(!game || game.inventory.length === 0) { 
+        grid.innerHTML = "<div style='color:#555;grid-column:1/-1;text-align:center'>Рюкзак пустий</div>"; return; 
+    }
+    
+    game.inventory.forEach((item, index) => {
+        const meta = gameData.items.find(x => x.id === item.id) || item;
+        let emoji = meta.icon || '🍔';
+        let color = "#30d158";
+        let offset = 0;
+
+        if(item.isSpoiled) { emoji="🤢"; color="#555"; offset=100; }
+        else {
+            const left = Math.max(0, item.expireTime - Date.now());
+            offset = 100 - (100 * (left/item.totalLife));
+        }
+
+        const div = document.createElement('div');
+        div.className = 'app-card';
+        div.innerHTML = `
+            <div class="icon-wrapper">
+                <div class="app-bg"><span class="app-emoji">${emoji}</span></div>
+                <svg class="progress-svg" viewBox="0 0 76 76">
+                    <rect class="squircle" x="5" y="5" width="66" height="66" rx="18" fill="none" stroke="${color}" stroke-width="5" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}"></rect>
+                </svg>
+            </div>
+            <div class="app-label">${meta.name}</div>
+        `;
+        div.onclick = () => window.useFood(index);
+        grid.appendChild(div);
+    });
+}
+
+// --- ADMIN LOGIC ---
+let currentEditIndex = -1;
+
+window.toggleAdmin = function() {
+    const panel = document.getElementById('admin-panel');
+    if (panel.style.display === 'flex') panel.style.display = 'none';
+    else {
+        panel.style.display = 'flex';
+        renderAdminList();
+    }
+};
+
+function renderAdminList() {
+    const list = document.getElementById('admin-item-list');
+    list.innerHTML = "";
+    if(!gameData.items) return;
+    gameData.items.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'admin-item-btn';
+        div.innerHTML = `${item.icon} ${item.name} (${item.price}$)`;
+        div.onclick = () => editItem(index);
+        list.appendChild(div);
+    });
+}
+
+function editItem(index) {
+    currentEditIndex = index;
+    const item = gameData.items[index];
+    document.getElementById('admin-item-list').style.display = 'none';
+    document.getElementById('admin-editor').style.display = 'block';
+    
+    document.getElementById('edit-id').innerText = item.id;
+    document.getElementById('inp-name').value = item.name;
+    document.getElementById('inp-icon').value = item.icon;
+    document.getElementById('inp-price').value = item.price;
+    document.getElementById('inp-desc').value = item.desc;
+}
+
+window.saveAdminItem = async function() {
+    if(currentEditIndex === -1) return;
+    const item = gameData.items[currentEditIndex];
+    item.name = document.getElementById('inp-name').value;
+    item.icon = document.getElementById('inp-icon').value;
+    item.price = parseInt(document.getElementById('inp-price').value);
+    item.desc = document.getElementById('inp-desc').value;
+
+    // SAVE TO FIREBASE
+    await set(ref(db, 'gameData'), gameData);
+    
+    alert("Збережено в хмару!");
+    window.cancelEdit();
+    renderShop();
+};
+
+window.cancelEdit = function() {
+    currentEditIndex = -1;
+    document.getElementById('admin-editor').style.display = 'none';
+    document.getElementById('admin-item-list').style.display = 'flex';
+};
+
+// --- GLOBAL ACTIONS (Window export) ---
+
+window.buy = function(id) {
+    const meta = gameData.items.find(x => x.id === id);
     if(game.money < meta.price) return;
     game.money -= meta.price;
     
     if(meta.type === 'device') {
         game.room.push({id:meta.id, name:meta.name, category:'device', hp:100});
     } else {
-        // Використовуємо expireTime з налаштувань
-        let time = meta.expireTime || 15000; 
+        let time = meta.expireTime || 15000;
         game.inventory.push({id:meta.id, name:meta.name, category:'food', expireTime:Date.now()+time, totalLife:time, isSpoiled:false});
     }
     save(); render(); renderShop(); renderHome(); renderGrid();
-    alert("Куплено!");
-}
+    alert("Куплено: " + meta.name);
+};
 
-function startAction(itemId, type) {
+window.useFood = function(index) {
+    const item = game.inventory[index];
+    const meta = gameData.items.find(x => x.id === item.id);
+    const reward = meta ? (meta.energyReward || 20) : 20;
+
+    if(item.isSpoiled) { 
+        game.inventory.splice(index, 1); 
+    } else { 
+        game.inventory.splice(index, 1); 
+        game.energy = Math.min(100, game.energy + reward); 
+    }
+    save(); render(); renderGrid();
+};
+
+window.startAction = function(itemId, type) {
     if(isBusy) return;
     const item = game.room.find(i => i.id === itemId);
-    if(!item) return; // Error handling
+    const meta = gameData.items.find(x => x.id === itemId);
+    if(!item || !meta) return;
 
-    // Знаходимо параметри балансу в data.js
-    const meta = GAME_DATA.items.find(x => x.id === itemId);
-    const hpCost = meta ? (meta.hpCost || 20) : 20;
-    const enCost = meta ? (meta.energyCost || 10) : 10;
-    const reward = meta ? (meta.moneyReward || 0) : 0;
-    const enReward = meta ? (meta.energyReward || 0) : 0;
+    const hpCost = meta.hpCost || 10;
+    const enCost = meta.energyCost || 10;
+    const moneyReward = meta.moneyReward || 0;
+    const enReward = meta.energyReward || 0;
 
     if(item.hp <= 0) { 
         if(game.money >= 50 && confirm("Ремонт 50$?")) { game.money -= 50; item.hp = 100; save(); render(); renderHome(); }
         return;
     }
-    if(game.energy < enCost && type === 'work') return alert("Втома!");
+    if(type === 'work' && game.energy < enCost) return alert("Втома!");
 
     isBusy = true;
     const timerRing = document.getElementById(`timer-${itemId}`);
@@ -167,67 +374,46 @@ function startAction(itemId, type) {
     
     let int = setInterval(() => {
         let p = Date.now() - start;
-        let left = Math.max(0, duration - p);
         let offset = 100 * (p / duration); 
         if(timerRing) timerRing.style.strokeDashoffset = offset;
-        if(badge) badge.innerText = (left/1000).toFixed(1) + 'с';
-        if(left <= 0) {
+        if(badge) badge.innerText = (p/1000).toFixed(1) + 's';
+        if(p >= duration) {
             clearInterval(int);
             if(timerRing) timerRing.style.opacity = '0';
             if(badge) badge.innerText = (item.hp - hpCost) + '%';
+            
+            if(type==='work') { game.money += moneyReward; game.energy -= enCost; item.hp -= hpCost; }
+            if(type==='sleep') { game.energy = Math.min(100, game.energy + enReward); item.hp -= hpCost; }
+            isBusy = false;
+            document.getElementById('scene-overlay').classList.remove('active');
+            save(); render(); renderHome();
         }
     }, 30);
 
     const ov = document.getElementById('scene-overlay');
-    document.getElementById('overlay-icon').innerText = type==='work'?'👨‍💻':'😴';
-    document.getElementById('overlay-text').innerText = type==='work'?'ПРОЦЕС...':'СОН';
+    document.getElementById('overlay-icon').innerText = meta.icon;
+    document.getElementById('overlay-text').innerText = 'ПРОЦЕС...';
     ov.classList.add('active');
+};
 
-    setTimeout(() => {
-        // Застосовуємо баланс з data.js
-        if(type==='work') { game.money += reward; game.energy -= enCost; item.hp -= hpCost; }
-        if(type==='sleep') { game.energy = Math.min(100, game.energy + enReward); item.hp -= hpCost; }
-        
-        ov.classList.remove('active');
-        isBusy = false;
-        save(); render(); renderHome();
-    }, duration);
-}
-
-// ... (Інші функції: UseFood, RenderHome, RenderGrid, Tabs, MapNav - залишаємо як були в v30) ...
-// Тільки переконайся, що в коді ти не використовуєш стару змінну shopItems, а всюди GAME_DATA.items
-
-function useFood(index) {
-    const item = game.inventory[index];
-    const meta = GAME_DATA.items.find(x => x.id === item.id);
-    const enReward = meta ? (meta.energyReward || 20) : 20;
-
-    if(item.isSpoiled) { game.inventory.splice(index, 1); } 
-    else { game.inventory.splice(index, 1); game.energy = Math.min(100, game.energy + enReward); }
-    save(); render(); renderGrid();
-}
-
-// --- Стандартні функції навігації ---
-function openShopFromMap() {
+window.openShopFromMap = function() {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-shop').classList.add('active');
     renderShop();
-}
-function openBank() {
+};
+window.openBank = function() {
     const sheet = document.getElementById('sheet-content');
     const container = document.getElementById('action-sheet');
-    sheet.innerHTML = `<div style="font-size:50px;text-align:center">🏦</div><div style="text-align:center;font-weight:bold;margin-bottom:5px">БАНК</div><div style="text-align:center;color:#888;margin-bottom:15px">Борг: <span style="color:${game.debt>0?'red':'green'}">${game.debt}$</span></div><button class="sheet-btn" style="background:var(--accent)" onclick="takeLoan()">Взяти 100$</button><button class="sheet-btn" onclick="closeSheet()">Закрити</button>`;
+    sheet.innerHTML = `<div style="font-size:50px;text-align:center">🏦</div><div style="text-align:center;font-weight:bold;margin-bottom:5px">БАНК</div><div style="text-align:center;color:#888;margin-bottom:15px">Борг: <span style="color:${game.debt>0?'red':'green'}">${game.debt}$</span></div><button class="sheet-btn" style="background:var(--accent)" onclick="window.takeLoan()">Взяти 100$</button><button class="sheet-btn" onclick="window.closeSheet()">Закрити</button>`;
     container.classList.add('open');
-}
-function takeLoan() { game.money += 100; game.debt += 150; save(); render(); closeSheet(); alert("Кредит взято!"); }
-function startWorkFromMap() {
+};
+window.takeLoan = function() { game.money += 100; game.debt += 150; save(); render(); window.closeSheet(); alert("Кредит взято!"); };
+window.startWorkFromMap = function() {
     if(game.energy < 20) return alert("Мало енергії!");
     const ov = document.getElementById('scene-overlay'); ov.classList.add('active');
     setTimeout(() => { game.money += 50; game.energy -= 20; ov.classList.remove('active'); save(); render(); alert("Зароблено 50$!"); }, 2000);
-}
-function closeSheet() { document.getElementById('action-sheet').classList.remove('open'); }
-function save() { localStorage.setItem('lifeSim_v31_map', JSON.stringify(game)); }
-window.hardReset = function() { localStorage.clear(); location.reload(); }
+};
+window.closeSheet = function() { document.getElementById('action-sheet').classList.remove('open'); };
 window.switchTab = function(tabName, btn) {
     if (!btn && tabName === 'shop') btn = document.querySelector('.nav-btn:nth-child(3)');
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -237,4 +423,11 @@ window.switchTab = function(tabName, btn) {
     if(tabName === 'home') { renderHome(); render(); }
     if(tabName === 'inv') renderGrid();
     if(tabName === 'shop') renderShop();
+};
+window.hardReset = function() {
+    if(confirm("Скинути ВСЕ?")) {
+        game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
+        save();
+        location.reload();
+    }
 };

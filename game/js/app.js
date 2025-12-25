@@ -1,4 +1,3 @@
-// --- IMPORT FIREBASE (CDN) ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, get, set, update } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -15,94 +14,61 @@ const firebaseConfig = {
   measurementId: "G-4KC3QSJG5H"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// GLOBAL STATE
 let game;
 let gameData = { items: [], locations: [] }; 
 let userId = "test_user_local"; 
 let isBusy = false;
 
-// --- STARTUP ---
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Telegram ID
     if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.expand();
         const user = window.Telegram.WebApp.initDataUnsafe.user;
-        if (user && user.id) {
-            userId = user.id.toString();
-            console.log("TG User:", userId);
-        } else {
-            console.log("No TG user, using test ID:", userId);
-        }
+        if (user && user.id) userId = user.id.toString();
     }
 
-    // 2. Load Config & Player Data
     await Promise.all([loadGameData(), loadPlayerProgress()]);
-    
-    // 3. Admin Check
     checkAdminStatus();
 
-    // 4. Render
-    render(); 
-    renderHome(); 
-    renderShop(); 
-    renderGrid(); 
-    renderMapPins();
-
-    // 5. Start Loop
+    render(); renderHome(); renderShop(); renderGrid(); renderMapPins();
     setInterval(gameLoop, 1000);
 });
 
-// --- FIREBASE FUNCTIONS ---
-
+// --- FIREBASE ---
 async function checkAdminStatus() {
     try {
-        // Перевіряємо, чи є ID в списку admins
         const snap = await get(ref(db, 'admins/' + userId));
         if (snap.exists() && snap.val() === true) {
             document.querySelector('.admin-toggle').style.display = 'block';
         }
-    } catch (e) { console.error("Admin check failed", e); }
+    } catch (e) {}
 }
 
 async function loadGameData() {
-    try {
-        const snap = await get(ref(db, 'gameData'));
-        if (snap.exists()) {
-            gameData = snap.val();
-            // Safety checks
-            if(!gameData.items) gameData.items = [];
-            if(!gameData.locations) gameData.locations = [];
-        } else {
-            console.log("No gameData in DB!");
-        }
-    } catch (e) { console.error("Load Data Error", e); }
+    const snap = await get(ref(db, 'gameData'));
+    if (snap.exists()) {
+        gameData = snap.val();
+        if (!gameData.items) gameData.items = [];
+        if (!gameData.locations) gameData.locations = [];
+    }
 }
 
 async function loadPlayerProgress() {
-    try {
-        const snap = await get(ref(db, 'users/' + userId));
-        if (snap.exists()) {
-            game = snap.val();
-            // Fix structure
-            if(!game.room) game.room = [];
-            if(!game.inventory) game.inventory = [];
-            if(!game.debt) game.debt = 0;
-        } else {
-            // New User
-            game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
-            save(); // Create in DB
-        }
-    } catch (e) { console.error("Load Player Error", e); }
+    const snap = await get(ref(db, 'users/' + userId));
+    if (snap.exists()) {
+        game = snap.val();
+        if (!game.room) game.room = [];
+        if (!game.inventory) game.inventory = [];
+        if (!game.debt) game.debt = 0;
+    } else {
+        game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
+        save();
+    }
 }
 
-function save() {
-    if (!game) return;
-    update(ref(db, 'users/' + userId), game);
-}
+function save() { if (game) update(ref(db, 'users/' + userId), game); }
 
 // --- GAME LOOP ---
 function gameLoop() {
@@ -112,14 +78,13 @@ function gameLoop() {
     
     game.inventory.forEach(item => {
         const meta = gameData.items.find(x => x.id === item.id);
-        const expireTime = meta ? meta.expireTime : 30000;
+        const expireTime = meta ? (meta.expireTime || 30000) : 30000;
         if(item.category==='food' && !item.isSpoiled && now > item.expireTime) {
             item.isSpoiled = true; saveNeeded = true;
         }
     });
 
     if(saveNeeded) { save(); render(); renderGrid(); }
-    
     if(document.getElementById('tab-home').classList.contains('active')) renderHome();
     if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
 }
@@ -130,13 +95,10 @@ function render() {
     document.getElementById('energy').innerText = game.energy;
 }
 
-// --- RENDERERS ---
-
+// --- RENDERING ---
 function renderMapPins() {
     const mapContainer = document.querySelector('.map-wrapper');
-    // Clear old pins only
     mapContainer.querySelectorAll('.map-pin').forEach(p => p.remove());
-
     if (!gameData.locations) return;
 
     gameData.locations.forEach(loc => {
@@ -144,11 +106,9 @@ function renderMapPins() {
         pin.className = 'map-pin';
         pin.style.top = loc.top + '%';
         pin.style.left = loc.left + '%';
-        
         if (loc.type === 'shop') pin.onclick = () => window.openShopFromMap();
         if (loc.type === 'bank') pin.onclick = () => window.openBank();
         if (loc.type === 'work') pin.onclick = () => window.startWorkFromMap();
-
         pin.innerHTML = `<div class="pin-icon">${loc.icon}</div><div class="pin-label">${loc.name}</div>`;
         mapContainer.appendChild(pin);
     });
@@ -160,7 +120,12 @@ function renderShop() {
     if (!gameData.items) return;
 
     gameData.items.forEach(item => {
-        let tags = item.specs ? item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('') : '';
+        // Генеруємо теги автоматично, якщо їх немає, або беремо збережені
+        let tagsHTML = "";
+        if (item.specs && item.specs.length > 0) {
+            tagsHTML = item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('');
+        }
+
         let btnTxt = `Купити ${item.price}$`;
         let dis = false;
         
@@ -173,12 +138,11 @@ function renderShop() {
             <div class="shop-info">
                 <div class="shop-header"><span class="shop-title">${item.name}</span><span class="shop-price">${item.price}$</span></div>
                 <div class="shop-desc">${item.desc}</div>
-                <div class="shop-tags">${tags}</div>
+                <div class="shop-tags">${tagsHTML}</div>
                 <button class="shop-btn" id="btn-buy-${item.id}">${btnTxt}</button>
             </div>
         </div>`;
         
-        // Add listener
         setTimeout(() => {
             const btn = document.getElementById(`btn-buy-${item.id}`);
             if(btn && !dis) btn.onclick = () => window.buy(item.id);
@@ -190,16 +154,14 @@ function renderHome() {
     if(isBusy || !game) return;
     const grid = document.getElementById('home-grid');
     grid.innerHTML = "";
-    
-    if(game.room.length === 0) {
-        document.getElementById('empty-home-msg').style.display = 'block';
-    } else {
+    if(game.room.length === 0) { document.getElementById('empty-home-msg').style.display = 'block'; } 
+    else {
         document.getElementById('empty-home-msg').style.display = 'none';
         game.room.forEach(item => {
             const meta = gameData.items.find(x => x.id === item.id) || item;
             let hpColor = item.hp > 50 ? '#30d158' : '#ff453a';
             let hpOffset = 100 - item.hp;
-            let action = item.id === 'pc' ? 'work' : 'sleep';
+            let action = item.id === 'pc' ? 'work' : 'sleep'; 
             
             const div = document.createElement('div');
             div.className = 'app-card';
@@ -224,22 +186,19 @@ function renderHome() {
 function renderGrid() {
     const grid = document.getElementById('inventory-grid');
     grid.innerHTML = "";
-    if(!game || game.inventory.length === 0) { 
-        grid.innerHTML = "<div style='color:#555;grid-column:1/-1;text-align:center'>Рюкзак пустий</div>"; return; 
-    }
+    if(!game || game.inventory.length === 0) { grid.innerHTML = "<div style='color:#555;grid-column:1/-1;text-align:center'>Рюкзак пустий</div>"; return; }
     
     game.inventory.forEach((item, index) => {
         const meta = gameData.items.find(x => x.id === item.id) || item;
         let emoji = meta.icon || '🍔';
         let color = "#30d158";
         let offset = 0;
-
         if(item.isSpoiled) { emoji="🤢"; color="#555"; offset=100; }
         else {
             const left = Math.max(0, item.expireTime - Date.now());
-            offset = 100 - (100 * (left/item.totalLife));
+            const total = meta.expireTime || 30000;
+            offset = 100 - (100 * (left/total));
         }
-
         const div = document.createElement('div');
         div.className = 'app-card';
         div.innerHTML = `
@@ -256,7 +215,7 @@ function renderGrid() {
     });
 }
 
-// --- ADMIN LOGIC ---
+// --- ADMIN LOGIC (ROBUST) ---
 let currentEditIndex = -1;
 
 window.toggleAdmin = function() {
@@ -271,41 +230,94 @@ window.toggleAdmin = function() {
 function renderAdminList() {
     const list = document.getElementById('admin-item-list');
     list.innerHTML = "";
-    if(!gameData.items) return;
     gameData.items.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'admin-item-btn';
-        div.innerHTML = `${item.icon} ${item.name} (${item.price}$)`;
+        div.innerHTML = `${item.icon} ${item.name}`;
         div.onclick = () => editItem(index);
         list.appendChild(div);
     });
 }
 
+window.createNewItem = function() {
+    const id = "item_" + Date.now(); // Unique ID
+    const newItem = {
+        id: id,
+        type: 'food',
+        name: 'New Item',
+        price: 10,
+        icon: '📦',
+        desc: 'Опис...',
+        energyReward: 0,
+        moneyReward: 0,
+        hpCost: 0,
+        expireTime: 30000
+    };
+    gameData.items.push(newItem);
+    editItem(gameData.items.length - 1); // Одразу відкрити редактор
+};
+
 function editItem(index) {
     currentEditIndex = index;
     const item = gameData.items[index];
+    
     document.getElementById('admin-item-list').style.display = 'none';
+    document.getElementById('admin-controls').style.display = 'none';
     document.getElementById('admin-editor').style.display = 'block';
     
-    document.getElementById('edit-id').innerText = item.id;
+    document.getElementById('inp-id').value = item.id;
+    document.getElementById('inp-type').value = item.type || 'food';
     document.getElementById('inp-name').value = item.name;
     document.getElementById('inp-icon').value = item.icon;
     document.getElementById('inp-price').value = item.price;
     document.getElementById('inp-desc').value = item.desc;
+    
+    // Effects
+    document.getElementById('inp-energy').value = (item.energyReward || 0) + (item.energyCost ? -item.energyCost : 0);
+    document.getElementById('inp-money').value = item.moneyReward || 0;
+    document.getElementById('inp-hp').value = item.hpCost || 0;
+    
+    // Time (seconds)
+    document.getElementById('inp-time').value = (item.expireTime || 30000) / 1000;
 }
 
 window.saveAdminItem = async function() {
     if(currentEditIndex === -1) return;
     const item = gameData.items[currentEditIndex];
+    
+    // Basic Info
+    item.type = document.getElementById('inp-type').value;
     item.name = document.getElementById('inp-name').value;
     item.icon = document.getElementById('inp-icon').value;
-    item.price = parseInt(document.getElementById('inp-price').value);
+    item.price = parseInt(document.getElementById('inp-price').value) || 0;
     item.desc = document.getElementById('inp-desc').value;
+    
+    // Stats Parsing
+    const energyInput = parseInt(document.getElementById('inp-energy').value) || 0;
+    if (energyInput > 0) {
+        item.energyReward = energyInput;
+        item.energyCost = 0;
+    } else {
+        item.energyReward = 0;
+        item.energyCost = Math.abs(energyInput);
+    }
+    
+    item.moneyReward = parseInt(document.getElementById('inp-money').value) || 0;
+    item.hpCost = parseInt(document.getElementById('inp-hp').value) || 0;
+    item.expireTime = (parseInt(document.getElementById('inp-time').value) || 30) * 1000;
 
-    // SAVE TO FIREBASE
+    // AUTO-GENERATE SPECS TAGS
+    item.specs = [];
+    if (energyInput > 0) item.specs.push({t: `⚡ +${energyInput}`, c: 'tag-green'});
+    if (energyInput < 0) item.specs.push({t: `⚡ ${energyInput}`, c: 'tag-red'});
+    if (item.moneyReward > 0) item.specs.push({t: `💰 +${item.moneyReward}$`, c: 'tag-green'});
+    if (item.hpCost > 0) item.specs.push({t: `💔 -${item.hpCost}`, c: 'tag-orange'});
+    if (item.type === 'food') item.specs.push({t: `⏳ ${item.expireTime/1000}c`, c: 'tag-blue'});
+
+    // SAVE
     await set(ref(db, 'gameData'), gameData);
     
-    alert("Збережено в хмару!");
+    alert("Збережено!");
     window.cancelEdit();
     renderShop();
 };
@@ -314,10 +326,20 @@ window.cancelEdit = function() {
     currentEditIndex = -1;
     document.getElementById('admin-editor').style.display = 'none';
     document.getElementById('admin-item-list').style.display = 'flex';
+    document.getElementById('admin-controls').style.display = 'block';
 };
 
-// --- GLOBAL ACTIONS (Window export) ---
+window.deleteItem = async function() {
+    if(currentEditIndex === -1) return;
+    if(confirm("Видалити цей предмет назавжди?")) {
+        gameData.items.splice(currentEditIndex, 1);
+        await set(ref(db, 'gameData'), gameData);
+        window.cancelEdit();
+        renderShop();
+    }
+};
 
+// --- ACTIONS ---
 window.buy = function(id) {
     const meta = gameData.items.find(x => x.id === id);
     if(game.money < meta.price) return;
@@ -336,7 +358,7 @@ window.buy = function(id) {
 window.useFood = function(index) {
     const item = game.inventory[index];
     const meta = gameData.items.find(x => x.id === item.id);
-    const reward = meta ? (meta.energyReward || 20) : 20;
+    const reward = meta ? (meta.energyReward || 0) : 0; // Fix: 0 if undefined
 
     if(item.isSpoiled) { 
         game.inventory.splice(index, 1); 
@@ -353,8 +375,8 @@ window.startAction = function(itemId, type) {
     const meta = gameData.items.find(x => x.id === itemId);
     if(!item || !meta) return;
 
-    const hpCost = meta.hpCost || 10;
-    const enCost = meta.energyCost || 10;
+    const hpCost = meta.hpCost || 0;
+    const enCost = meta.energyCost || 0;
     const moneyReward = meta.moneyReward || 0;
     const enReward = meta.energyReward || 0;
 
@@ -362,7 +384,7 @@ window.startAction = function(itemId, type) {
         if(game.money >= 50 && confirm("Ремонт 50$?")) { game.money -= 50; item.hp = 100; save(); render(); renderHome(); }
         return;
     }
-    if(type === 'work' && game.energy < enCost) return alert("Втома!");
+    if(enCost > 0 && game.energy < enCost) return alert("Втома!");
 
     isBusy = true;
     const timerRing = document.getElementById(`timer-${itemId}`);
@@ -370,7 +392,12 @@ window.startAction = function(itemId, type) {
     if(timerRing) timerRing.style.opacity = '1';
     
     let start = Date.now();
-    let duration = 3000;
+    let duration = 3000; // Можна теж винести в адмінку (meta.duration)
+    
+    const ov = document.getElementById('scene-overlay');
+    document.getElementById('overlay-icon').innerText = meta.icon;
+    document.getElementById('overlay-text').innerText = 'ПРОЦЕС...';
+    ov.classList.add('active');
     
     let int = setInterval(() => {
         let p = Date.now() - start;
@@ -382,18 +409,16 @@ window.startAction = function(itemId, type) {
             if(timerRing) timerRing.style.opacity = '0';
             if(badge) badge.innerText = (item.hp - hpCost) + '%';
             
-            if(type==='work') { game.money += moneyReward; game.energy -= enCost; item.hp -= hpCost; }
-            if(type==='sleep') { game.energy = Math.min(100, game.energy + enReward); item.hp -= hpCost; }
+            // Apply Effects
+            game.money += moneyReward;
+            game.energy = Math.min(100, Math.max(0, game.energy - enCost + enReward));
+            item.hp = Math.max(0, item.hp - hpCost);
+
+            ov.classList.remove('active');
             isBusy = false;
-            document.getElementById('scene-overlay').classList.remove('active');
             save(); render(); renderHome();
         }
     }, 30);
-
-    const ov = document.getElementById('scene-overlay');
-    document.getElementById('overlay-icon').innerText = meta.icon;
-    document.getElementById('overlay-text').innerText = 'ПРОЦЕС...';
-    ov.classList.add('active');
 };
 
 window.openShopFromMap = function() {

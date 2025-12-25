@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v35: Firebase</title>
+    <title>Life OS v36: Adv Admin</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    
     <link rel="stylesheet" href="css/style.css?v=35">
 </head>
 <body>
@@ -18,7 +17,6 @@
             <div id="overlay-text">ДІЯ...</div>
         </div>
         <div id="visual-hero">🧍</div>
-        
         <button class="admin-toggle" onclick="window.toggleAdmin()" style="display:none;">⚙️</button>
     </div>
 
@@ -34,17 +32,12 @@
         <div id="tab-home" class="tab active">
             <div class="section-title">МОЯ КІМНАТА</div>
             <div id="home-grid" class="app-grid"></div>
-            <div id="empty-home-msg" class="empty-msg">
-                Завантаження даних...
-            </div>
+            <div id="empty-home-msg" class="empty-msg">Завантаження...</div>
         </div>
 
         <div id="tab-map" class="tab">
-            <div class="map-wrapper">
-                </div>
-            <div style="text-align:center; color:#666; font-size:12px; margin-top:10px;">
-                Тисни на будівлі
-            </div>
+            <div class="map-wrapper"></div>
+            <div style="text-align:center; color:#666; font-size:12px; margin-top:10px;">Тисни на будівлі</div>
         </div>
 
         <div id="tab-inv" class="tab">
@@ -69,46 +62,84 @@
 
     <div id="admin-panel" class="admin-panel">
         <div class="admin-header">
-            <h3>Адмін Панель (Firebase)</h3>
+            <h3>Конструктор Предметів</h3>
             <button onclick="window.toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;">✖</button>
         </div>
         
         <div class="admin-content">
-            <div style="color:#888; font-size:12px; margin-bottom:10px;">Редагування змінює гру для ВСІХ гравців.</div>
-            
             <div id="admin-item-list" class="admin-list"></div>
             
-            <hr style="border: 1px solid #333; margin: 15px 0;">
+            <div id="admin-controls" style="margin-top:20px;">
+                <button class="admin-btn new" onclick="window.createNewItem()">➕ Створити Новий</button>
+            </div>
 
-            <div id="admin-editor" style="display:none;">
-                <h4>Редагування: <span id="edit-id" style="color:var(--accent)"></span></h4>
+            <div id="admin-editor" style="display:none; margin-top:20px; border-top:1px solid #333; padding-top:20px;">
+                <h4 style="margin-bottom:15px; color:var(--accent)">Редагування</h4>
                 
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label>ID (унік):</label>
+                        <input type="text" id="inp-id" class="admin-inp" disabled style="opacity:0.5">
+                    </div>
+                    <div>
+                        <label>Тип:</label>
+                        <select id="inp-type" class="admin-inp">
+                            <option value="device">Меблі (Кімната)</option>
+                            <option value="food">Їжа (Рюкзак)</option>
+                        </select>
+                    </div>
+                </div>
+
                 <label>Назва:</label>
                 <input type="text" id="inp-name" class="admin-inp">
                 
-                <label>Іконка (Емодзі):</label>
-                <input type="text" id="inp-icon" class="admin-inp">
-                
-                <label>Ціна ($):</label>
-                <input type="number" id="inp-price" class="admin-inp">
+                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
+                    <div>
+                        <label>Іконка:</label>
+                        <input type="text" id="inp-icon" class="admin-inp" placeholder="🍕">
+                    </div>
+                    <div>
+                        <label>Ціна ($):</label>
+                        <input type="number" id="inp-price" class="admin-inp">
+                    </div>
+                </div>
                 
                 <label>Опис:</label>
                 <input type="text" id="inp-desc" class="admin-inp">
 
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="admin-btn save" onclick="window.saveAdminItem()">💾 Зберегти в Хмару</button>
-                    <button class="admin-btn cancel" onclick="window.cancelEdit()">Відміна</button>
-                </div>
-            </div>
+                <hr style="border: 1px solid #333; margin: 15px 0;">
+                <div style="font-size:12px; color:#aaa; margin-bottom:10px;">Ефекти (0 = немає ефекту)</div>
 
-            <div id="admin-controls" style="margin-top:20px;">
-                <button class="reset-btn" style="position:static; width:100%; margin-top:10px;" onclick="window.hardReset()">Скинути МІЙ прогрес</button>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label>⚡ Енергія (+/-):</label>
+                        <input type="number" id="inp-energy" class="admin-inp" placeholder="20 або -10">
+                    </div>
+                    <div>
+                        <label>💰 Гроші (+):</label>
+                        <input type="number" id="inp-money" class="admin-inp" placeholder="0">
+                    </div>
+                    <div>
+                        <label>💔 Знос/HP (-):</label>
+                        <input type="number" id="inp-hp" class="admin-inp" placeholder="20">
+                    </div>
+                    <div>
+                        <label>⏳ Час дії (сек):</label>
+                        <input type="number" id="inp-time" class="admin-inp" placeholder="30">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="admin-btn save" onclick="window.saveAdminItem()">💾 ЗБЕРЕГТИ</button>
+                    <button class="admin-btn cancel" onclick="window.cancelEdit()" style="background:#444">Відміна</button>
+                </div>
+                <button class="admin-btn reset" onclick="window.deleteItem()" style="margin-top:10px; background:#500;">🗑 Видалити предмет</button>
             </div>
         </div>
     </div>
 
     <div id="action-sheet"><div id="sheet-content"></div></div>
 
-    <script type="module" src="js/app.js?v=35"></script>
+    <script type="module" src="js/app.js?v=36"></script>
 </body>
 </html>

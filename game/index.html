@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v36: Mobile Admin</title>
+    <title>Life OS v37: Stable</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
-    <link rel="stylesheet" href="css/style.css?v=36">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css?v=37">
 </head>
 <body>
 
@@ -19,7 +23,7 @@
         </div>
         <div id="visual-hero">🧍</div>
         
-        <button class="admin-toggle" onclick="window.toggleAdmin()" style="display:none;">⚙️</button>
+        <button class="admin-toggle" onclick="toggleAdmin()" style="display:none;">⚙️</button>
     </div>
 
     <div class="ui">
@@ -35,12 +39,13 @@
             <div class="section-title">МОЯ КІМНАТА</div>
             <div id="home-grid" class="app-grid"></div>
             <div id="empty-home-msg" class="empty-msg">
-                Завантаження даних...
+                Завантаження...
             </div>
         </div>
 
         <div id="tab-map" class="tab">
-            <div class="map-wrapper"></div>
+            <div class="map-wrapper">
+                </div>
             <div style="text-align:center; color:#666; font-size:12px; margin-top:10px;">
                 Тисни на будівлі
             </div>
@@ -53,7 +58,7 @@
 
         <div id="tab-shop" class="tab">
             <div style="display:flex; align-items:center; margin-bottom:15px;">
-                <button class="back-btn" onclick="window.switchTab('map', document.getElementById('nav-map'))">⬅ На мапу</button>
+                <button class="back-btn" onclick="switchTab('map', document.getElementById('nav-map'))">⬅ На мапу</button>
                 <div class="section-title" style="margin:0 0 0 15px;">СУПЕРМАРКЕТ</div>
             </div>
             <div id="shop-container" class="shop-list"></div>
@@ -61,22 +66,22 @@
     </div>
 
     <div class="nav">
-        <button class="nav-btn active" onclick="window.switchTab('home', this)">🏠</button>
-        <button class="nav-btn" id="nav-map" onclick="window.switchTab('map', this)">🗺️</button>
-        <button class="nav-btn" onclick="window.switchTab('inv', this)">🎒</button>
+        <button class="nav-btn active" onclick="switchTab('home', this)">🏠</button>
+        <button class="nav-btn" id="nav-map" onclick="switchTab('map', this)">🗺️</button>
+        <button class="nav-btn" onclick="switchTab('inv', this)">🎒</button>
     </div>
 
     <div id="admin-panel" class="admin-panel">
         <div class="admin-header">
             <h3>Адмін Панель</h3>
-            <button onclick="window.toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;padding:10px;">✕</button>
+            <button onclick="toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;padding:10px;">✕</button>
         </div>
         
         <div class="admin-content">
             <div id="admin-item-list" class="admin-list"></div>
             
             <div id="admin-controls" style="margin-top:20px;">
-                <button class="admin-btn new" onclick="window.createNewItem()">➕ Створити Новий</button>
+                <button class="admin-btn new" onclick="createNewItem()">➕ Створити Новий</button>
             </div>
 
             <div id="admin-editor" style="display:none; margin-top:20px;">
@@ -84,68 +89,68 @@
                 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                     <div>
-                        <label>ID (унік):</label>
+                        <label>ID:</label>
                         <input type="text" id="inp-id" class="admin-inp" disabled style="opacity:0.5">
                     </div>
                     <div>
                         <label>Тип:</label>
                         <select id="inp-type" class="admin-inp">
-                            <option value="device">Меблі (Кімната)</option>
-                            <option value="food">Їжа (Рюкзак)</option>
+                            <option value="device">Меблі</option>
+                            <option value="food">Їжа</option>
                         </select>
                     </div>
                 </div>
 
-                <label>Назва предмета:</label>
-                <input type="text" id="inp-name" class="admin-inp" placeholder="Назва...">
+                <label>Назва:</label>
+                <input type="text" id="inp-name" class="admin-inp">
                 
                 <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
                     <div>
                         <label>Іконка:</label>
-                        <input type="text" id="inp-icon" class="admin-inp" placeholder="😎">
+                        <input type="text" id="inp-icon" class="admin-inp">
                     </div>
                     <div>
                         <label>Ціна ($):</label>
-                        <input type="number" id="inp-price" class="admin-inp" placeholder="100">
+                        <input type="number" id="inp-price" class="admin-inp">
                     </div>
                 </div>
                 
-                <label>Опис для магазину:</label>
-                <input type="text" id="inp-desc" class="admin-inp" placeholder="Короткий опис...">
+                <label>Опис:</label>
+                <input type="text" id="inp-desc" class="admin-inp">
 
                 <hr style="border: 1px solid #333; margin: 20px 0;">
-                <div style="font-size:14px; font-weight:bold; color:#fff; margin-bottom:15px;">Ефекти (баланс)</div>
+                <div style="font-size:14px; font-weight:bold; color:#fff; margin-bottom:15px;">Ефекти</div>
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                     <div>
-                        <label>⚡ Енергія (+/-):</label>
-                        <input type="number" id="inp-energy" class="admin-inp" placeholder="20">
+                        <label>⚡ Енергія:</label>
+                        <input type="number" id="inp-energy" class="admin-inp">
                     </div>
                     <div>
                         <label>💰 Гроші (+):</label>
-                        <input type="number" id="inp-money" class="admin-inp" placeholder="0">
+                        <input type="number" id="inp-money" class="admin-inp">
                     </div>
                     <div>
                         <label>💔 Знос (-):</label>
-                        <input type="number" id="inp-hp" class="admin-inp" placeholder="10">
+                        <input type="number" id="inp-hp" class="admin-inp">
                     </div>
                     <div>
                         <label>⏳ Час (сек):</label>
-                        <input type="number" id="inp-time" class="admin-inp" placeholder="30">
+                        <input type="number" id="inp-time" class="admin-inp">
                     </div>
                 </div>
 
                 <div style="display:flex; gap:10px; margin-top:30px;">
-                    <button class="admin-btn save" onclick="window.saveAdminItem()">💾 Зберегти</button>
-                    <button class="admin-btn cancel" onclick="window.cancelEdit()">Відміна</button>
+                    <button class="admin-btn save" onclick="saveAdminItem()">💾 Зберегти</button>
+                    <button class="admin-btn cancel" onclick="cancelEdit()">Відміна</button>
                 </div>
-                <button class="admin-btn reset" onclick="window.deleteItem()" style="margin-top:20px;">🗑 Видалити</button>
+                <button class="admin-btn reset" onclick="deleteItem()" style="margin-top:20px;">🗑 Видалити</button>
             </div>
         </div>
     </div>
 
     <div id="action-sheet"><div id="sheet-content"></div></div>
 
-    <script type="module" src="js/app.js?v=36"></script>
+    <script src="js/app.js?v=37"></script>
 </body>
 </html>

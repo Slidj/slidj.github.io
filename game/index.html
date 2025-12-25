@@ -3,49 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v26: Modular</title>
+    <title>Life OS v27</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
-    <link rel="stylesheet" href="css/style.css?v=1">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <button class="reset-btn" onclick="hardReset()">RESET v26</button>
+    <button class="reset-btn" onclick="hardReset()">RESET</button>
 
     <div class="scene-container">
         <div id="scene-overlay">
             <div class="overlay-emoji" id="overlay-icon">⏳</div>
             <div id="overlay-text">ДІЯ...</div>
         </div>
+        <div id="item-pc" class="room-item">🖥️</div>
+        <div id="item-bed" class="room-item">🛏️</div>
         <div id="visual-hero">🧍</div>
     </div>
 
     <div class="ui">
         <div class="widget-header">
             <div>
-                <div style="font-size:28px;font-weight:800;color:#30d158"><span id="money">0</span> $</div>
-                <div style="font-size:12px;color:#666">Фінанси</div>
+                <div class="money"><span id="money">0</span> $</div>
+                <div class="subtitle">Фінанси</div>
             </div>
-            <div style="font-weight:bold;color:var(--green)">⚡ <span id="energy">100</span>%</div>
+            <div class="energy">⚡ <span id="energy">100</span>%</div>
         </div>
 
         <div id="tab-home" class="tab active">
-            <div style="color:#666;font-size:12px;margin-bottom:10px">КІМНАТА</div>
+            <div class="section-title">МЕБЛІ В КІМНАТІ</div>
             <div id="home-grid" class="app-grid"></div>
-            <div id="empty-home-msg" style="text-align:center; color:#555; margin-top:20px; display:none;">
-                Пусто. Купи меблі.
+            <div id="empty-home-msg" class="empty-msg">
+                Пусто. Купи меблі в магазині!
             </div>
         </div>
 
         <div id="tab-inv" class="tab">
-            <div style="color:#666;font-size:12px;margin-bottom:10px">РЮКЗАК</div>
+            <div class="section-title">РЮКЗАК (ЇЖА)</div>
             <div id="inventory-grid" class="app-grid"></div>
         </div>
 
         <div id="tab-shop" class="tab">
-            <div style="color:#666;font-size:12px;margin-bottom:10px">МАРКЕТПЛЕЙС</div>
+            <div class="section-title">МАРКЕТПЛЕЙС</div>
             <div id="shop-container" class="shop-list"></div>
         </div>
     </div>
@@ -56,6 +58,6 @@
         <button class="nav-btn" onclick="switchTab('shop', this)">🛒</button>
     </div>
 
-    <script src="js/app.js?v=1"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

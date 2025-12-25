@@ -98,15 +98,36 @@ window.saveDonation = function(stars) {
     }
 };
 
+// 🔥 ВИПРАВЛЕНА ФУНКЦІЯ ДАТИ (З ЦИФРАМИ І ВІДМІНЮВАННЯМ)
 function formatRelativeDate(isoString) {
-    if (!isoString) return t.statusLong;
+    if (!isoString) return '<span style="color:gray">Невідомо</span>';
+    
     const date = new Date(isoString);
     const now = new Date();
-    const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    const timeStr = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-    if (diffInDays === 0) return `${t.statusOnline} ${timeStr}`;
-    if (diffInDays === 1) return `${t.statusYesterday} ${timeStr}`;
-    return `${t.statusDays} ${timeStr}`;
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Форматуємо час (11:00)
+    const time = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+
+    if (diffDays === 0) return `<span style="color:#46d369">Сьогодні о ${time}</span>`;
+    if (diffDays === 1) return `<span style="color:#FFD700">Вчора о ${time}</span>`;
+    
+    // Виправляємо закінчення: 2 дні, 5 днів
+    let suffix = 'днів';
+    const lastDigit = diffDays % 10;
+    const lastTwoDigits = diffDays % 100;
+
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+        suffix = 'днів';
+    } else if (lastDigit === 1) {
+        suffix = 'день';
+    } else if (lastDigit >= 2 && lastDigit <= 4) {
+        suffix = 'дні';
+    }
+
+    // Тепер точно повертаємо цифру!
+    return `<span style="color:#aaa">${diffDays} ${suffix} тому о ${time}</span>`;
 }
 
 async function loadAdminData() {
@@ -126,6 +147,7 @@ async function loadAdminData() {
                 
                 const card = document.createElement('div');
                 card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
+                // Тут викликаємо нашу нову функцію formatRelativeDate
                 card.innerHTML = `<div style="color:white; font-size:12px; display:flex; align-items:center;"><span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span><div><b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)}</span></div></div><button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
                 listDiv.appendChild(card);
             });

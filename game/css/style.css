@@ -18,8 +18,6 @@ body {
     background-size: cover; background-position: center bottom;
     border-bottom: 1px solid #333; overflow: hidden; transition: 0.3s;
 }
-/* Коли ми на мапі, сцену можна ховати або затемнювати (опціонально) */
-.scene-hidden { height: 0; border: none; }
 
 #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
 .room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
@@ -47,31 +45,41 @@ body {
 .section-title { color: #666; font-size: 12px; margin-bottom: 10px; }
 .empty-msg { text-align: center; color: #555; margin-top: 20px; display: none; }
 
-/* --- MAP STYLES --- */
+/* --- MAP STYLES (ВИПРАВЛЕНО) --- */
 .map-wrapper {
-    position: relative; width: 100%; height: 350px; /* Висота мапи */
+    position: relative; width: 100%; height: 350px;
     background: #222; border-radius: 20px; border: 2px solid #444; overflow: hidden;
-    background-image: url('../images/bg-city.jpg'); 
+    background-image: url('../images/bg-city.jpg'); /* JPG */
     background-size: cover; background-position: center;
+    z-index: 1;
 }
 
 .map-pin {
-    position: absolute; display: flex; flex-direction: column; align-items: center;
-    cursor: pointer; transform: translate(-50%, -50%); /* Центруємо точку */
+    position: absolute; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; 
+    transform: translate(-50%, -50%);
     transition: transform 0.2s;
+    
+    /* FORCE FIX: Підняли шар і збільшили зону */
+    z-index: 100; 
+    width: 80px; height: 80px;
 }
+
 .map-pin:active { transform: translate(-50%, -50%) scale(0.9); }
 
 .pin-icon {
-    font-size: 32px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+    font-size: 36px; 
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
     animation: bounce 2s infinite;
+    pointer-events: none; /* Клік проходить крізь іконку на блок */
 }
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
 .pin-label {
     background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; 
     border-radius: 6px; font-size: 10px; font-weight: bold; margin-top: -5px;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px); pointer-events: none;
 }
 
 .back-btn {

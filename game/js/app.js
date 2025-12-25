@@ -1,8 +1,10 @@
+// --- IMPORT FIREBASE (CDN) ---
+// Ми використовуємо CDN посилання, щоб гра працювала в браузері без Node.js/Webpack
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, get, set, update } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// 🔥 ТВОЇ КЛЮЧІ 🔥
+// 🔥 ТВОЇ КЛЮЧІ (ОНОВЛЕНО) 🔥
 const firebaseConfig = {
   apiKey: "AIzaSyBApfHQizLRlYhILiq9_4m9WPyUKUEqtVI",
   authDomain: "lifeos-game.firebaseapp.com",
@@ -14,61 +16,96 @@ const firebaseConfig = {
   measurementId: "G-4KC3QSJG5H"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// GLOBAL STATE
 let game;
 let gameData = { items: [], locations: [] }; 
 let userId = "test_user_local"; 
 let isBusy = false;
 
+// --- STARTUP ---
 document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Telegram ID
     if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.expand();
         const user = window.Telegram.WebApp.initDataUnsafe.user;
-        if (user && user.id) userId = user.id.toString();
+        if (user && user.id) {
+            userId = user.id.toString();
+            console.log("TG User:", userId);
+        } else {
+            console.log("No TG user, using test ID:", userId);
+        }
     }
 
+    // 2. Load Config & Player Data
     await Promise.all([loadGameData(), loadPlayerProgress()]);
+    
+    // 3. Admin Check
     checkAdminStatus();
 
-    render(); renderHome(); renderShop(); renderGrid(); renderMapPins();
+    // 4. Render
+    render(); 
+    renderHome(); 
+    renderShop(); 
+    renderGrid(); 
+    renderMapPins();
+
+    // 5. Start Loop
     setInterval(gameLoop, 1000);
 });
 
-// --- FIREBASE ---
+// --- FIREBASE FUNCTIONS ---
+
 async function checkAdminStatus() {
     try {
+        // Перевіряємо, чи є ID в списку admins
         const snap = await get(ref(db, 'admins/' + userId));
         if (snap.exists() && snap.val() === true) {
             document.querySelector('.admin-toggle').style.display = 'block';
         }
-    } catch (e) {}
+    } catch (e) { console.error("Admin check failed", e); }
 }
 
 async function loadGameData() {
-    const snap = await get(ref(db, 'gameData'));
-    if (snap.exists()) {
-        gameData = snap.val();
-        if (!gameData.items) gameData.items = [];
-        if (!gameData.locations) gameData.locations = [];
-    }
+    try {
+        const snap = await get(ref(db, 'gameData'));
+        if (snap.exists()) {
+            gameData = snap.val();
+            // Safety checks
+            if(!gameData.items) gameData.items = [];
+            if(!gameData.locations) gameData.locations = [];
+        } else {
+            console.log("No gameData in DB! Using defaults.");
+            // Якщо база пуста, ініціалізуємо базовою структурою (щоб не було помилок)
+            gameData = { items: [], locations: [] };
+        }
+    } catch (e) { console.error("Load Data Error", e); }
 }
 
 async function loadPlayerProgress() {
-    const snap = await get(ref(db, 'users/' + userId));
-    if (snap.exists()) {
-        game = snap.val();
-        if (!game.room) game.room = [];
-        if (!game.inventory) game.inventory = [];
-        if (!game.debt) game.debt = 0;
-    } else {
-        game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
-        save();
-    }
+    try {
+        const snap = await get(ref(db, 'users/' + userId));
+        if (snap.exists()) {
+            game = snap.val();
+            // Fix structure
+            if(!game.room) game.room = [];
+            if(!game.inventory) game.inventory = [];
+            if(!game.debt) game.debt = 0;
+        } else {
+            // New User
+            game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
+            save(); // Create in DB
+        }
+    } catch (e) { console.error("Load Player Error", e); }
 }
 
-function save() { if (game) update(ref(db, 'users/' + userId), game); }
+function save() {
+    if (!game) return;
+    update(ref(db, 'users/' + userId), game);
+}
 
 // --- GAME LOOP ---
 function gameLoop() {
@@ -85,6 +122,7 @@ function gameLoop() {
     });
 
     if(saveNeeded) { save(); render(); renderGrid(); }
+    
     if(document.getElementById('tab-home').classList.contains('active')) renderHome();
     if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
 }
@@ -95,10 +133,13 @@ function render() {
     document.getElementById('energy').innerText = game.energy;
 }
 
-// --- RENDERING ---
+// --- RENDERERS ---
+
 function renderMapPins() {
     const mapContainer = document.querySelector('.map-wrapper');
+    // Clear old pins only
     mapContainer.querySelectorAll('.map-pin').forEach(p => p.remove());
+
     if (!gameData.locations) return;
 
     gameData.locations.forEach(loc => {
@@ -106,9 +147,12 @@ function renderMapPins() {
         pin.className = 'map-pin';
         pin.style.top = loc.top + '%';
         pin.style.left = loc.left + '%';
+        
+        // Прив'язка подій до window (бо type=module ізолює функції)
         if (loc.type === 'shop') pin.onclick = () => window.openShopFromMap();
         if (loc.type === 'bank') pin.onclick = () => window.openBank();
         if (loc.type === 'work') pin.onclick = () => window.startWorkFromMap();
+
         pin.innerHTML = `<div class="pin-icon">${loc.icon}</div><div class="pin-label">${loc.name}</div>`;
         mapContainer.appendChild(pin);
     });
@@ -143,6 +187,7 @@ function renderShop() {
             </div>
         </div>`;
         
+        // Add event listener manually because of module scope
         setTimeout(() => {
             const btn = document.getElementById(`btn-buy-${item.id}`);
             if(btn && !dis) btn.onclick = () => window.buy(item.id);
@@ -154,8 +199,10 @@ function renderHome() {
     if(isBusy || !game) return;
     const grid = document.getElementById('home-grid');
     grid.innerHTML = "";
-    if(game.room.length === 0) { document.getElementById('empty-home-msg').style.display = 'block'; } 
-    else {
+    
+    if(game.room.length === 0) {
+        document.getElementById('empty-home-msg').style.display = 'block';
+    } else {
         document.getElementById('empty-home-msg').style.display = 'none';
         game.room.forEach(item => {
             const meta = gameData.items.find(x => x.id === item.id) || item;
@@ -186,19 +233,23 @@ function renderHome() {
 function renderGrid() {
     const grid = document.getElementById('inventory-grid');
     grid.innerHTML = "";
-    if(!game || game.inventory.length === 0) { grid.innerHTML = "<div style='color:#555;grid-column:1/-1;text-align:center'>Рюкзак пустий</div>"; return; }
+    if(!game || game.inventory.length === 0) { 
+        grid.innerHTML = "<div style='color:#555;grid-column:1/-1;text-align:center'>Рюкзак пустий</div>"; return; 
+    }
     
     game.inventory.forEach((item, index) => {
         const meta = gameData.items.find(x => x.id === item.id) || item;
         let emoji = meta.icon || '🍔';
         let color = "#30d158";
         let offset = 0;
+
         if(item.isSpoiled) { emoji="🤢"; color="#555"; offset=100; }
         else {
             const left = Math.max(0, item.expireTime - Date.now());
             const total = meta.expireTime || 30000;
             offset = 100 - (100 * (left/total));
         }
+
         const div = document.createElement('div');
         div.className = 'app-card';
         div.innerHTML = `
@@ -215,7 +266,7 @@ function renderGrid() {
     });
 }
 
-// --- ADMIN LOGIC (ROBUST) ---
+// --- ADMIN LOGIC ---
 let currentEditIndex = -1;
 
 window.toggleAdmin = function() {
@@ -230,10 +281,15 @@ window.toggleAdmin = function() {
 function renderAdminList() {
     const list = document.getElementById('admin-item-list');
     list.innerHTML = "";
+    if(!gameData.items) return;
     gameData.items.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'admin-item-btn';
-        div.innerHTML = `${item.icon} ${item.name}`;
+        div.innerHTML = `
+            <div class="admin-item-icon">${item.icon}</div>
+            <div>${item.name}</div>
+            <div style="font-size:10px; opacity:0.7">${item.price}$</div>
+        `;
         div.onclick = () => editItem(index);
         list.appendChild(div);
     });
@@ -339,7 +395,8 @@ window.deleteItem = async function() {
     }
 };
 
-// --- ACTIONS ---
+// --- GLOBAL ACTIONS (Window export) ---
+
 window.buy = function(id) {
     const meta = gameData.items.find(x => x.id === id);
     if(game.money < meta.price) return;
@@ -451,8 +508,4 @@ window.switchTab = function(tabName, btn) {
 };
 window.hardReset = function() {
     if(confirm("Скинути ВСЕ?")) {
-        game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
-        save();
-        location.reload();
-    }
-};
+        game = { money: 300, energy: 100, r

@@ -1,4 +1,4 @@
-// --- КОНФІГУРАЦІЯ ТОВАРІВ ---
+// --- CONFIG ---
 const shopItems = [
     { id: 'pc', type: 'device', name: 'iMac Pro', price: 150, icon: '🖥️', desc: 'Для заробітку.', specs: [{t:'⚡ -10',c:'tag-red'},{t:'💰 +20$',c:'tag-green'}] },
     { id: 'bed', type: 'device', name: 'Smart Bed', price: 100, icon: '🛏️', desc: 'Відновлює сили.', specs: [{t:'⚡ +30',c:'tag-green'},{t:'⏳ 3с',c:'tag-blue'}] },
@@ -7,16 +7,14 @@ const shopItems = [
 ];
 
 let game;
-let isBusy = false; // Блокування дій
+let isBusy = false;
 
-// --- ЗАПУСК ГРИ ---
 document.addEventListener("DOMContentLoaded", () => {
     try {
-        const saved = localStorage.getItem('lifeSim_v27_bold');
+        const saved = localStorage.getItem('lifeSim_v28_clean');
         if(saved) game = JSON.parse(saved);
         else game = { money: 300, energy: 100, room: [], inventory: [] };
         
-        // Захист структури
         if(!game.room) game.room = [];
         if(!game.inventory) game.inventory = [];
         
@@ -24,22 +22,18 @@ document.addEventListener("DOMContentLoaded", () => {
         game = { money: 300, energy: 100, room: [], inventory: [] }; 
     }
 
-    // Telegram API
     if(window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.expand();
     }
 
-    // Перший рендер
     render(); 
     renderHome(); 
     renderShop(); 
     renderGrid();
 
-    // Запуск таймера
     setInterval(gameLoop, 1000);
 });
 
-// --- ЦИКЛ ГРИ ---
 function gameLoop() {
     const now = Date.now();
     let saveNeeded = false;
@@ -52,7 +46,6 @@ function gameLoop() {
 
     if(saveNeeded) { save(); render(); renderGrid(); }
     
-    // Оновлення таймерів у вкладках
     if(document.getElementById('tab-home').classList.contains('active')) renderHome();
     if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
 }
@@ -60,21 +53,12 @@ function gameLoop() {
 function render() {
     document.getElementById('money').innerText = game.money;
     document.getElementById('energy').innerText = game.energy;
-
-    // Сцена: показати/сховати меблі
-    const pc = game.room.find(i => i.id === 'pc');
-    const bed = game.room.find(i => i.id === 'bed');
-    
-    const pcEl = document.getElementById('item-pc');
-    if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; } else { pcEl.style.display='none'; }
-    
-    const bedEl = document.getElementById('item-bed');
-    if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; } else { bedEl.style.display='none'; }
+    // Більше не шукаємо і не показуємо #item-pc та #item-bed на сцені!
 }
 
-// --- ОТРИСОВКА КІМНАТИ (МЕБЛІ) ---
+// --- RENDER HOME (FURNITURE) ---
 function renderHome() {
-    if(isBusy) return; // Не перемальовуємо під час анімації
+    if(isBusy) return;
     const grid = document.getElementById('home-grid');
     grid.innerHTML = "";
     
@@ -112,7 +96,7 @@ function renderHome() {
     }
 }
 
-// --- ОТРИСОВКА РЮКЗАКА (ЇЖА) ---
+// --- RENDER INV (FOOD) ---
 function renderGrid() {
     const grid = document.getElementById('inventory-grid');
     grid.innerHTML = "";
@@ -135,7 +119,6 @@ function renderGrid() {
             offset = 100 - (100 * (left/item.totalLife));
         }
 
-        // ТОВСТА ЛІНІЯ (stroke-width="5")
         grid.innerHTML += `
         <div class="app-card" onclick="useFood(${index})">
             <div class="icon-wrapper">
@@ -151,7 +134,6 @@ function renderGrid() {
     });
 }
 
-// --- ОТРИСОВКА МАГАЗИНУ ---
 function renderShop() {
     const container = document.getElementById('shop-container');
     container.innerHTML = "";
@@ -176,7 +158,7 @@ function renderShop() {
     });
 }
 
-// --- ЛОГІКА ДІЙ ---
+// --- ACTIONS ---
 function startAction(itemId, type) {
     if(isBusy) return;
     const item = game.room.find(i => i.id === itemId);
@@ -255,10 +237,9 @@ function buy(id) {
     alert("Куплено!");
 }
 
-function save() { localStorage.setItem('lifeSim_v27_bold', JSON.stringify(game)); }
+function save() { localStorage.setItem('lifeSim_v28_clean', JSON.stringify(game)); }
 window.hardReset = function() { localStorage.clear(); location.reload(); }
 
-// Перемикання вкладок
 window.switchTab = function(tabName, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-'+tabName).classList.add('active');

@@ -10,7 +10,7 @@ let isBusy = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     try {
-        const saved = localStorage.getItem('lifeSim_v29_map');
+        const saved = localStorage.getItem('lifeSim_v30_fixed');
         if(saved) game = JSON.parse(saved);
         else game = { money: 300, energy: 100, room: [], inventory: [], debt: 0 };
         
@@ -52,31 +52,38 @@ function render() {
 
     const pc = game.room.find(i => i.id === 'pc');
     const bed = game.room.find(i => i.id === 'bed');
-    
-    const pcEl = document.getElementById('item-pc');
-    if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; } else { pcEl.style.display='none'; }
-    
-    const bedEl = document.getElementById('item-bed');
-    if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; } else { bedEl.style.display='none'; }
+    // Сцена тепер просто фон, тому не шукаємо item-pc і item-bed
 }
 
-// --- MAP ACTIONS ---
+// --- MAP ACTIONS (FIXED) ---
 function openShopFromMap() {
-    // Вручну перемикаємо на вкладку Shop, але не міняємо активну кнопку в Nav (щоб світилась Map)
+    // 1. Прибираємо активність з усіх вкладок
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-shop').classList.add('active');
-    renderShop();
+    
+    // 2. Вмикаємо вкладку Shop
+    const shopTab = document.getElementById('tab-shop');
+    if(shopTab) {
+        shopTab.classList.add('active');
+        renderShop();
+    } else {
+        alert("Помилка: вкладка магазину не знайдена");
+    }
 }
 
 function openBank() {
-    document.getElementById('sheet-content').innerHTML = `
+    const sheet = document.getElementById('sheet-content');
+    const container = document.getElementById('action-sheet');
+    
+    if(!sheet || !container) return alert("Помилка інтерфейсу банку");
+
+    sheet.innerHTML = `
         <div style="font-size:50px;text-align:center">🏦</div>
         <div style="text-align:center;font-weight:bold;margin-bottom:5px">БАНК</div>
         <div style="text-align:center;color:#888;margin-bottom:15px">Борг: <span style="color:${game.debt>0?'red':'green'}">${game.debt}$</span></div>
         <button class="sheet-btn" style="background:var(--accent)" onclick="takeLoan()">Взяти 100$</button>
         <button class="sheet-btn" onclick="closeSheet()">Закрити</button>
     `;
-    document.getElementById('action-sheet').classList.add('open');
+    container.classList.add('open');
 }
 
 function takeLoan() {
@@ -191,7 +198,7 @@ function renderShop() {
     });
 }
 
-let isBusy = false;
+// --- ACTIONS ---
 function startAction(itemId, type) {
     if(isBusy) return;
     const item = game.room.find(i => i.id === itemId);
@@ -255,30 +262,31 @@ function buy(id) {
 }
 
 function closeSheet() { document.getElementById('action-sheet').classList.remove('open'); }
-function save() { localStorage.setItem('lifeSim_v29_map', JSON.stringify(game)); }
+function save() { localStorage.setItem('lifeSim_v30_fixed', JSON.stringify(game)); }
 window.hardReset = function() { localStorage.clear(); location.reload(); }
 
 window.switchTab = function(tabName, btn) {
-    // Якщо клік з мапи (без кнопки), шукаємо кнопку в навігації
+    // Якщо клік з мапи (без кнопки)
     if (!btn) {
-        if (tabName === 'shop') btn = document.querySelector('.nav-btn:nth-child(3)'); // Але у нас немає кнопки Shop, тому ігноруємо
+        if (tabName === 'shop') btn = document.querySelector('.nav-btn:nth-child(3)');
     }
 
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-'+tabName).classList.add('active');
     
-    // Оновлюємо активну кнопку тільки якщо вона є в навігації
+    // Оновлюємо активну кнопку ТІЛЬКИ якщо вона є в навігації
     if (btn && btn.classList.contains('nav-btn')) {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
     }
     
-    // Коли йдемо з магазину назад на мапу
+    // Якщо повернулися на мапу - підсвічуємо кнопку мапи
     if (tabName === 'map') {
-        // Знаходимо кнопку мапи і підсвічуємо
-        const mapBtn = document.querySelectorAll('.nav-btn')[1]; // 2-га кнопка
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        mapBtn.classList.add('active');
+        const mapBtn = document.getElementById('nav-map');
+        if(mapBtn) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            mapBtn.classList.add('active');
+        }
     }
 
     if(tabName === 'home') { renderHome(); render(); }

@@ -1,3 +1,4 @@
+// --- КОНФІГУРАЦІЯ ТОВАРІВ ---
 const shopItems = [
     { id: 'pc', type: 'device', name: 'iMac Pro', price: 150, icon: '🖥️', desc: 'Для заробітку.', specs: [{t:'⚡ -10',c:'tag-red'},{t:'💰 +20$',c:'tag-green'}] },
     { id: 'bed', type: 'device', name: 'Smart Bed', price: 100, icon: '🛏️', desc: 'Відновлює сили.', specs: [{t:'⚡ +30',c:'tag-green'},{t:'⏳ 3с',c:'tag-blue'}] },
@@ -6,33 +7,52 @@ const shopItems = [
 ];
 
 let game;
+let isBusy = false; // Блокування дій
 
+// --- ЗАПУСК ГРИ ---
 document.addEventListener("DOMContentLoaded", () => {
     try {
-        const saved = localStorage.getItem('lifeSim_v26_sep');
+        const saved = localStorage.getItem('lifeSim_v27_bold');
         if(saved) game = JSON.parse(saved);
         else game = { money: 300, energy: 100, room: [], inventory: [] };
-        if(!Array.isArray(game.room)) game.room = [];
-        if(!Array.isArray(game.inventory)) game.inventory = [];
-    } catch(e) { game = { money: 300, energy: 100, room: [], inventory: [] }; }
+        
+        // Захист структури
+        if(!game.room) game.room = [];
+        if(!game.inventory) game.inventory = [];
+        
+    } catch(e) { 
+        game = { money: 300, energy: 100, room: [], inventory: [] }; 
+    }
 
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    // Telegram API
+    if(window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.expand();
+    }
 
-    render(); renderHome(); renderShop(); renderGrid();
+    // Перший рендер
+    render(); 
+    renderHome(); 
+    renderShop(); 
+    renderGrid();
+
+    // Запуск таймера
     setInterval(gameLoop, 1000);
 });
 
+// --- ЦИКЛ ГРИ ---
 function gameLoop() {
     const now = Date.now();
     let saveNeeded = false;
+    
     game.inventory.forEach(item => {
         if(item.category==='food' && !item.isSpoiled && now > item.expireTime) {
             item.isSpoiled = true; saveNeeded = true;
         }
     });
+
     if(saveNeeded) { save(); render(); renderGrid(); }
     
+    // Оновлення таймерів у вкладках
     if(document.getElementById('tab-home').classList.contains('active')) renderHome();
     if(document.getElementById('tab-inv').classList.contains('active')) renderGrid();
 }
@@ -40,11 +60,21 @@ function gameLoop() {
 function render() {
     document.getElementById('money').innerText = game.money;
     document.getElementById('energy').innerText = game.energy;
+
+    // Сцена: показати/сховати меблі
+    const pc = game.room.find(i => i.id === 'pc');
+    const bed = game.room.find(i => i.id === 'bed');
+    
+    const pcEl = document.getElementById('item-pc');
+    if(pc) { pcEl.style.display='block'; pcEl.className = pc.hp<=0?'room-item broken-visual':'room-item'; } else { pcEl.style.display='none'; }
+    
+    const bedEl = document.getElementById('item-bed');
+    if(bed) { bedEl.style.display='block'; bedEl.className = bed.hp<=0?'room-item broken-visual':'room-item'; } else { bedEl.style.display='none'; }
 }
 
-// --- RENDER HOME (CONCENTRIC SQUIRCLES) ---
+// --- ОТРИСОВКА КІМНАТИ (МЕБЛІ) ---
 function renderHome() {
-    if(isBusy) return;
+    if(isBusy) return; // Не перемальовуємо під час анімації
     const grid = document.getElementById('home-grid');
     grid.innerHTML = "";
     
@@ -65,12 +95,13 @@ function renderHome() {
                     <div class="app-bg"><span class="app-emoji">${icon}</span></div>
                     
                     <svg class="progress-svg" viewBox="0 0 76 76">
-                        <rect class="squircle ring-bg-inner" x="8" y="8" width="60" height="60" rx="16" opacity="0.3"></rect>
-                        <rect class="squircle ring-hp" x="8" y="8" width="60" height="60" rx="16" 
-                              stroke="${hpColor}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${hpOffset}"></rect>
+                        <rect x="8" y="8" width="60" height="60" rx="16" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round" opacity="0.3"></rect>
                         
-                        <rect class="squircle ring-timer" id="timer-${item.id}" x="3" y="3" width="70" height="70" rx="20" 
-                              pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></rect>
+                        <rect x="8" y="8" width="60" height="60" rx="16" fill="none" stroke="${hpColor}" stroke-width="3" stroke-linecap="round"
+                              pathLength="100" stroke-dasharray="100" stroke-dashoffset="${hpOffset}"></rect>
+                        
+                        <rect id="timer-${item.id}" x="3" y="3" width="70" height="70" rx="20" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"
+                              pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" style="opacity:0; transition: opacity 0.2s"></rect>
                     </svg>
                     
                     <div class="app-badge" id="badge-${item.id}">${item.hp}%</div>
@@ -81,11 +112,15 @@ function renderHome() {
     }
 }
 
-// --- RENDER INV (SINGLE SQUIRCLE) ---
+// --- ОТРИСОВКА РЮКЗАКА (ЇЖА) ---
 function renderGrid() {
     const grid = document.getElementById('inventory-grid');
     grid.innerHTML = "";
-    if(game.inventory.length === 0) { grid.innerHTML = "<div style='color:#555;grid-column:1/-1;text-align:center'>Пусто</div>"; return; }
+    
+    if(game.inventory.length === 0) {
+        grid.innerHTML = "<div style='color:#555;grid-column:1/-1;text-align:center'>Рюкзак пустий</div>";
+        return;
+    }
     
     game.inventory.forEach((item, index) => {
         let emoji = item.id==='pizza'?'🍕':'🍣';
@@ -100,12 +135,13 @@ function renderGrid() {
             offset = 100 - (100 * (left/item.totalLife));
         }
 
+        // ТОВСТА ЛІНІЯ (stroke-width="5")
         grid.innerHTML += `
         <div class="app-card" onclick="useFood(${index})">
             <div class="icon-wrapper">
                 <div class="app-bg"><span class="app-emoji">${emoji}</span></div>
                 <svg class="progress-svg" viewBox="0 0 76 76">
-                    <rect class="squircle" x="3" y="3" width="70" height="70" rx="18" fill="none" stroke="${color}" 
+                    <rect x="5" y="5" width="66" height="66" rx="18" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round" 
                           pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}"></rect>
                 </svg>
                 <div class="app-badge">${badge}</div>
@@ -115,6 +151,7 @@ function renderGrid() {
     });
 }
 
+// --- ОТРИСОВКА МАГАЗИНУ ---
 function renderShop() {
     const container = document.getElementById('shop-container');
     container.innerHTML = "";
@@ -122,6 +159,7 @@ function renderShop() {
         let tags = item.specs.map(s => `<span class="tag ${s.c}">${s.t}</span>`).join('');
         let btnTxt = `Купити ${item.price}$`;
         let dis = false;
+        
         if (item.type === 'device' && game.room.some(i => i.id === item.id)) { btnTxt="Вже є"; dis=true; }
         else if (game.money < item.price) { btnTxt=`Треба ${item.price}$`; dis=true; }
 
@@ -138,21 +176,25 @@ function renderShop() {
     });
 }
 
-let isBusy = false;
+// --- ЛОГІКА ДІЙ ---
 function startAction(itemId, type) {
     if(isBusy) return;
     const item = game.room.find(i => i.id === itemId);
     if(!item) return;
+
     if(item.hp <= 0) { 
-        if(game.money >= 50 && confirm("Предмет зламаний. Ремонт 50$?")) { game.money -= 50; item.hp = 100; save(); render(); renderHome(); }
+        if(game.money >= 50 && confirm("Предмет зламаний. Ремонт 50$?")) {
+            game.money -= 50; item.hp = 100; save(); render(); renderHome();
+        }
         return;
     }
     if(game.energy < 10) return alert("Втома!");
 
     isBusy = true;
+    
     const timerRing = document.getElementById(`timer-${itemId}`);
     const badge = document.getElementById(`badge-${itemId}`);
-    if(timerRing) timerRing.classList.add('active');
+    if(timerRing) timerRing.style.opacity = '1';
     
     let start = Date.now();
     let duration = 3000;
@@ -161,11 +203,13 @@ function startAction(itemId, type) {
         let p = Date.now() - start;
         let left = Math.max(0, duration - p);
         let offset = 100 * (p / duration); 
+        
         if(timerRing) timerRing.style.strokeDashoffset = offset;
         if(badge) badge.innerText = (left/1000).toFixed(1) + 'с';
+        
         if(left <= 0) {
             clearInterval(int);
-            if(timerRing) timerRing.classList.remove('active');
+            if(timerRing) timerRing.style.opacity = '0';
             if(badge) badge.innerText = (item.hp - (type==='work'?20:5)) + '%';
         }
     }, 30);
@@ -178,6 +222,7 @@ function startAction(itemId, type) {
     setTimeout(() => {
         if(type==='work') { game.money+=20; game.energy-=10; item.hp-=20; }
         if(type==='sleep') { game.energy+=30; item.hp-=5; }
+        
         ov.classList.remove('active');
         isBusy = false;
         save(); render(); renderHome();
@@ -186,8 +231,12 @@ function startAction(itemId, type) {
 
 function useFood(index) {
     const item = game.inventory[index];
-    if(item.isSpoiled) { game.inventory.splice(index, 1); } 
-    else { game.inventory.splice(index, 1); game.energy = Math.min(100, game.energy + 20); }
+    if(item.isSpoiled) { 
+        game.inventory.splice(index, 1); 
+    } else { 
+        game.inventory.splice(index, 1); 
+        game.energy = Math.min(100, game.energy + 20); 
+    }
     save(); render(); renderGrid();
 }
 
@@ -195,20 +244,28 @@ function buy(id) {
     const meta = shopItems.find(x => x.id === id);
     if(game.money < meta.price) return;
     game.money -= meta.price;
-    if(meta.type === 'device') { game.room.push({id:meta.id, name:meta.name, category:'device', hp:100}); } 
-    else { let time = id==='pizza'?30000:15000; game.inventory.push({id:meta.id, name:meta.name, category:'food', expireTime:Date.now()+time, totalLife:time, isSpoiled:false}); }
+    
+    if(meta.type === 'device') {
+        game.room.push({id:meta.id, name:meta.name, category:'device', hp:100});
+    } else {
+        let time = id==='pizza'?30000:15000;
+        game.inventory.push({id:meta.id, name:meta.name, category:'food', expireTime:Date.now()+time, totalLife:time, isSpoiled:false});
+    }
     save(); render(); renderShop(); renderHome(); renderGrid();
     alert("Куплено!");
 }
 
-function save() { localStorage.setItem('lifeSim_v26_sep', JSON.stringify(game)); }
+function save() { localStorage.setItem('lifeSim_v27_bold', JSON.stringify(game)); }
 window.hardReset = function() { localStorage.clear(); location.reload(); }
 
+// Перемикання вкладок
 window.switchTab = function(tabName, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-'+tabName).classList.add('active');
+    
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    
     if(tabName === 'home') renderHome();
     if(tabName === 'inv') renderGrid();
     if(tabName === 'shop') renderShop();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v37: Stable</title>
+    <title>Life OS v38: Stable</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
-    <link rel="stylesheet" href="css/style.css?v=37">
+    <link rel="stylesheet" href="css/style.css?v=38">
 </head>
 <body>
 
@@ -38,9 +38,7 @@
         <div id="tab-home" class="tab active">
             <div class="section-title">МОЯ КІМНАТА</div>
             <div id="home-grid" class="app-grid"></div>
-            <div id="empty-home-msg" class="empty-msg">
-                Завантаження...
-            </div>
+            <div id="empty-home-msg" class="empty-msg">Завантаження...</div>
         </div>
 
         <div id="tab-map" class="tab">
@@ -74,7 +72,7 @@
     <div id="admin-panel" class="admin-panel">
         <div class="admin-header">
             <h3>Адмін Панель</h3>
-            <button onclick="toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;padding:10px;">✕</button>
+            <button onclick="toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;">✖</button>
         </div>
         
         <div class="admin-content">
@@ -87,11 +85,8 @@
             <div id="admin-editor" style="display:none; margin-top:20px;">
                 <h4 style="margin-bottom:15px; color:var(--accent)">Редагування</h4>
                 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div>
-                        <label>ID:</label>
-                        <input type="text" id="inp-id" class="admin-inp" disabled style="opacity:0.5">
-                    </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div><label>ID:</label><input type="text" id="inp-id" class="admin-inp" disabled style="opacity:0.5"></div>
                     <div>
                         <label>Тип:</label>
                         <select id="inp-type" class="admin-inp">
@@ -101,56 +96,36 @@
                     </div>
                 </div>
 
-                <label>Назва:</label>
-                <input type="text" id="inp-name" class="admin-inp">
+                <label>Назва:</label><input type="text" id="inp-name" class="admin-inp">
                 
-                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
-                    <div>
-                        <label>Іконка:</label>
-                        <input type="text" id="inp-icon" class="admin-inp">
-                    </div>
-                    <div>
-                        <label>Ціна ($):</label>
-                        <input type="number" id="inp-price" class="admin-inp">
-                    </div>
+                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
+                    <div><label>Іконка:</label><input type="text" id="inp-icon" class="admin-inp"></div>
+                    <div><label>Ціна ($):</label><input type="number" id="inp-price" class="admin-inp"></div>
                 </div>
                 
-                <label>Опис:</label>
-                <input type="text" id="inp-desc" class="admin-inp">
+                <label>Опис:</label><input type="text" id="inp-desc" class="admin-inp">
 
-                <hr style="border: 1px solid #333; margin: 20px 0;">
-                <div style="font-size:14px; font-weight:bold; color:#fff; margin-bottom:15px;">Ефекти</div>
+                <hr style="border: 1px solid #333; margin: 15px 0;">
+                <div style="font-size:12px;color:#aaa;margin-bottom:5px">Ефекти (баланс)</div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div>
-                        <label>⚡ Енергія:</label>
-                        <input type="number" id="inp-energy" class="admin-inp">
-                    </div>
-                    <div>
-                        <label>💰 Гроші (+):</label>
-                        <input type="number" id="inp-money" class="admin-inp">
-                    </div>
-                    <div>
-                        <label>💔 Знос (-):</label>
-                        <input type="number" id="inp-hp" class="admin-inp">
-                    </div>
-                    <div>
-                        <label>⏳ Час (сек):</label>
-                        <input type="number" id="inp-time" class="admin-inp">
-                    </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div><label>⚡ Енергія (+/-):</label><input type="number" id="inp-energy" class="admin-inp"></div>
+                    <div><label>💰 Гроші (+):</label><input type="number" id="inp-money" class="admin-inp"></div>
+                    <div><label>💔 Знос (-):</label><input type="number" id="inp-hp" class="admin-inp"></div>
+                    <div><label>⏳ Час (сек):</label><input type="number" id="inp-time" class="admin-inp"></div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-top:30px;">
+                <div style="display:flex; gap:10px; margin-top:20px;">
                     <button class="admin-btn save" onclick="saveAdminItem()">💾 Зберегти</button>
                     <button class="admin-btn cancel" onclick="cancelEdit()">Відміна</button>
                 </div>
-                <button class="admin-btn reset" onclick="deleteItem()" style="margin-top:20px;">🗑 Видалити</button>
+                <button class="admin-btn reset" onclick="deleteItem()" style="margin-top:10px;">🗑 Видалити</button>
             </div>
         </div>
     </div>
 
     <div id="action-sheet"><div id="sheet-content"></div></div>
 
-    <script src="js/app.js?v=37"></script>
+    <script src="js/app.js?v=38"></script>
 </body>
 </html>

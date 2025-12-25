@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v30: Fixed Map</title>
+    <title>Life OS v35: Firebase</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
-    <link rel="stylesheet" href="css/style.css?v=30">
+    <link rel="stylesheet" href="css/style.css?v=35">
 </head>
 <body>
-
-    <button class="reset-btn" onclick="hardReset()">RESET</button>
 
     <div class="scene-container" id="room-scene">
         <div id="scene-overlay">
@@ -20,6 +18,8 @@
             <div id="overlay-text">ДІЯ...</div>
         </div>
         <div id="visual-hero">🧍</div>
+        
+        <button class="admin-toggle" onclick="window.toggleAdmin()" style="display:none;">⚙️</button>
     </div>
 
     <div class="ui">
@@ -35,29 +35,15 @@
             <div class="section-title">МОЯ КІМНАТА</div>
             <div id="home-grid" class="app-grid"></div>
             <div id="empty-home-msg" class="empty-msg">
-                Пусто. Сходи в місто за покупками!
+                Завантаження даних...
             </div>
         </div>
 
         <div id="tab-map" class="tab">
             <div class="map-wrapper">
-                <div class="map-pin" style="top: 40%; left: 20%;" onclick="openShopFromMap()">
-                    <div class="pin-icon">🛒</div>
-                    <div class="pin-label">iShop</div>
                 </div>
-
-                <div class="map-pin" style="top: 30%; left: 70%;" onclick="openBank()">
-                    <div class="pin-icon">🏦</div>
-                    <div class="pin-label">Банк</div>
-                </div>
-
-                <div class="map-pin" style="top: 70%; left: 50%;" onclick="startWorkFromMap()">
-                    <div class="pin-icon">🏢</div>
-                    <div class="pin-label">Офіс</div>
-                </div>
-            </div>
             <div style="text-align:center; color:#666; font-size:12px; margin-top:10px;">
-                Тисни на будівлі, щоб увійти
+                Тисни на будівлі
             </div>
         </div>
 
@@ -68,7 +54,7 @@
 
         <div id="tab-shop" class="tab">
             <div style="display:flex; align-items:center; margin-bottom:15px;">
-                <button class="back-btn" onclick="switchTab('map', document.getElementById('nav-map'))">⬅ На мапу</button>
+                <button class="back-btn" onclick="window.switchTab('map', document.getElementById('nav-map'))">⬅ На мапу</button>
                 <div class="section-title" style="margin:0 0 0 15px;">СУПЕРМАРКЕТ</div>
             </div>
             <div id="shop-container" class="shop-list"></div>
@@ -76,13 +62,53 @@
     </div>
 
     <div class="nav">
-        <button class="nav-btn active" onclick="switchTab('home', this)">🏠</button>
-        <button class="nav-btn" id="nav-map" onclick="switchTab('map', this)">🗺️</button>
-        <button class="nav-btn" onclick="switchTab('inv', this)">🎒</button>
+        <button class="nav-btn active" onclick="window.switchTab('home', this)">🏠</button>
+        <button class="nav-btn" id="nav-map" onclick="window.switchTab('map', this)">🗺️</button>
+        <button class="nav-btn" onclick="window.switchTab('inv', this)">🎒</button>
+    </div>
+
+    <div id="admin-panel" class="admin-panel">
+        <div class="admin-header">
+            <h3>Адмін Панель (Firebase)</h3>
+            <button onclick="window.toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;">✖</button>
+        </div>
+        
+        <div class="admin-content">
+            <div style="color:#888; font-size:12px; margin-bottom:10px;">Редагування змінює гру для ВСІХ гравців.</div>
+            
+            <div id="admin-item-list" class="admin-list"></div>
+            
+            <hr style="border: 1px solid #333; margin: 15px 0;">
+
+            <div id="admin-editor" style="display:none;">
+                <h4>Редагування: <span id="edit-id" style="color:var(--accent)"></span></h4>
+                
+                <label>Назва:</label>
+                <input type="text" id="inp-name" class="admin-inp">
+                
+                <label>Іконка (Емодзі):</label>
+                <input type="text" id="inp-icon" class="admin-inp">
+                
+                <label>Ціна ($):</label>
+                <input type="number" id="inp-price" class="admin-inp">
+                
+                <label>Опис:</label>
+                <input type="text" id="inp-desc" class="admin-inp">
+
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="admin-btn save" onclick="window.saveAdminItem()">💾 Зберегти в Хмару</button>
+                    <button class="admin-btn cancel" onclick="window.cancelEdit()">Відміна</button>
+                </div>
+            </div>
+
+            <div id="admin-controls" style="margin-top:20px;">
+                <button class="reset-btn" style="position:static; width:100%; margin-top:10px;" onclick="window.hardReset()">Скинути МІЙ прогрес</button>
+            </div>
+        </div>
     </div>
 
     <div id="action-sheet"><div id="sheet-content"></div></div>
-    <script src="js/data.js?v=1"></script>
-    <script src="js/app.js?v=32"></script>
+
+    <script type="module" src="js/app.js?v=35"></script>
 </body>
 </html>

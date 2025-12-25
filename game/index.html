@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v28: Clean Scene</title>
+    <title>Life OS v29: City Map</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=3">
+    
+    <link rel="stylesheet" href="css/style.css?v=29">
 </head>
 <body>
 
     <button class="reset-btn" onclick="hardReset()">RESET</button>
 
-    <div class="scene-container">
+    <div class="scene-container" id="room-scene">
         <div id="scene-overlay">
             <div class="overlay-emoji" id="overlay-icon">⏳</div>
             <div id="overlay-text">ДІЯ...</div>
         </div>
-        
+        <div id="item-pc" class="room-item">🖥️</div>
+        <div id="item-bed" class="room-item">🛏️</div>
         <div id="visual-hero">🧍</div>
     </div>
 
@@ -26,36 +28,63 @@
         <div class="widget-header">
             <div>
                 <div class="money"><span id="money">0</span> $</div>
-                <div class="subtitle">Фінанси</div>
+                <div class="subtitle">Гаманець</div>
             </div>
             <div class="energy">⚡ <span id="energy">100</span>%</div>
         </div>
 
         <div id="tab-home" class="tab active">
-            <div class="section-title">МЕБЛІ В КІМНАТІ</div>
+            <div class="section-title">МОЯ КІМНАТА</div>
             <div id="home-grid" class="app-grid"></div>
             <div id="empty-home-msg" class="empty-msg">
-                Кімната пуста. Зайди в Маркетплейс.
+                Пусто. Сходи в місто за покупками!
+            </div>
+        </div>
+
+        <div id="tab-map" class="tab">
+            <div class="map-wrapper">
+                <div class="map-pin" style="top: 40%; left: 20%;" onclick="openShopFromMap()">
+                    <div class="pin-icon">🛒</div>
+                    <div class="pin-label">iShop</div>
+                </div>
+
+                <div class="map-pin" style="top: 30%; left: 70%;" onclick="openBank()">
+                    <div class="pin-icon">🏦</div>
+                    <div class="pin-label">Банк</div>
+                </div>
+
+                <div class="map-pin" style="top: 70%; left: 50%;" onclick="startWorkFromMap()">
+                    <div class="pin-icon">🏢</div>
+                    <div class="pin-label">Офіс</div>
+                </div>
+            </div>
+            <div style="text-align:center; color:#666; font-size:12px; margin-top:10px;">
+                Тисни на будівлі, щоб увійти
             </div>
         </div>
 
         <div id="tab-inv" class="tab">
-            <div class="section-title">РЮКЗАК (ЇЖА)</div>
+            <div class="section-title">РЮКЗАК</div>
             <div id="inventory-grid" class="app-grid"></div>
         </div>
 
         <div id="tab-shop" class="tab">
-            <div class="section-title">МАРКЕТПЛЕЙС</div>
+            <div style="display:flex; align-items:center; margin-bottom:15px;">
+                <button class="back-btn" onclick="switchTab('map', document.getElementById('nav-map'))">⬅ На мапу</button>
+                <div class="section-title" style="margin:0 0 0 15px;">СУПЕРМАРКЕТ</div>
+            </div>
             <div id="shop-container" class="shop-list"></div>
         </div>
     </div>
 
     <div class="nav">
         <button class="nav-btn active" onclick="switchTab('home', this)">🏠</button>
+        <button class="nav-btn" id="nav-map" onclick="switchTab('map', this)">🗺️</button>
         <button class="nav-btn" onclick="switchTab('inv', this)">🎒</button>
-        <button class="nav-btn" onclick="switchTab('shop', this)">🛒</button>
     </div>
 
-    <script src="js/app.js?v=3"></script>
+    <div id="action-sheet"><div id="sheet-content"></div></div>
+
+    <script src="js/app.js?v=29"></script>
 </body>
 </html>

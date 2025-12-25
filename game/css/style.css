@@ -8,9 +8,7 @@ body {
     margin: 0; padding-bottom: 100px; user-select: none; -webkit-tap-highlight-color: transparent; 
 }
 
-.reset-btn { position: fixed; top: 10px; right: 10px; z-index: 10000; background: rgba(255, 69, 58, 0.3); color: white; border: 1px solid var(--red); padding: 5px 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
-
-/* SCENE (КІМНАТА) */
+/* SCENE */
 .scene-container { 
     position: relative; width: 100%; height: 260px; 
     background-color: #2c2c2e; 
@@ -20,10 +18,14 @@ body {
 }
 
 #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
-.room-item { position: absolute; font-size: 50px; display: none; z-index: 5; }
-#item-pc { right: 30px; bottom: 40px; }
-#item-bed { left: 30px; bottom: 40px; }
-.broken-visual { filter: grayscale(1) opacity(0.5); }
+
+/* ADMIN TOGGLE BTN */
+.admin-toggle {
+    position: absolute; top: 10px; right: 10px; z-index: 200;
+    background: rgba(0,0,0,0.6); border: 1px solid #444; color: white;
+    width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer;
+    backdrop-filter: blur(5px);
+}
 
 /* OVERLAY */
 #scene-overlay {
@@ -45,53 +47,27 @@ body {
 .section-title { color: #666; font-size: 12px; margin-bottom: 10px; }
 .empty-msg { text-align: center; color: #555; margin-top: 20px; display: none; }
 
-/* --- MAP STYLES (ВИПРАВЛЕНО) --- */
+/* MAP STYLES */
 .map-wrapper {
     position: relative; width: 100%; height: 350px;
     background: #222; border-radius: 20px; border: 2px solid #444; overflow: hidden;
-    background-image: url('../images/bg-city.jpg'); /* JPG */
+    background-image: url('../images/bg-city.jpg'); 
     background-size: cover; background-position: center;
     z-index: 1;
 }
-
 .map-pin {
-    position: absolute; 
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    cursor: pointer; 
-    transform: translate(-50%, -50%);
-    transition: transform 0.2s;
-    
-    /* FORCE FIX: Підняли шар і збільшили зону */
-    z-index: 100; 
-    width: 80px; height: 80px;
+    position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    cursor: pointer; transform: translate(-50%, -90%); transition: transform 0.2s;
+    z-index: 100; width: 60px; height: 60px;
 }
+.map-pin:active { transform: translate(-50%, -90%) scale(0.9); }
+.pin-icon { font-size: 32px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); pointer-events: none; }
+.pin-label { background: rgba(0,0,0,0.8); color: #fff; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: bold; pointer-events: none; white-space: nowrap; }
+.back-btn { background: #333; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; }
 
-.map-pin:active { transform: translate(-50%, -50%) scale(0.9); }
-
-.pin-icon {
-    font-size: 36px; 
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
-    animation: bounce 2s infinite;
-    pointer-events: none; /* Клік проходить крізь іконку на блок */
-}
-@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
-.pin-label {
-    background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; 
-    border-radius: 6px; font-size: 10px; font-weight: bold; margin-top: -5px;
-    backdrop-filter: blur(2px); pointer-events: none;
-}
-
-.back-btn {
-    background: #333; color: white; border: none; padding: 8px 12px;
-    border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center;
-}
-
-/* GRIDS */
+/* GRIDS & CARDS */
 .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
 .shop-list { display: flex; flex-direction: column; gap: 15px; }
-
-/* APP CARD */
 .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; z-index: 1; }
 .app-card:active .icon-wrapper { transform: scale(0.95); }
 .icon-wrapper { position: relative; width: 76px; height: 76px; display: flex; justify-content: center; align-items: center; }
@@ -105,7 +81,6 @@ body {
 .ring-hp { transition: stroke-dashoffset 0.3s; }
 .ring-timer { stroke: var(--accent); opacity: 0; transition: opacity 0.2s; }
 .ring-timer.active { opacity: 1; }
-
 .app-label { font-size: 11px; margin-top: 4px; color: #fff; font-weight: 500; text-align: center;}
 .app-badge { position: absolute; bottom: -6px; z-index: 3; font-size: 9px; font-weight: bold; padding: 2px 6px; background: #333; border-radius: 8px; border: 2px solid var(--bg); color: #ccc; min-width: 20px; text-align: center; }
 
@@ -126,17 +101,42 @@ body {
 .shop-btn { background: var(--accent); color: white; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 13px; z-index: 5; }
 .shop-btn:disabled { background: #333; color: #555; }
 
-/* ACTION SHEET */
-#action-sheet { position: fixed; bottom: -100%; left: 0; width: 100%; background: #1c1c1e; padding: 25px; box-sizing: border-box; transition: bottom 0.3s; z-index: 1000; border-top: 1px solid #333; }
-#action-sheet.open { bottom: 0; }
-.sheet-btn { width: 100%; padding: 15px; margin-top: 10px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #333; color: white; }
+/* ADMIN PANEL STYLES */
+.admin-panel {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #111; z-index: 10000; display: none;
+    flex-direction: column; padding: 20px; box-sizing: border-box;
+    overflow-y: auto;
+}
+.admin-panel.open { display: flex; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.admin-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.admin-item-btn {
+    background: #222; border: 1px solid #333; color: white; padding: 10px;
+    border-radius: 8px; cursor: pointer; font-size: 12px; flex: 1 1 40%;
+    display: flex; align-items: center; gap: 8px;
+}
+.admin-item-btn:hover { background: #333; border-color: var(--accent); }
+.admin-inp {
+    width: 100%; background: #000; border: 1px solid #444; color: white;
+    padding: 10px; margin-bottom: 10px; border-radius: 8px; box-sizing: border-box;
+}
+label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; }
+.admin-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none; 
+    font-weight: bold; cursor: pointer; margin-bottom: 10px; color: white;
+}
+.admin-btn.save { background: var(--green); }
+.admin-btn.cancel { background: #333; }
 
-/* TABS */
+/* TABS & NAV */
 .tab { display: none; animation: fade 0.2s; } 
 .tab.active { display: block; }
 @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-/* NAV */
 .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; padding: 15px 0; border-top: 1px solid #333; z-index: 9999; }
 .nav-btn { flex: 1; background: none; border: none; font-size: 28px; cursor: pointer; opacity: 0.5; transition: 0.2s; }
 .nav-btn.active { opacity: 1; transform: scale(1.1); }
+
+#action-sheet { position: fixed; bottom: -100%; left: 0; width: 100%; background: #1c1c1e; padding: 25px; box-sizing: border-box; transition: bottom 0.3s; z-index: 1000; border-top: 1px solid #333; }
+#action-sheet.open { bottom: 0; }
+.sheet-btn { width: 100%; padding: 15px; margin-top: 10px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #333; color: white; }

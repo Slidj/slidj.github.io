@@ -22,6 +22,17 @@ export const t = {
     menuAdmin: "⚙️ Admin Panel",
     menuProfile: "👤 Profile",
     menuDonate: "⭐ Support Project",
+    // 🔥 НОВІ ПЕРЕКЛАДИ (ENGLISH)
+    menuPromo: "🎁 Enter Promo Code",
+    promoTitle: "🎁 Get a Gift",
+    promoInputPlaceholder: "Enter code...",
+    promoBtnActivate: "ACTIVATE",
+    promoBtnCancel: "Cancel",
+    bonusTitle: "+0.5 Ticket",
+    bonusHalfMsg: "Lucky you! You found half a ticket.<br><span style='color: #aaa; font-size: 14px;'>Come back tomorrow to get the second half!</span>",
+    bonusFullMsg: "Welcome back! Ticket completed.<br><span style='color: #46d369; font-weight: bold;'>(Total +1.0)</span>",
+    bonusBtn: "AWESOME!",
+    // КІНЕЦЬ НОВИХ
     donateTitle: "Support MEDIA HUB",
     donateDesc: "Your support helps us pay for servers and add new movies.",
     donateLvl1: "☕ Cup of Coffee",
@@ -79,6 +90,17 @@ const dictionaries = {
         menuAdmin: "⚙️ Адмін-панель",
         menuProfile: "👤 Профіль",
         menuDonate: "⭐ Підтримати проект",
+        // 🔥 НОВІ ПЕРЕКЛАДИ (UKRAINIAN)
+        menuPromo: "🎁 Ввести промокод",
+        promoTitle: "🎁 Отримати подарунок",
+        promoInputPlaceholder: "Введіть код...",
+        promoBtnActivate: "АКТИВУВАТИ",
+        promoBtnCancel: "Скасувати",
+        bonusTitle: "+0.5 Ticket",
+        bonusHalfMsg: "Вам пощастило! Ви знайшли половинку квитка.<br><span style='color: #aaa; font-size: 14px;'>Зайдіть завтра, щоб гарантовано забрати другу частину!</span>",
+        bonusFullMsg: "Ви повернулися! Квиток зібрано повністю.<br><span style='color: #46d369; font-weight: bold;'>(Разом +1.0)</span>",
+        bonusBtn: "СУПЕР!",
+        // КІНЕЦЬ НОВИХ
         donateTitle: "Підтримка MEDIA HUB",
         donateDesc: "Ваші донати допомагають нам оплачувати сервери та додавати нові фільми.",
         donateLvl1: "☕ Чашка кави",
@@ -122,8 +144,14 @@ export function initLanguage() {
 function updateStaticInterface() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (t[key]) el.innerText = t[key];
+        if (t[key]) el.innerHTML = t[key]; // innerHTML для підтримки тегів <br> і <span>
     });
+    
+    // Оновлення плейсхолдерів
     const searchInput = document.getElementById('search_input');
     if(searchInput) searchInput.placeholder = t.searchPlaceholder;
+
+    // 🔥 Оновлення плейсхолдера промокоду
+    const promoInput = document.getElementById('user_promo_input');
+    if(promoInput) promoInput.placeholder = t.promoInputPlaceholder;
 }

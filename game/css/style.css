@@ -151,49 +151,70 @@ select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;c
 #action-sheet.open { bottom: 0; }
 .sheet-btn { width: 100%; padding: 15px; margin-top: 10px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #333; color: white; }
 
-/* --- 🔥 ЕФЕКТИ ЗІПСОВАНОЇ ЇЖІ --- */
+/* --- 🔥 ВИПРАВЛЕНІ ЕФЕКТИ ЗІПСОВАНОЇ ЇЖІ --- */
 
-/* Бейдж смітника */
+/* 1. Бейдж смітника (Стиль без змін, він працює) */
 .trash-badge {
     position: absolute; 
-    top: -6px; 
-    right: -6px;
-    width: 22px; height: 22px;
+    top: -8px; /* Трохи вище */
+    right: -8px; /* Трохи правіше */
+    width: 24px; height: 24px;
     background: #ff453a; 
     border: 2px solid #1c1c1e; 
     border-radius: 50%; 
     color: white;
     display: flex; justify-content: center; align-items: center;
-    font-size: 12px; 
-    z-index: 10;
+    font-size: 14px; 
+    z-index: 20; /* Найвищий шар */
     box-shadow: 0 2px 5px rgba(0,0,0,0.5);
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
-/* Анімація "Сморід" (Зелений дим) */
-.spoiled-wrapper::after {
+/* 2. Контейнер зіпсованого предмета */
+.spoiled-wrapper {
+    overflow: visible !important; /* Дозволяємо диму виходити за рамки */
+    position: relative;
+}
+
+/* 3. Сама іконка стає зеленуватою і пульсує */
+.spoiled-wrapper .app-bg {
+    border: 1px solid #3dff3d !important; /* Яскрава зелена рамка */
+    box-shadow: 0 0 15px rgba(61, 255, 61, 0.3); /* Зелене світіння */
+    animation: toxic-pulse 2s infinite;
+}
+
+@keyframes toxic-pulse {
+    0% { box-shadow: 0 0 5px rgba(61, 255, 61, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(61, 255, 61, 0.6); }
+    100% { box-shadow: 0 0 5px rgba(61, 255, 61, 0.2); }
+}
+
+/* 4. ГАЗОВА ХМАРА (Дим) */
+.spoiled-wrapper::before {
     content: '';
     position: absolute; 
     top: 50%; left: 50%; 
-    width: 100%; height: 100%;
+    
+    /* Робимо хмару великою (160% від розміру іконки) */
+    width: 160%; height: 160%;
+    
     transform: translate(-50%, -50%);
-    background: radial-gradient(circle, rgba(120, 255, 68, 0.4) 0%, transparent 70%);
+    
+    /* Градієнт: Яскраво-зелений центр -> Прозорі краї */
+    background: radial-gradient(circle, rgba(100, 255, 0, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+    
+    z-index: 10; /* Шар ПОВЕРХ іконки, як туман */
+    pointer-events: none; /* Щоб можна було клікати крізь дим */
     border-radius: 50%;
-    z-index: 0;
-    pointer-events: none; 
-    animation: toxic-fumes 3s infinite ease-in-out;
+    
+    /* Анімація клубочіння */
+    animation: toxic-cloud 4s infinite ease-in-out;
 }
 
-@keyframes toxic-fumes {
-    0% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
-    50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.1); filter: blur(4px); }
-    100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
-}
-
-.spoiled-wrapper .app-bg {
-    position: relative;
-    z-index: 1;
-    border-color: #5d5d5d !important;
-}
+@keyframes toxic-cloud {
+    0% { transform: translate(-50%, -50%) scale(0.8) rotate(0deg); opacity: 0.5; }
+    50% { transform: translate(-50%, -50%) scale(1.1) rotate(20deg); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(0.8) rotate(0deg); opacity: 0.5; }
+                                    }

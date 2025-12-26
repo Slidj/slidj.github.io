@@ -148,9 +148,11 @@ select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;c
 #action-sheet.open { bottom: 0; }
 .sheet-btn { width: 100%; padding: 15px; margin-top: 10px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #333; color: white; }
 
-/* --- 🤢 ЕФЕКТ "ЖИВОГО" ГАЗУ (LIQUID BLOB) 🤢 --- */
+/* ... (початок файлу без змін) ... */
 
-/* 1. Бейдж смітника (Статичний) */
+/* --- 🤢 ЕФЕКТ "ХАОТИЧНИЙ РІЙ" (SWARM GAS) 🤢 --- */
+
+/* 1. Бейдж смітника */
 .trash-badge {
     position: absolute; 
     top: -8px; right: -8px;
@@ -166,55 +168,79 @@ select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;c
 /* 2. Контейнер */
 .spoiled-wrapper {
     position: relative;
-    overflow: visible !important; /* Дозволяємо хмарі виходити за межі */
+    overflow: visible !important;
 }
 
-/* 3. Іконка (Світиться) */
+/* 3. Іконка */
 .spoiled-wrapper .app-bg {
-    border: 1px solid #3dff3d !important;
-    box-shadow: 0 0 10px rgba(61, 255, 61, 0.4);
-    z-index: 2; /* Іконка над газом */
+    border: 2px solid #4aff4a !important; /* Кислотний колір */
+    box-shadow: 0 0 5px rgba(74, 255, 74, 0.5);
     position: relative;
-    background: #111; /* Темний фон */
+    z-index: 5; /* Іконка чітко зверху */
+    background: #111;
 }
 
-/* 4. ГАЗОВІ ХМАРИ (Шар 1 і Шар 2) */
+/* --- НАЛАШТУВАННЯ ГАЗУ --- */
 .spoiled-wrapper::before,
 .spoiled-wrapper::after {
     content: '';
     position: absolute;
     top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 170%; height: 170%; /* Велика хмара */
-    border-radius: 40%; /* Неправильна форма */
-    filter: blur(12px); /* Сильне розмиття для ефекту газу */
-    opacity: 0.7;
+    
+    /* Великі плями */
+    width: 160%; height: 160%;
+    
+    /* Робимо їх хмароподібними */
+    border-radius: 45%; 
+    filter: blur(10px); /* М'який газ */
+    opacity: 0.6;
     pointer-events: none;
     z-index: 1; /* Газ виходить з-під кнопки */
 }
 
-/* Шар 1 (Яскравий центр) */
+/* Хмара 1: Рухається хаотично вліво-вправо-вгору */
 .spoiled-wrapper::before {
-    background: radial-gradient(circle, rgba(61, 255, 61, 0.5) 20%, transparent 70%);
-    animation: gas-swarm-1 10s infinite linear;
+    background: radial-gradient(circle at 30% 30%, rgba(50, 255, 50, 0.7), transparent 60%);
+    animation: swarm-1 4s infinite ease-in-out alternate;
 }
 
-/* Шар 2 (Додатковий об'єм) */
+/* Хмара 2: Рухається хаотично в інший бік */
 .spoiled-wrapper::after {
-    background: radial-gradient(circle, rgba(150, 255, 100, 0.3) 20%, transparent 70%);
-    animation: gas-swarm-2 12s infinite linear reverse; /* Крутиться в інший бік */
+    background: radial-gradient(circle at 70% 70%, rgba(150, 255, 50, 0.5), transparent 60%);
+    animation: swarm-2 5s infinite ease-in-out alternate;
 }
 
-/* Анімація: Плавне переливання форми (Blob effect) */
-@keyframes gas-swarm-1 {
-    0% { transform: translate(-50%, -50%) rotate(0deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
-    33% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
-    66% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
-    100% { transform: translate(-50%, -50%) rotate(360deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+/* Анімація 1: "Блукання" першої хмари */
+@keyframes swarm-1 {
+    0% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    }
+    33% {
+        transform: translate(-70%, -60%) scale(1.2) rotate(45deg); /* Зсув вліво-вгору */
+    }
+    66% {
+        transform: translate(-30%, -40%) scale(0.9) rotate(90deg); /* Зсув вправо-вниз */
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.1) rotate(135deg);
+        border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%;
+    }
 }
 
-@keyframes gas-swarm-2 {
-    0% { transform: translate(-50%, -50%) rotate(0deg); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-    50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
-    100% { transform: translate(-50%, -50%) rotate(360deg); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+/* Анімація 2: "Блукання" другої хмари (інша траєкторія) */
+@keyframes swarm-2 {
+    0% {
+        transform: translate(-50%, -50%) scale(1.1) rotate(0deg);
+        border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%;
+    }
+    50% {
+        transform: translate(-40%, -80%) scale(1.3) rotate(-60deg); /* Сильний вихід вгору */
+        opacity: 0.8; /* Густішає */
+    }
+    100% {
+        transform: translate(-60%, -30%) scale(1) rotate(-120deg);
+        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        opacity: 0.4;
+    }
 }

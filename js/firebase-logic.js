@@ -16,6 +16,12 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 let currentSettings = null;
 
+// 🔥 ЗМІННІ ДЛЯ ПОСТОРІНКОВОЇ НАВІГАЦІЇ
+let adminAllUserIds = [];   // Тут зберігаємо всі ID
+let adminUsersData = {};    // Тут самі дані користувачів
+let adminCurrentPage = 1;   // Поточна сторінка
+const adminItemsPerPage = 10; // Кількість на сторінці
+
 export async function initAdminSystem() {
     const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
     if (!user) return;
@@ -109,28 +115,19 @@ export async function initAdminSystem() {
 
 window.saveDonation = function(stars) { const user = window.Telegram?.WebApp?.initDataUnsafe?.user; if(!user) return; const userRef = db.ref('users/' + user.id); userRef.child('donations').push({ amount: stars, date: new Date().toISOString(), type: 'stars' }); userRef.child('total_donated').transaction((current) => { return (current || 0) + stars; }); if (stars >= 50) { userRef.update({ is_patron: true }); } };
 
-// 🔥 НОВА ФУНКЦІЯ: Зміна балансу (Адмінка)
+// Зміна балансу (Адмінка)
 window.changeUserBalance = function(userId, userName) {
     const input = prompt(`Зміна балансу для ${userName}.\n\nВведіть суму:\n👉 10 (щоб додати)\n👉 -10 (щоб відняти)`, "0");
-    
-    if (input === null) return; // Натиснули "Скасувати"
-    
+    if (input === null) return;
     const amount = parseFloat(input);
-    if (isNaN(amount) || amount === 0) {
-        alert("Введіть коректне число (не нуль).");
-        return;
-    }
-
+    if (isNaN(amount) || amount === 0) { alert("Введіть коректне число (не нуль)."); return; }
     db.ref('users/' + userId + '/tickets').transaction((current) => {
         let newBal = (current || 0) + amount;
-        if (newBal < 0) newBal = 0; // Не даємо піти в мінус
+        if (newBal < 0) newBal = 0;
         return newBal;
     }, (error, committed, snapshot) => {
-        if (error) {
-            alert("Помилка оновлення бази.");
-        } else if (committed) {
-            alert(`Успішно! Новий баланс: ${snapshot.val()}`);
-        }
+        if (error) { alert("Помилка оновлення бази."); } 
+        else if (committed) { alert(`Успішно! Новий баланс: ${snapshot.val()}`); }
     });
 };
 
@@ -147,41 +144,103 @@ function formatRelativeDate(isoString) {
     return `<span style="color:#aaa">${diffDays} ${suffix} тому о ${time}</span>`;
 }
 
+// 🔥 ЗАВАНТАЖЕННЯ ДАНИХ (ОНОВЛЕНО ДЛЯ ПАГІНАЦІЇ)
 async function loadAdminData() {
     const statsDiv = document.getElementById('admin_stats');
-    const listDiv = document.getElementById('admin_user_list');
+    
     db.ref('users').on('value', (snapshot) => {
-        const users = snapshot.val() || {};
-        const ids = Object.keys(users);
-        if(statsDiv) statsDiv.innerHTML = `👥 Усього користувачів: <b>${ids.length}</b><br>⚙️ Статус: ${currentSettings?.isMaintenance ? '🚧 Техроботи' : '✅ Ок'}`;
-        if(listDiv) {
-            listDiv.innerHTML = '';
-            ids.reverse().forEach(id => {
-                const u = users[id];
-                const isOnline = u.status === 'online';
-                const patronBadge = u.total_donated > 0 ? '⭐' : '';
-                const card = document.createElement('div');
-                card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
-                
-                // 🔥 ОНОВЛЕНИЙ HTML КАРТКИ: Додана кнопка [±🎟️]
-                card.innerHTML = `
-                    <div style="color:white; font-size:12px; display:flex; align-items:center;">
-                        <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span>
-                        <div>
-                            <b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br>
-                            <span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0}</span>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button onclick="window.changeUserBalance('${u.id}', '${u.first_name}')" style="background:#3498db; color:white; border:none; padding:5px 8px; border-radius:3px; font-weight:bold;">±🎟️</button>
-                        <button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>
-                    </div>
-                `;
-                listDiv.appendChild(card);
-            });
-        }
+        adminUsersData = snapshot.val() || {};
+        // Отримуємо всі ID і сортуємо (нові зверху)
+        adminAllUserIds = Object.keys(adminUsersData).reverse();
+        
+        if(statsDiv) statsDiv.innerHTML = `👥 Усього користувачів: <b>${adminAllUserIds.length}</b><br>⚙️ Статус: ${currentSettings?.isMaintenance ? '🚧 Техроботи' : '✅ Ок'}`;
+        
+        // Малюємо поточну сторінку
+        renderAdminPage();
     });
 }
+
+// 🔥 НОВА ФУНКЦІЯ: МАЛЮЄ КОНКРЕТНУ СТОРІНКУ
+function renderAdminPage() {
+    const listDiv = document.getElementById('admin_user_list');
+    if (!listDiv) return;
+    listDiv.innerHTML = '';
+
+    const totalPages = Math.ceil(adminAllUserIds.length / adminItemsPerPage);
+    
+    // Перевірка, щоб не вийти за межі
+    if (adminCurrentPage > totalPages && totalPages > 0) adminCurrentPage = totalPages;
+    if (adminCurrentPage < 1) adminCurrentPage = 1;
+
+    // Вираховуємо індекси для зрізу
+    const start = (adminCurrentPage - 1) * adminItemsPerPage;
+    const end = start + adminItemsPerPage;
+    const usersOnPage = adminAllUserIds.slice(start, end);
+
+    // Малюємо користувачів
+    usersOnPage.forEach(id => {
+        const u = adminUsersData[id];
+        const isOnline = u.status === 'online';
+        const patronBadge = u.total_donated > 0 ? '⭐' : '';
+        
+        const card = document.createElement('div');
+        card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
+        
+        card.innerHTML = `
+            <div style="color:white; font-size:12px; display:flex; align-items:center;">
+                <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span>
+                <div>
+                    <b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br>
+                    <span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0}</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button onclick="window.changeUserBalance('${u.id}', '${u.first_name}')" style="background:#3498db; color:white; border:none; padding:5px 8px; border-radius:3px; font-weight:bold;">±🎟️</button>
+                <button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>
+            </div>
+        `;
+        listDiv.appendChild(card);
+    });
+
+    // 🔥 МАЛЮЄМО КНОПКИ НАВІГАЦІЇ (1, 2, 3...)
+    if (totalPages > 1) {
+        const paginationDiv = document.createElement('div');
+        paginationDiv.style = "display:flex; gap:5px; justify-content:center; margin-top:15px; flex-wrap:wrap;";
+        
+        // Кнопка "Назад"
+        if (adminCurrentPage > 1) {
+            paginationDiv.innerHTML += `<button onclick="window.changeAdminPage(${adminCurrentPage - 1})" style="padding:5px 10px; background:#444; color:white; border:none; border-radius:3px;">❮</button>`;
+        }
+
+        // Номери сторінок (показуємо, наприклад, 5 найближчих, щоб не було 100 кнопок)
+        let startPage = Math.max(1, adminCurrentPage - 2);
+        let endPage = Math.min(totalPages, adminCurrentPage + 2);
+
+        if (startPage > 1) paginationDiv.innerHTML += `<span style="color:#666; align-self:center;">...</span>`;
+
+        for (let i = startPage; i <= endPage; i++) {
+            const isActive = i === adminCurrentPage;
+            paginationDiv.innerHTML += `<button onclick="window.changeAdminPage(${i})" style="padding:5px 10px; background:${isActive ? '#e50914' : '#444'}; color:white; border:none; border-radius:3px;">${i}</button>`;
+        }
+
+        if (endPage < totalPages) paginationDiv.innerHTML += `<span style="color:#666; align-self:center;">...</span>`;
+
+        // Кнопка "Вперед"
+        if (adminCurrentPage < totalPages) {
+            paginationDiv.innerHTML += `<button onclick="window.changeAdminPage(${adminCurrentPage + 1})" style="padding:5px 10px; background:#444; color:white; border:none; border-radius:3px;">❯</button>`;
+        }
+
+        listDiv.appendChild(paginationDiv);
+    }
+}
+
+// Функція перемикання сторінки
+window.changeAdminPage = function(page) {
+    adminCurrentPage = page;
+    renderAdminPage();
+    // Прокручуємо вгору списку
+    document.getElementById('admin_modal').children[0].scrollTo(0,0);
+};
 
 function showNotification(text) { const bar = document.getElementById('notification_bar'); const txt = document.getElementById('notif_text'); if (bar && txt) { playSound('Notification.wav'); txt.innerText = text; bar.classList.add('active'); setTimeout(() => { bar.classList.remove('active'); }, 15000); } }
 window.closeNotification = function() { document.getElementById('notification_bar')?.classList.remove('active'); };

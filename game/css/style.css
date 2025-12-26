@@ -8,6 +8,11 @@ body {
     margin: 0; padding-bottom: 100px; user-select: none; -webkit-tap-highlight-color: transparent; 
 }
 
+/* --- 🔧 ВАЖЛИВО: СТИЛІ ВКЛАДОК (Щоб не накладалися) --- */
+.tab { display: none; animation: fade 0.3s ease-in-out; } 
+.tab.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
 /* SCENE */
 .scene-container { 
     position: relative; width: 100%; height: 260px; 
@@ -22,9 +27,7 @@ body {
 /* ADMIN TOGGLE */
 .admin-toggle {
     position: absolute; 
-    top: 90px;          
-    left: 15px;         
-    z-index: 1000;      
+    top: 90px; left: 15px; z-index: 1000;      
     background: rgba(0,0,0,0.6); border: 1px solid #444; color: white;
     width: 44px; height: 44px; border-radius: 50%; font-size: 22px; cursor: pointer;
     backdrop-filter: blur(5px); box-shadow: 0 2px 10px rgba(0,0,0,0.5);
@@ -57,8 +60,7 @@ body {
     position: relative; width: 100%; height: 350px;
     background: #222; border-radius: 20px; border: 2px solid #444; overflow: hidden;
     background-image: url('../images/bg-city.jpg'); 
-    background-size: cover; background-position: center;
-    z-index: 1;
+    background-size: cover; background-position: center; z-index: 1;
 }
 .map-pin {
     position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
@@ -138,42 +140,28 @@ label { font-size: 12px; color: #888; display: block; margin-bottom: 6px; font-w
 .admin-btn.reset { background: rgba(255, 69, 58, 0.1); color: var(--red); border: 1px solid var(--red); }
 select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
+.nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; padding: 15px 0; border-top: 1px solid #333; z-index: 9999; }
+.nav-btn { flex: 1; background: none; border: none; font-size: 28px; cursor: pointer; opacity: 0.5; transition: 0.2s; }
+.nav-btn.active { opacity: 1; transform: scale(1.1); }
+
 /* --- 📱 ACTION SHEET (МЕНЮ ДІЙ) --- */
 #action-sheet {
-    position: fixed; 
-    bottom: -100%; 
-    left: 0; 
-    width: 100%; 
-    background: rgba(28, 28, 30, 0.95); /* Напівпрозорий фон */
-    backdrop-filter: blur(15px); /* Розмиття фону */
-    padding: 25px 20px 40px 20px; 
-    box-sizing: border-box; 
+    position: fixed; bottom: -100%; left: 0; width: 100%; 
+    background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(15px);
+    padding: 25px 20px 40px 20px; box-sizing: border-box; 
     transition: bottom 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-    z-index: 2000; 
-    border-top: 1px solid #333;
-    border-radius: 20px 20px 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    z-index: 2000; border-top: 1px solid #333; border-radius: 20px 20px 0 0;
+    display: flex; flex-direction: column; gap: 10px;
 }
-
 #action-sheet.open { bottom: 0; }
-
-/* Заголовок меню */
 .sheet-header { text-align: center; margin-bottom: 15px; }
 .sheet-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
 .sheet-subtitle { font-size: 13px; color: #888; }
-
-/* Кнопки меню */
 .sheet-btn {
-    width: 100%; padding: 16px; border-radius: 14px; border: none; 
-    font-weight: 600; font-size: 16px; cursor: pointer; 
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    transition: transform 0.1s;
+    width: 100%; padding: 16px; border-radius: 14px; border: none; font-weight: 600; font-size: 16px; cursor: pointer; 
+    display: flex; align-items: center; justify-content: center; gap: 10px; transition: transform 0.1s;
 }
 .sheet-btn:active { transform: scale(0.98); }
-
-/* Кольори кнопок */
 .btn-primary { background: var(--accent); color: white; }
 .btn-success { background: var(--green); color: white; }
 .btn-danger { background: rgba(255, 69, 58, 0.15); color: var(--red); }
@@ -182,44 +170,34 @@ select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;c
 
 /* --- 🤢 ЕФЕКТ "ХАОТИЧНИЙ РІЙ" (ГАЗ) --- */
 .trash-badge {
-    position: absolute; top: -8px; right: -8px;
-    width: 24px; height: 24px;
-    background: #ff453a; border: 2px solid #1c1c1e; 
-    border-radius: 50%; color: white;
-    display: flex; justify-content: center; align-items: center;
-    font-size: 14px; z-index: 20;
+    position: absolute; top: -8px; right: -8px; width: 24px; height: 24px;
+    background: #ff453a; border: 2px solid #1c1c1e; border-radius: 50%; color: white;
+    display: flex; justify-content: center; align-items: center; font-size: 14px; z-index: 20;
     box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
-
 .spoiled-wrapper { position: relative; overflow: visible !important; }
-
 .spoiled-wrapper .app-bg {
     border: 2px solid #4aff4a !important; box-shadow: 0 0 5px rgba(74, 255, 74, 0.5);
     position: relative; z-index: 5; background: #111;
 }
-
 .spoiled-wrapper::before, .spoiled-wrapper::after {
     content: ''; position: absolute; top: 50%; left: 50%;
     width: 170%; height: 170%; border-radius: 45%; 
     filter: blur(12px); opacity: 0.6; pointer-events: none; z-index: 1;
 }
-
 .spoiled-wrapper::before {
     background: radial-gradient(circle at 30% 30%, rgba(50, 255, 50, 0.6), transparent 60%);
     animation: swarm-1 5s infinite ease-in-out alternate;
 }
-
 .spoiled-wrapper::after {
     background: radial-gradient(circle at 70% 70%, rgba(150, 255, 50, 0.4), transparent 60%);
     animation: swarm-2 6s infinite ease-in-out alternate;
 }
-
 @keyframes swarm-1 {
     0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
     50% { transform: translate(-60%, -60%) scale(1.1) rotate(90deg); border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%; }
     100% { transform: translate(-40%, -40%) scale(1) rotate(180deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
 }
-
 @keyframes swarm-2 {
     0% { transform: translate(-50%, -50%) scale(1.1) rotate(0deg); border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%; }
     50% { transform: translate(-40%, -40%) scale(0.9) rotate(-90deg); border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }

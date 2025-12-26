@@ -10,38 +10,22 @@ let playerIdleTimer = null;
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
 
-// 🔥 ОПЛАТА TELEGRAM STARS
 window.selectDonateLevel = (stars) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
-
     const links = {
         5:  "https://t.me/$dg8POh3jOErKFgAAXydTAL3IV5g",
         20: "https://t.me/$IGZ5qh3jOErLFgAAdaeivliYG7k",
         50: "https://t.me/$8xXaLh3jOErMFgAA3wPWf_AsLvM"
     };
-
     const invoiceUrl = links[stars];
-
-    if (!invoiceUrl) {
-        console.error("Link not found for stars:", stars);
-        return;
-    }
-
+    if (!invoiceUrl) return;
     sessionStorage.setItem('pending_donation', stars);
-
     if (window.Telegram?.WebApp?.openInvoice) {
         window.Telegram.WebApp.openInvoice(invoiceUrl, (status) => {
-            if (status === 'paid') {
-                window.processSuccessfulDonation(stars);
-            } else if (status === 'failed') {
-                window.Telegram.WebApp.showAlert('Оплата не пройшла. Спробуйте ще раз.');
-            } else if (status === 'cancelled') {
-                console.log("Оплату скасовано");
-            }
+            if (status === 'paid') window.processSuccessfulDonation(stars);
+            else if (status === 'failed') window.Telegram.WebApp.showAlert('Оплата не пройшла. Спробуйте ще раз.');
         });
-    } else {
-        window.open(invoiceUrl, '_blank');
-    }
+    } else window.open(invoiceUrl, '_blank');
 };
 
 window.processSuccessfulDonation = (stars) => {
@@ -67,39 +51,27 @@ export function renderGrid(items, isAppend = false) {
     const c = document.getElementById('content_container'); 
     if (!c) return; 
     if (!isAppend) c.innerHTML = '';
-    
     items.forEach((item, index) => {
         const d = document.createElement('div'); 
         d.className = 'movie-poster-card card-anim'; 
         d.onclick = () => { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); openMoviePage(item); };
-        
         let badgeHtml = '';
         if (item.type === 'tv') badgeHtml += `<div class="type-badge">${t.serialBadge}</div>`;
-        
-        // Бейдж TOP-10
-        if (state.currentTab === 'home' && index < 10 && !isAppend) {
-             badgeHtml += `<div class="top10-badge"><span>TOP</span>${index + 1}</div>`;
-        }
-
+        if (state.currentTab === 'home' && index < 10 && !isAppend) badgeHtml += `<div class="top10-badge"><span>TOP</span>${index + 1}</div>`;
         d.innerHTML = `<img src="${item.img}" loading="lazy">${badgeHtml}<div class="rating-mini">${item.rating}</div>`;
         c.appendChild(d);
     });
 }
 
-// 🔥 Кнопка "Play Something" (Рандом)
 export function toggleRandomButton(isVisible) {
     const fab = document.getElementById('random_fab');
     if (fab) fab.style.display = isVisible ? 'flex' : 'none';
 }
 
-// Рандомний вибір
 window.playRandomMovie = () => {
     playSound('Tap.wav');
     const items = state.feedMovies;
-    if (!items || items.length === 0) {
-        window.Telegram?.WebApp?.showAlert("Стрічка ще вантажиться...");
-        return;
-    }
+    if (!items || items.length === 0) { window.Telegram?.WebApp?.showAlert("Стрічка ще вантажиться..."); return; }
     const randomItem = items[Math.floor(Math.random() * items.length)];
     window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
     openMoviePage(randomItem);
@@ -130,164 +102,48 @@ export async function openMoviePage(movie) {
     playSound('Pop.wav');
     state.activeMovie = movie; 
     addToHistory(movie);
-    
     const modal = document.getElementById('movie_details_modal');
     const content = document.getElementById('movie_details_content');
     if (!modal || !content) return;
-
     document.body.style.overflow = 'hidden';
     content.classList.remove('modal-closing-anim');
-    
     let initialBackdrop = movie.backdrop || movie.img;
-    if(initialBackdrop && initialBackdrop.includes('/w500/')) {
-        initialBackdrop = initialBackdrop.replace('/w500/', '/w1280/'); 
-    }
-
-    content.innerHTML = `
-        <div class="nf-container">
-            <div class="nf-hero">
-                <div class="nf-backdrop" style="background-image: url('${initialBackdrop}');"></div>
-                <div class="nf-gradient"></div>
-                <div class="nf-hero-content">
-                    <div id="dynamic_title_area" class="title-fade-in" style="min-height: 50px;"></div>
-                    <div class="nf-meta"><span>Завантаження...</span></div>
-                </div>
-            </div>
-            <div style="padding: 40px; display: flex; justify-content: center; align-items: center; color: #666;">
-                <div class="netflix-loader"></div>
-            </div>
-        </div>
-    `;
+    if(initialBackdrop && initialBackdrop.includes('/w500/')) initialBackdrop = initialBackdrop.replace('/w500/', '/w1280/'); 
+    content.innerHTML = `<div class="nf-container"><div class="nf-hero"><div class="nf-backdrop" style="background-image: url('${initialBackdrop}');"></div><div class="nf-gradient"></div><div class="nf-hero-content"><div id="dynamic_title_area" class="title-fade-in" style="min-height: 50px;"></div><div class="nf-meta"><span>Завантаження...</span></div></div></div><div style="padding: 40px; display: flex; justify-content: center; align-items: center; color: #666;"><div class="netflix-loader"></div></div></div>`;
     modal.style.display = 'block';
-
     const apiType = movie.type === 'tv' ? 'tv' : 'movie';
-    
     try {
-        const [data, similar] = await Promise.all([
-            fetchMovieDetails(movie.id, apiType),
-            fetchSimilar(movie.id, apiType)
-        ]);
-
+        const [data, similar] = await Promise.all([fetchMovieDetails(movie.id, apiType), fetchSimilar(movie.id, apiType)]);
         let details = { ...movie }; 
         let logoUrl = null, castHtml = '', trailersHtml = '', similarHtml = '';
-
         if (data.external_ids?.imdb_id) state.activeMovie.imdb_id = details.imdb_id = data.external_ids.imdb_id;
         if (data.original_title) state.activeMovie.original_title = data.original_title;
-        
         details.desc = data.overview || movie.desc;
         const rt = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : null);
         if (rt) details.runtime = rt > 60 ? `${Math.floor(rt/60)}${t.modalHour} ${rt%60}${t.modalMin}` : `${rt}${t.modalMin}`;
         details.age = data.adult ? '18+' : '16+';
-
-        if (data.images?.logos?.length > 0) {
-            const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || 
-                         data.images.logos.find(l => l.iso_639_1 === 'en') || 
-                         data.images.logos[0];
-            logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
-        }
-
-        if (data.credits?.cast) {
-            castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${data.credits.cast.slice(0,10).filter(p=>p.profile_path).map(p=>`<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
-        }
-        if (data.videos?.results) {
-            const trailers = data.videos.results.filter(v => v.type === 'Trailer').slice(0,3);
-            if(trailers.length > 0) {
-                trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${trailers.map(v => `<div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')"><div class="trailer-img-box"><img src="https://img.youtube.com/vi/${v.key}/mqdefault.jpg" loading="lazy"><div class="trailer-play-icon">▶</div></div></div>`).join('')}</div></div>`;
-            }
-        }
-        if (similar && similar.length > 0) {
-            similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
-        }
-
-        // 🔥 РОЗРАХУНОК РЕЙТИНГУ (з TMDB)
+        if (data.images?.logos?.length > 0) { const logo = data.images.logos.find(l => l.iso_639_1 === 'uk') || data.images.logos.find(l => l.iso_639_1 === 'en') || data.images.logos[0]; logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`; }
+        if (data.credits?.cast) castHtml = `<div class="cast-section"><div class="cast-title">${t.modalActors}</div><div class="cast-row">${data.credits.cast.slice(0,10).filter(p=>p.profile_path).map(p=>`<div class="cast-card"><img src="https://image.tmdb.org/t/p/w200${p.profile_path}" class="cast-img"><div class="cast-name">${p.name}</div></div>`).join('')}</div></div>`;
+        if (data.videos?.results) { const trailers = data.videos.results.filter(v => v.type === 'Trailer').slice(0,3); if(trailers.length > 0) trailersHtml = `<div class="trailer-section"><div class="trailer-title">${t.modalTrailers}</div><div class="trailer-row">${trailers.map(v => `<div class="trailer-card" onclick="window.ui_openTrailer('${v.key}')"><div class="trailer-img-box"><img src="https://img.youtube.com/vi/${v.key}/mqdefault.jpg" loading="lazy"><div class="trailer-play-icon">▶</div></div></div>`).join('')}</div></div>`; }
+        if (similar && similar.length > 0) similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
         let matchPercent = ''; 
-        if (details.rating && details.rating !== 'N/A') {
-            const numericRating = parseFloat(details.rating);
-            if (!isNaN(numericRating) && numericRating > 0) {
-                matchPercent = Math.round(numericRating * 10) + '%';
-            }
-        }
+        if (details.rating && details.rating !== 'N/A') { const numericRating = parseFloat(details.rating); if (!isNaN(numericRating) && numericRating > 0) matchPercent = Math.round(numericRating * 10) + '%'; }
         const matchLabel = matchPercent ? `<span class="nf-match">${matchPercent} ${t.match}</span>` : '';
-
-        content.innerHTML = `
-            <div class="nf-container">
-                <div class="nf-hero">
-                    <div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div>
-                    <div class="nf-gradient"></div>
-                    <div class="nf-hero-content">
-                        <div id="dynamic_title_area" class="title-fade-in" style="min-height: 50px;"></div>
-                        <div class="nf-meta">
-                            ${matchLabel}
-                            <span>${details.year}</span>
-                            <span class="nf-age">${details.age}</span>
-                            <span>${details.runtime || ''}</span>
-                            <span class="nf-badge">HD</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="nf-btn-row">
-                    <button class="nf-btn nf-play" onclick="window.openPremiumPlayer('${movie.id}', this)">
-                        <svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg>
-                        <span>${t.watch}</span>
-                    </button>
-                    <div class="nf-actions-group">
-                        <button class="nf-btn nf-secondary" onclick="window.ui_toggleSave('${movie.id}', this)">
-                            <svg viewBox="0 0 24 24" fill="${isSaved(movie.id)?'white':'none'}" stroke="white" stroke-width="2" width="24" height="24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                            <span>${isSaved(movie.id)?t.saveBtnActive:t.saveBtn}</span>
-                        </button>
-                        <button class="nf-btn nf-secondary" onclick="window.ui_share('${movie.id}')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                            <span>${t.share}</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="nf-description">${details.desc || t.descMissing}</div>
-                ${trailersHtml} 
-                ${castHtml} 
-                ${similarHtml}
-                <div style="height: 50px;"></div>
-            </div>
-        `;
-
+        content.innerHTML = `<div class="nf-container"><div class="nf-hero"><div class="nf-backdrop" style="background-image: url('${details.backdrop || details.img}');"></div><div class="nf-gradient"></div><div class="nf-hero-content"><div id="dynamic_title_area" class="title-fade-in" style="min-height: 50px;"></div><div class="nf-meta">${matchLabel}<span>${details.year}</span><span class="nf-age">${details.age}</span><span>${details.runtime || ''}</span><span class="nf-badge">HD</span></div></div></div><div class="nf-btn-row"><button class="nf-btn nf-play" onclick="window.openPremiumPlayer('${movie.id}', this)"><svg viewBox="0 0 24 24" fill="black" width="24" height="24"><path d="M8 5v14l11-7z"/></svg><span>${t.watch}</span></button><div class="nf-actions-group"><button class="nf-btn nf-secondary" onclick="window.ui_toggleSave('${movie.id}', this)"><svg viewBox="0 0 24 24" fill="${isSaved(movie.id)?'white':'none'}" stroke="white" stroke-width="2" width="24" height="24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg><span>${isSaved(movie.id)?t.saveBtnActive:t.saveBtn}</span></button><button class="nf-btn nf-secondary" onclick="window.ui_share('${movie.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg><span>${t.share}</span></button></div></div><div class="nf-description">${details.desc || t.descMissing}</div>${trailersHtml}${castHtml}${similarHtml}<div style="height: 50px;"></div></div>`;
         const titleArea = document.getElementById('dynamic_title_area');
         if (titleArea) {
-            if (logoUrl) {
-                const img = new Image();
-                img.src = logoUrl;
-                img.className = "nf-logo";
-                img.onload = () => {
-                    titleArea.innerHTML = ''; 
-                    titleArea.appendChild(img);
-                    requestAnimationFrame(() => titleArea.classList.add('title-visible'));
-                };
-            } else {
-                titleArea.innerHTML = `<div class="nf-title-text">${details.title}</div>`;
-                requestAnimationFrame(() => titleArea.classList.add('title-visible'));
-            }
+            if (logoUrl) { const img = new Image(); img.src = logoUrl; img.className = "nf-logo"; img.onload = () => { titleArea.innerHTML = ''; titleArea.appendChild(img); requestAnimationFrame(() => titleArea.classList.add('title-visible')); }; } 
+            else { titleArea.innerHTML = `<div class="nf-title-text">${details.title}</div>`; requestAnimationFrame(() => titleArea.classList.add('title-visible')); }
         }
-
         window.ui_openSimilar = (id, type) => { const target = similar.find(m => m.id == id); if (target) openMoviePage(target); };
         window.ui_openTrailer = (key) => { const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'); document.getElementById('movie_details_modal').style.display = 'none'; f.src = `https://www.youtube.com/embed/${key}?autoplay=1`; p.style.display = 'flex'; };
-        window.ui_share = (id) => { 
-            let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); 
-            if(!m) return; 
-            const botLink = `https://t.me/${BOT_USERNAME}/app?startapp=${m.type}_${m.id}`;
-            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(t.shareMessage + " " + m.title)}`; 
-            window.Telegram?.WebApp?.openTelegramLink(shareUrl); 
-        };
-
-    } catch (e) { 
-        console.error("Помилка завантаження деталей:", e);
-        content.innerHTML = `<div style="padding:50px; text-align:center;">Помилка завантаження даних.<br>Спробуйте пізніше.</div>`;
-    }
+        window.ui_share = (id) => { let m = state.activeMovie || state.feedMovies.find(i=>i.id==id); if(!m) return; const botLink = `https://t.me/${BOT_USERNAME}/app?startapp=${m.type}_${m.id}`; const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(t.shareMessage + " " + m.title)}`; window.Telegram?.WebApp?.openTelegramLink(shareUrl); };
+    } catch (e) { content.innerHTML = `<div style="padding:50px; text-align:center;">Помилка завантаження даних.<br>Спробуйте пізніше.</div>`; }
 }
 
 export function closeMoviePage() {
     const modal = document.getElementById('movie_details_modal'), content = document.getElementById('movie_details_content');
-    if (!modal) return; 
-    playSound('Bubble.wav'); 
-    
-    document.body.style.overflow = '';
+    if (!modal) return; playSound('Bubble.wav'); document.body.style.overflow = '';
     content.classList.add('modal-closing-anim');
     setTimeout(() => { modal.style.display = 'none'; content.innerHTML = ''; state.activeMovie = null; if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide(); }, 300);
 }
@@ -327,60 +183,36 @@ export function renderHistorySection(items) {
     return section;
 }
 
-window.saveHolidayIcon = (filename) => {
-    if (!window.firebase) return;
-    firebase.database().ref('settings/holiday_icon').set(filename)
-        .then(() => { window.Telegram?.WebApp?.showAlert('Іконку змінено!'); })
-        .catch(e => console.error(e));
-};
+window.saveHolidayIcon = (filename) => { if (!window.firebase) return; firebase.database().ref('settings/holiday_icon').set(filename).then(() => { window.Telegram?.WebApp?.showAlert('Іконку змінено!'); }).catch(e => console.error(e)); };
+export function initHolidayIconListener() { if (!window.firebase) return; const iconEl = document.getElementById('holiday_icon'), selectEl = document.getElementById('holiday_select'); firebase.database().ref('settings/holiday_icon').on('value', (snapshot) => { const filename = snapshot.val(); if (filename && filename !== "") { iconEl.src = `images/holidays/${filename}`; iconEl.style.display = 'block'; iconEl.classList.add('logo-anim'); } else { iconEl.style.display = 'none'; iconEl.src = ''; iconEl.classList.remove('logo-anim'); } if (selectEl) selectEl.value = filename || ""; }); }
+const checkFirebaseInterval = setInterval(() => { if (window.firebase) { clearInterval(checkFirebaseInterval); initHolidayIconListener(); } }, 500);
+document.querySelectorAll('.nav-item').forEach(el => { el.addEventListener('click', (e) => { const fab = document.getElementById('random_fab'), isHome = e.currentTarget.innerText.includes('Головна') || e.currentTarget.innerText.includes('Home'); if(fab) fab.style.display = isHome ? 'flex' : 'none'; }); });
 
-export function initHolidayIconListener() {
-    if (!window.firebase) return;
-    
-    const iconEl = document.getElementById('holiday_icon');
-    const selectEl = document.getElementById('holiday_select');
-
-    firebase.database().ref('settings/holiday_icon').on('value', (snapshot) => {
-        const filename = snapshot.val();
-        
-        if (filename && filename !== "") {
-            iconEl.src = `images/holidays/${filename}`;
-            iconEl.style.display = 'block';
-            iconEl.classList.add('logo-anim');
-        } else {
-            iconEl.style.display = 'none';
-            iconEl.src = '';
-            iconEl.classList.remove('logo-anim');
-        }
-
-        if (selectEl) selectEl.value = filename || "";
-    });
-}
-
-const checkFirebaseInterval = setInterval(() => {
-    if (window.firebase) {
-        clearInterval(checkFirebaseInterval);
-        initHolidayIconListener();
-    }
-}, 500);
-
-document.querySelectorAll('.nav-item').forEach(el => {
-    el.addEventListener('click', (e) => {
-        const fab = document.getElementById('random_fab');
-        const isHome = e.currentTarget.innerText.includes('Головна') || e.currentTarget.innerText.includes('Home');
-        if(fab) fab.style.display = isHome ? 'flex' : 'none';
-    });
-});
-
-// 🔥 ФУНКЦІЇ ДЛЯ ЩОДЕННОГО БОНУСУ
-window.showDailyBonus = () => {
+// 🔥 ОНОВЛЕНІ ФУНКЦІЇ ДЛЯ БОНУСУ
+// type: 'half' (0.5) або 'full' (1.0)
+window.showDailyBonus = (type) => {
     const m = document.getElementById('daily_bonus_modal');
-    if (m) {
-        m.style.display = 'flex';
+    if (!m) return;
+
+    const titleEl = document.getElementById('bonus_title');
+    const msgEl = document.getElementById('bonus_msg');
+
+    if (type === 'full') {
+        // Якщо це гарантований другий день
+        titleEl.innerText = '+0.5 Ticket';
+        msgEl.innerHTML = `Ви повернулися! Квиток зібрано повністю.<br><span style="color: #46d369; font-weight: bold;">(Разом +1.0)</span>`;
+        // Ефект конфеті (звук)
+        playSound('Notification.wav'); 
+    } else {
+        // Якщо це випадковий дроп (перший день)
+        titleEl.innerText = '+0.5 Ticket';
+        msgEl.innerHTML = `Вам пощастило! Ви знайшли половинку квитка.<br><span style="color: #aaa; font-size: 14px;">Зайдіть завтра, щоб гарантовано забрати другу частину!</span>`;
         playSound('Notification.wav');
-        if(window.Telegram?.WebApp?.HapticFeedback) {
-            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-        }
+    }
+
+    m.style.display = 'flex';
+    if(window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
     }
 };
 

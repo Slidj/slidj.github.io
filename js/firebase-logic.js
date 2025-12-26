@@ -28,11 +28,11 @@ export async function initAdminSystem() {
         }
     });
 
-    // 🔥 ЛОГІКА ЩОДЕННОГО БОНУСУ (оновлена)
+    // 🔥 ГОЛОВНА ЛОГІКА БОНУСІВ (STREAK SYSTEM)
     userRef.once('value', (snapshot) => {
-        const data = snapshot.val() || {}; // Якщо даних немає, беремо пустий об'єкт
+        const data = snapshot.val() || {};
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0]; // Формат 2024-12-26
+        const todayStr = now.toISOString().split('T')[0]; // 2024-12-26
         
         const updateData = { 
             id: user.id, 
@@ -40,27 +40,68 @@ export async function initAdminSystem() {
             username: user.username || '', 
             last_visit: now.toISOString() 
         };
-        
         if (!data.created_at) updateData.created_at = todayStr;
 
-        // Перевіряємо, чи отримував бонус сьогодні
-        if (data.last_bonus_date !== todayStr) {
-            // Бонус ще не отримано!
-            const currentTickets = (data.tickets && !isNaN(parseFloat(data.tickets))) ? parseFloat(data.tickets) : 0;
-            
-            updateData.tickets = currentTickets + 0.5; // Додаємо половинку
-            updateData.last_bonus_date = todayStr;     // Запам'ятовуємо, що сьогодні вже видали
-            
-            // Запускаємо красиве вікно через 2 секунди (щоб інтерфейс встиг прогрузитись)
-            setTimeout(() => {
-                if (window.showDailyBonus) window.showDailyBonus();
-            }, 2000);
+        const lastBonusDate = data.last_bonus_date;
+        const bonusState = data.bonus_state; // 'half' або null
+
+        // Якщо сьогодні ще не отримував бонус
+        if (lastBonusDate !== todayStr) {
+            let giveBonus = false;
+            let bonusType = ''; // 'half' або 'full'
+
+            if (bonusState === 'half') {
+                // Перевіряємо, чи це НАСТУПНИЙ день
+                const d1 = new Date(lastBonusDate);
+                const d2 = new Date(todayStr);
+                const diffTime = d2 - d1;
+                const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+                if (diffDays === 1 || diffDays < 1.1) { // Іноді бувають похибки в годинах, <1.1 це "наступний день"
+                    // ✅ УСПІХ! Ланцюжок замкнувся
+                    giveBonus = true;
+                    bonusType = 'full';
+                } else {
+                    // ❌ Ланцюжок розірвано (пройшло більше 1 дня)
+                    // Але даємо шанс почати новий ланцюжок одразу (щоб не було сумно)
+                    if (Math.random() < 0.25) { 
+                        giveBonus = true;
+                        bonusType = 'half';
+                    }
+                    // Якщо не пощастило - просто скидаємо статус
+                    else {
+                        updateData.bonus_state = null; 
+                    }
+                }
+            } else {
+                // Немає активного ланцюжка. Кидаємо кубик (шанс 25%)
+                if (Math.random() < 0.25) {
+                    giveBonus = true;
+                    bonusType = 'half';
+                }
+            }
+
+            if (giveBonus) {
+                const currentTickets = (data.tickets && !isNaN(parseFloat(data.tickets))) ? parseFloat(data.tickets) : 0;
+                updateData.tickets = currentTickets + 0.5;
+                updateData.last_bonus_date = todayStr;
+                
+                if (bonusType === 'half') {
+                    updateData.bonus_state = 'half';
+                } else {
+                    updateData.bonus_state = null; // Цикл завершено
+                }
+
+                // Показуємо вікно із затримкою
+                setTimeout(() => {
+                    if (window.showDailyBonus) window.showDailyBonus(bonusType);
+                }, 2000);
+            }
         }
 
         userRef.update(updateData);
     });
 
-    // 2. Слухач даних (для оновлення квитків в реальному часі)
     userRef.on('value', (snapshot) => {
         const data = snapshot.val();
         const balanceEl = document.getElementById('user_ticket_balance');
@@ -73,51 +114,16 @@ export async function initAdminSystem() {
         currentSettings = snapshot.val();
         if (!currentSettings) return;
         const { isMaintenance, adminId } = currentSettings;
-
-        if (isMaintenance && user.id != adminId) {
-            const screen = document.getElementById('maintenance_screen');
-            if(screen) screen.style.display = 'flex';
-        }
-
-        if (user.id == adminId) {
-            window.isAdmin = true;
-            const btn = document.getElementById('admin_menu_item');
-            const preview = document.getElementById('admin_stats_preview');
-            if(btn) btn.style.display = 'flex';
-            if(preview) preview.style.display = 'block';
-            updateMenuStats();
-            updateMaintenanceBtnUI(isMaintenance);
-        }
+        if (isMaintenance && user.id != adminId) { const screen = document.getElementById('maintenance_screen'); if(screen) screen.style.display = 'flex'; }
+        if (user.id == adminId) { window.isAdmin = true; const btn = document.getElementById('admin_menu_item'); const preview = document.getElementById('admin_stats_preview'); if(btn) btn.style.display = 'flex'; if(preview) preview.style.display = 'block'; updateMenuStats(); updateMaintenanceBtnUI(isMaintenance); }
     });
 
-    db.ref('broadcast').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.text && data.timestamp) {
-            const lastSeenTs = localStorage.getItem('last_notification_ts');
-            if (data.timestamp.toString() !== lastSeenTs) {
-                showNotification(data.text);
-                localStorage.setItem('last_notification_ts', data.timestamp.toString());
-            }
-        }
-    });
-
-    db.ref('users/' + user.id + '/blocked').on('value', (snapshot) => {
-        const screen = document.getElementById('blocked_screen');
-        if (snapshot.val() === true && screen) screen.style.display = 'flex';
-    });
+    db.ref('broadcast').on('value', (snapshot) => { const data = snapshot.val(); if (data && data.text && data.timestamp) { const lastSeenTs = localStorage.getItem('last_notification_ts'); if (data.timestamp.toString() !== lastSeenTs) { showNotification(data.text); localStorage.setItem('last_notification_ts', data.timestamp.toString()); } } });
+    db.ref('users/' + user.id + '/blocked').on('value', (snapshot) => { const screen = document.getElementById('blocked_screen'); if (snapshot.val() === true && screen) screen.style.display = 'flex'; });
 }
 
-// Збереження донату
-window.saveDonation = function(stars) {
-    const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
-    if(!user) return;
-    const userRef = db.ref('users/' + user.id);
-    userRef.child('donations').push({ amount: stars, date: new Date().toISOString(), type: 'stars' });
-    userRef.child('total_donated').transaction((current) => { return (current || 0) + stars; });
-    if (stars >= 50) { userRef.update({ is_patron: true }); }
-};
+window.saveDonation = function(stars) { const user = window.Telegram?.WebApp?.initDataUnsafe?.user; if(!user) return; const userRef = db.ref('users/' + user.id); userRef.child('donations').push({ amount: stars, date: new Date().toISOString(), type: 'stars' }); userRef.child('total_donated').transaction((current) => { return (current || 0) + stars; }); if (stars >= 50) { userRef.update({ is_patron: true }); } };
 
-// Форматування дати
 function formatRelativeDate(isoString) {
     if (!isoString) return '<span style="color:gray">Невідомо</span>';
     const date = new Date(isoString);
@@ -125,17 +131,9 @@ function formatRelativeDate(isoString) {
     const diffTime = Math.abs(now - date);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     const time = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-
     if (diffDays === 0) return `<span style="color:#46d369">Сьогодні о ${time}</span>`;
     if (diffDays === 1) return `<span style="color:#FFD700">Вчора о ${time}</span>`;
-    
-    let suffix = 'днів';
-    const lastDigit = diffDays % 10;
-    const lastTwoDigits = diffDays % 100;
-    if (lastTwoDigits >= 11 && lastTwoDigits <= 19) { suffix = 'днів'; } 
-    else if (lastDigit === 1) { suffix = 'день'; } 
-    else if (lastDigit >= 2 && lastDigit <= 4) { suffix = 'дні'; }
-
+    let suffix = 'днів'; const lastDigit = diffDays % 10; const lastTwoDigits = diffDays % 100; if (lastTwoDigits >= 11 && lastTwoDigits <= 19) { suffix = 'днів'; } else if (lastDigit === 1) { suffix = 'день'; } else if (lastDigit >= 2 && lastDigit <= 4) { suffix = 'дні'; }
     return `<span style="color:#aaa">${diffDays} ${suffix} тому о ${time}</span>`;
 }
 
@@ -161,36 +159,10 @@ async function loadAdminData() {
     });
 }
 
-function showNotification(text) {
-    const bar = document.getElementById('notification_bar');
-    const txt = document.getElementById('notif_text');
-    if (bar && txt) {
-        playSound('Notification.wav');
-        txt.innerText = text;
-        bar.classList.add('active');
-        setTimeout(() => { bar.classList.remove('active'); }, 15000); 
-    }
-}
-
+function showNotification(text) { const bar = document.getElementById('notification_bar'); const txt = document.getElementById('notif_text'); if (bar && txt) { playSound('Notification.wav'); txt.innerText = text; bar.classList.add('active'); setTimeout(() => { bar.classList.remove('active'); }, 15000); } }
 window.closeNotification = function() { document.getElementById('notification_bar')?.classList.remove('active'); };
-
-window.sendBroadcastNotification = function() {
-    const input = document.getElementById('notif_input');
-    const text = input?.value.trim();
-    if (!text) return;
-    db.ref('broadcast').set({ text: text, timestamp: Date.now() }).then(() => { if(input) input.value = ''; alert("Надіслано!"); });
-};
-
-async function updateMenuStats() {
-    const statsBox = document.getElementById('admin_stats_preview');
-    const today = new Date().toISOString().split('T')[0];
-    db.ref('users').once('value', (snapshot) => {
-        const users = snapshot.val() || {};
-        const all = Object.values(users);
-        if(statsBox) statsBox.innerHTML = `🚀 Сьогодні: <b>+${all.filter(u => u.created_at === today).length}</b> | 👥 Усього: <b>${all.length}</b>`;
-    });
-}
-
+window.sendBroadcastNotification = function() { const input = document.getElementById('notif_input'); const text = input?.value.trim(); if (!text) return; db.ref('broadcast').set({ text: text, timestamp: Date.now() }).then(() => { if(input) input.value = ''; alert("Надіслано!"); }); };
+async function updateMenuStats() { const statsBox = document.getElementById('admin_stats_preview'); const today = new Date().toISOString().split('T')[0]; db.ref('users').once('value', (snapshot) => { const users = snapshot.val() || {}; const all = Object.values(users); if(statsBox) statsBox.innerHTML = `🚀 Сьогодні: <b>+${all.filter(u => u.created_at === today).length}</b> | 👥 Усього: <b>${all.length}</b>`; }); }
 window.openAdminPanel = function() { const modal = document.getElementById('admin_modal'); if (modal) { modal.style.display = 'block'; loadAdminData(); } };
 window.toggleMaintenanceMode = function() { if(currentSettings) db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); };
 window.toggleUserBlock = function(userId, status) { if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); };

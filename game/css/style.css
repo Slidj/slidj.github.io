@@ -19,10 +19,10 @@ body {
 
 #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
 
-/* --- 🔥 ВИПРАВЛЕНА КНОПКА АДМІНА --- */
+/* ADMIN TOGGLE */
 .admin-toggle {
     position: absolute; 
-    top: 90px;          /* Опущено вниз */
+    top: 90px;          
     left: 15px;         
     z-index: 1000;      
     background: rgba(0,0,0,0.6); border: 1px solid #444; color: white;
@@ -111,10 +111,7 @@ body {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #111; z-index: 10000; display: none;
     flex-direction: column; 
-    
-    /* 🔥 ВІДСТУП ДЛЯ ТЕЛЕГРАМУ: 80px зверху */
     padding: 80px 20px 100px 20px; 
-    
     box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 .admin-panel.open { display: flex; }
@@ -151,97 +148,73 @@ select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;c
 #action-sheet.open { bottom: 0; }
 .sheet-btn { width: 100%; padding: 15px; margin-top: 10px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #333; color: white; }
 
-/* ... (код вище без змін) ... */
+/* --- 🤢 ЕФЕКТ "ЖИВОГО" ГАЗУ (LIQUID BLOB) 🤢 --- */
 
-/* --- ☢️ ТОКСИЧНІ ВИПАРОВУВАННЯ (АКТИВНИЙ РУХ) ☢️ --- */
-
-/* 1. Бейдж смітника (Статичний, чіткий) */
+/* 1. Бейдж смітника (Статичний) */
 .trash-badge {
     position: absolute; 
     top: -8px; right: -8px;
     width: 24px; height: 24px;
     background: #ff453a; 
     border: 2px solid #1c1c1e; 
-    border-radius: 50%; 
-    color: white;
+    border-radius: 50%; color: white;
     display: flex; justify-content: center; align-items: center;
-    font-size: 14px; 
-    z-index: 20; 
+    font-size: 14px; z-index: 20;
     box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 
 /* 2. Контейнер */
 .spoiled-wrapper {
     position: relative;
-    overflow: visible !important; /* Газ має виходити за межі */
+    overflow: visible !important; /* Дозволяємо хмарі виходити за межі */
 }
 
-/* 3. Іконка (Світиться зеленим, щоб показати зараження) */
+/* 3. Іконка (Світиться) */
 .spoiled-wrapper .app-bg {
-    border: 2px solid #3dff3d !important; /* Ядуча рамка */
-    box-shadow: 0 0 15px rgba(61, 255, 61, 0.4);
+    border: 1px solid #3dff3d !important;
+    box-shadow: 0 0 10px rgba(61, 255, 61, 0.4);
+    z-index: 2; /* Іконка над газом */
     position: relative;
-    z-index: 5; /* Іконка над димом */
     background: #111; /* Темний фон */
 }
 
-/* --- НАЛАШТУВАННЯ ДИМУ --- */
+/* 4. ГАЗОВІ ХМАРИ (Шар 1 і Шар 2) */
 .spoiled-wrapper::before,
 .spoiled-wrapper::after {
     content: '';
     position: absolute;
-    /* Стартова позиція - центр іконки */
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    
-    border-radius: 50%;
+    width: 170%; height: 170%; /* Велика хмара */
+    border-radius: 40%; /* Неправильна форма */
+    filter: blur(12px); /* Сильне розмиття для ефекту газу */
+    opacity: 0.7;
     pointer-events: none;
-    filter: blur(8px); /* Робимо плями м'якими */
+    z-index: 1; /* Газ виходить з-під кнопки */
 }
 
-/* Хмара 1: Летить вгору і вліво */
+/* Шар 1 (Яскравий центр) */
 .spoiled-wrapper::before {
-    width: 60%; height: 60%;
-    background: rgba(100, 255, 50, 0.7); /* Яскраво-салатовий */
-    z-index: 10; /* ПЕРЕД іконкою (перекриває її трохи) */
-    animation: fume-left 2s infinite linear;
+    background: radial-gradient(circle, rgba(61, 255, 61, 0.5) 20%, transparent 70%);
+    animation: gas-swarm-1 10s infinite linear;
 }
 
-/* Хмара 2: Летить вгору і вправо (повільніше) */
+/* Шар 2 (Додатковий об'єм) */
 .spoiled-wrapper::after {
-    width: 80%; height: 80%;
-    background: rgba(50, 200, 50, 0.5); /* Темніший зелений */
-    z-index: 0; /* ЗА іконкою */
-    animation: fume-right 2.5s infinite linear;
-    animation-delay: 0.5s; /* Розсинхрон, щоб не було однаково */
+    background: radial-gradient(circle, rgba(150, 255, 100, 0.3) 20%, transparent 70%);
+    animation: gas-swarm-2 12s infinite linear reverse; /* Крутиться в інший бік */
 }
 
-/* Анімація 1: Швидкий викид газу вліво-вгору */
-@keyframes fume-left {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, -20%) scale(0.4); /* Знизу, маленький */
-    }
-    30% {
-        opacity: 0.9; /* Різко з'являється */
-    }
-    100% {
-        opacity: 0; /* Зникає */
-        transform: translate(-120%, -150%) scale(2); /* Летить далеко вбік і росте */
-    }
+/* Анімація: Плавне переливання форми (Blob effect) */
+@keyframes gas-swarm-1 {
+    0% { transform: translate(-50%, -50%) rotate(0deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+    33% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
+    66% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+    100% { transform: translate(-50%, -50%) rotate(360deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
 }
 
-/* Анімація 2: Повільний викид газу вправо-вгору */
-@keyframes fume-right {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, -20%) scale(0.5);
-    }
-    40% {
-        opacity: 0.7;
-    }
-    100% {
-        opacity: 0;
-        transform: translate(50%, -180%) scale(2.2); /* Летить в інший бік */
-    }
-    }
+@keyframes gas-swarm-2 {
+    0% { transform: translate(-50%, -50%) rotate(0deg); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+    50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+    100% { transform: translate(-50%, -50%) rotate(360deg); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+}

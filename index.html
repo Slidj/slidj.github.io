@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
-    <link rel="stylesheet" href="css/style.css?v=500">
+    <link rel="stylesheet" href="css/style.css?v=600">
     <link rel="stylesheet" href="css/intro.css">
 
     <style>
@@ -135,10 +135,18 @@
             
             <div class="menu-user-content">
                 <img id="menu_avatar_img" src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="menu-user-avatar">
+                
                 <div class="menu-user-info">
                     <span id="menu_username_text" class="menu-user-name">Гість</span>
-                    <span class="menu-user-status">Online</span>
-                </div>
+                    
+                    <div class="menu-ticket-badge">
+                        <svg class="ticket-icon" viewBox="0 0 24 24">
+                            <path d="M21 9.5c0-.83.67-1.5 1.5-1.5V6c0-1.1-.9-2-2-2H3.5C2.4 4 1.5 4.9 1.5 6v2c.83 0 1.5.67 1.5 1.5S2.33 11 1.5 11v2c0 1.1.9 2 2 2h17c1.1 0 2-.9 2-2v-2c-.83 0-1.5-.67-1.5-1.5zM9 13H5v-2h4v2zm6 0h-4v-2h4v2zm4 0h-2v-2h2v2z"/>
+                        </svg>
+                        <span id="user_ticket_balance" class="ticket-count">0</span>
+                        <span class="ticket-label">Tickets</span>
+                    </div>
+                    </div>
             </div>
         </div>
 
@@ -216,6 +224,6 @@
         }
     </script>
 
-    <script type="module" src="js/app.js?v=500"></script>
+    <script type="module" src="js/app.js?v=600"></script>
 </body>
 </html>

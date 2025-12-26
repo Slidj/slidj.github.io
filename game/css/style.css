@@ -242,3 +242,69 @@ select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;c
         border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
     }
 }
+/* ... (попередній код) ... */
+
+/* --- 📱 ACTION SHEET (Меню дій) --- */
+#action-sheet {
+    position: fixed; 
+    bottom: -100%; 
+    left: 0; 
+    width: 100%; 
+    background: rgba(28, 28, 30, 0.95); /* Напівпрозорий фон */
+    backdrop-filter: blur(15px); /* Розмиття фону (як в iOS) */
+    padding: 25px 20px 40px 20px; 
+    box-sizing: border-box; 
+    transition: bottom 0.3s cubic-bezier(0.19, 1, 0.22, 1); /* Плавна анімація */
+    z-index: 2000; 
+    border-top: 1px solid #333;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#action-sheet.open { 
+    bottom: 0; 
+}
+
+/* Заголовок меню */
+.sheet-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+.sheet-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.sheet-subtitle {
+    font-size: 13px;
+    color: #888;
+}
+
+/* Кнопки меню */
+.sheet-btn {
+    width: 100%; 
+    padding: 16px; 
+    border-radius: 14px; 
+    border: none; 
+    font-weight: 600; 
+    font-size: 16px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    gap: 10px;
+    transition: transform 0.1s;
+}
+
+.sheet-btn:active {
+    transform: scale(0.98);
+}
+
+/* Кольори кнопок */
+.btn-primary { background: var(--accent); color: white; }
+.btn-success { background: var(--green); color: white; } /* Зелена */
+.btn-danger { background: rgba(255, 69, 58, 0.15); color: var(--red); } /* Червона */
+.btn-neutral { background: #2c2c2e; color: white; } /* Сіра */
+.btn-cancel { background: transparent; color: #888; margin-top: 5px; }

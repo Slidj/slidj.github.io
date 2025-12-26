@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MAIN BUNDLE (v1.9.7)
+   🎨 STYLE.CSS: MAIN BUNDLE (v1.9.8)
    ========================================================== */
 
 @import 'root.css';
@@ -12,12 +12,12 @@
 .skeleton::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0)); animation: skeleton-move 1.5s infinite; }
 @keyframes skeleton-move { 100% { transform: translateX(100%); } }
 
-/* 🔥 ПОШУКОВИЙ КОНТЕЙНЕР (ШИРШИЙ І МЕНШ ОКРУГЛИЙ) */
+/* 🔥 ПОШУКОВИЙ КОНТЕЙНЕР */
 #search_bar_container {
-    display: none; /* JS вмикає це як block */
-    margin-top: 100px; /* Відступ зверху */
-    width: 94%; /* 🔥 СТАЛО ШИРШЕ (було 80%) */
-    max-width: 800px; /* 🔥 Максимальна ширина збільшена */
+    display: none; 
+    margin-top: 100px; 
+    width: 94%; 
+    max-width: 800px; 
     margin-left: auto;
     margin-right: auto;
     position: relative;
@@ -27,9 +27,9 @@
 
 #search_input {
     width: 100%;
-    height: 40px; /* Фіксована висота (тонше) */
+    height: 40px; 
     padding: 0 15px; 
-    border-radius: 8px; /* 🔥 МЕНШ ЗАКРУГЛЕНІ КУТИ (було 20px) */
+    border-radius: 8px; 
     border: none;
     background: #222;
     color: white;
@@ -106,3 +106,60 @@
 .trending-glow { animation: trending-pulse 2s ease-in-out 3; border: 1px solid rgba(229, 9, 20, 0.6) !important; position: relative; z-index: 5; }
 @keyframes modal-fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(25px); } }
 .modal-closing-anim { animation: modal-fade-out 0.3s forwards; pointer-events: none; }
+
+/* 🔥 НОВИЙ СТИЛЬ ДЛЯ ПРОФІЛЮ В МЕНЮ (ПЕНЗЛИК + СКЛО) */
+.menu-profile-header {
+    position: relative;
+    width: 100%;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    padding-left: 15px;
+    margin-bottom: 25px;
+    margin-top: 10px;
+    filter: drop-shadow(4px 4px 6px rgba(0,0,0,0.6));
+}
+
+.menu-brush-bg {
+    position: absolute;
+    top: 0; left: -20px;
+    width: 110%; /* Ширше, щоб закрити краї */
+    height: 100%;
+    background: linear-gradient(90deg, #990000 0%, #E50914 60%, #ff1f1f 100%);
+    z-index: 1;
+    clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%);
+}
+
+.menu-glass-overlay {
+    position: absolute;
+    top: 0; left: -20px;
+    width: 110%;
+    height: 100%;
+    z-index: 2;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.2));
+    backdrop-filter: blur(3px);
+    clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%);
+    opacity: 0.8;
+}
+
+.menu-user-content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.menu-user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.9);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    background: #000;
+}
+
+.menu-user-info { display: flex; flex-direction: column; justify-content: center; }
+.menu-user-name { color: #fff; font-family: var(--font-title, sans-serif); font-size: 18px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.9); line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px; }
+.menu-user-status { color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }

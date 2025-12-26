@@ -163,3 +163,41 @@
 .menu-user-info { display: flex; flex-direction: column; justify-content: center; }
 .menu-user-name { color: #fff; font-family: var(--font-title, sans-serif); font-size: 18px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.9); line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px; }
 .menu-user-status { color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+/* ... (попередні стилі) ... */
+
+/* 🔥 ВАЛЮТА "TICKETS" У МЕНЮ */
+.menu-ticket-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 8px 2px 6px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: fit-content;
+}
+
+.ticket-icon {
+    width: 16px;
+    height: 16px;
+    fill: #ffd700; /* Золотий колір для самого квитка */
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+}
+
+.ticket-count {
+    color: #46d369; /* Соковитий зелений колір */
+    font-family: var(--font-title, sans-serif);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 10px rgba(70, 211, 105, 0.4);
+}
+
+.ticket-label {
+    color: #aaa;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 2px;
+}

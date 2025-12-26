@@ -39,36 +39,12 @@ async function initApp() {
             tg.ready(); tg.expand(); 
             if(tg.requestFullscreen) tg.requestFullscreen();
             tg.setHeaderColor?.('#000000'); tg.setBackgroundColor?.('#000000');
-            const user = tg.initDataUnsafe?.user;
             
-            // 🔥 ОНОВЛЕННЯ ПРОФІЛЮ (ХЕДЕР + БОКОВЕ МЕНЮ)
-            if(user) {
-                // 1. Хедер
-                if(user.photo_url) {
-                    const avatarImg = document.getElementById('user_avatar');
-                    const defaultDiv = document.getElementById('default_avatar');
-                    if (avatarImg && defaultDiv) {
-                        avatarImg.src = user.photo_url;
-                        avatarImg.style.display = 'block';
-                        defaultDiv.style.display = 'none';
-                    }
-                }
-                
-                // 2. 🔥 НОВЕ БОКОВЕ МЕНЮ
-                const menuName = document.getElementById('menu_username_text');
-                const menuAvatar = document.getElementById('menu_avatar_img');
-                
-                if (menuName) menuName.innerText = user.first_name || 'Гість';
-                
-                if (menuAvatar) {
-                    if (user.photo_url) {
-                        menuAvatar.src = user.photo_url;
-                    } else {
-                        // Якщо немає фото - генеруємо красиву заглушку з ініціалами
-                        menuAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=333&color=fff`;
-                    }
-                }
-            }
+            // 🔥 СПРОБА 1: Отримати користувача
+            updateUserProfile();
+
+            // 🔥 СПРОБА 2 (ПЛАН Б): Якщо з першого разу не вийшло, пробуємо ще раз через пів секунди
+            setTimeout(() => updateUserProfile(), 500);
 
             // Слухач оплати
             tg.onEvent('invoiceClosed', (object) => {
@@ -91,6 +67,37 @@ async function initApp() {
             if(pre) { pre.style.opacity = '0'; setTimeout(() => pre.style.display = 'none', 500); }
         }, 500);
     } catch (e) { console.error(e); }
+}
+
+// 🔥 ФУНКЦІЯ ОНОВЛЕННЯ ПРОФІЛЮ (Винесена окремо для надійності)
+function updateUserProfile() {
+    let user = tg?.initDataUnsafe?.user;
+
+    // ДЕМО-РЕЖИМ для браузера (щоб ви бачили красу при тесті з ПК)
+    if (!user && !tg.initData) {
+        // console.log("Demo User Active");
+        // user = { first_name: "Media", last_name: "Fan", photo_url: null }; 
+    }
+
+    if (user) {
+        // 1. Хедер (аватарка справа зверху)
+        const headerAvatar = document.getElementById('user_avatar');
+        const headerDefault = document.getElementById('default_avatar');
+        const photoUrl = user.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=333&color=fff`;
+
+        if (headerAvatar && headerDefault) {
+            headerAvatar.src = photoUrl;
+            headerAvatar.style.display = 'block';
+            headerDefault.style.display = 'none';
+        }
+        
+        // 2. Бокове меню (червона шапка)
+        const menuName = document.getElementById('menu_username_text');
+        const menuAvatar = document.getElementById('menu_avatar_img');
+        
+        if (menuName) menuName.innerText = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+        if (menuAvatar) menuAvatar.src = photoUrl;
+    }
 }
 
 async function switchMode(tab) {

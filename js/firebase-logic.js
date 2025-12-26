@@ -17,10 +17,10 @@ const db = firebase.database();
 let currentSettings = null;
 
 // 🔥 ЗМІННІ ДЛЯ ПОСТОРІНКОВОЇ НАВІГАЦІЇ
-let adminAllUserIds = [];   // Тут зберігаємо всі ID
-let adminUsersData = {};    // Тут самі дані користувачів
-let adminCurrentPage = 1;   // Поточна сторінка
-const adminItemsPerPage = 10; // Кількість на сторінці
+let adminAllUserIds = [];   
+let adminUsersData = {};    
+let adminCurrentPage = 1;   
+const adminItemsPerPage = 10; 
 
 export async function initAdminSystem() {
     const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
@@ -115,7 +115,6 @@ export async function initAdminSystem() {
 
 window.saveDonation = function(stars) { const user = window.Telegram?.WebApp?.initDataUnsafe?.user; if(!user) return; const userRef = db.ref('users/' + user.id); userRef.child('donations').push({ amount: stars, date: new Date().toISOString(), type: 'stars' }); userRef.child('total_donated').transaction((current) => { return (current || 0) + stars; }); if (stars >= 50) { userRef.update({ is_patron: true }); } };
 
-// Зміна балансу (Адмінка)
 window.changeUserBalance = function(userId, userName) {
     const input = prompt(`Зміна балансу для ${userName}.\n\nВведіть суму:\n👉 10 (щоб додати)\n👉 -10 (щоб відняти)`, "0");
     if (input === null) return;
@@ -144,55 +143,38 @@ function formatRelativeDate(isoString) {
     return `<span style="color:#aaa">${diffDays} ${suffix} тому о ${time}</span>`;
 }
 
-// 🔥 ЗАВАНТАЖЕННЯ ДАНИХ (ОНОВЛЕНО ДЛЯ ПАГІНАЦІЇ)
+// 🔥 ЗАВАНТАЖЕННЯ ДАНИХ (ПАГІНАЦІЯ)
 async function loadAdminData() {
     const statsDiv = document.getElementById('admin_stats');
-    
     db.ref('users').on('value', (snapshot) => {
         adminUsersData = snapshot.val() || {};
-        // Отримуємо всі ID і сортуємо (нові зверху)
         adminAllUserIds = Object.keys(adminUsersData).reverse();
-        
         if(statsDiv) statsDiv.innerHTML = `👥 Усього користувачів: <b>${adminAllUserIds.length}</b><br>⚙️ Статус: ${currentSettings?.isMaintenance ? '🚧 Техроботи' : '✅ Ок'}`;
-        
-        // Малюємо поточну сторінку
         renderAdminPage();
     });
 }
 
-// 🔥 НОВА ФУНКЦІЯ: МАЛЮЄ КОНКРЕТНУ СТОРІНКУ
 function renderAdminPage() {
     const listDiv = document.getElementById('admin_user_list');
     if (!listDiv) return;
     listDiv.innerHTML = '';
-
     const totalPages = Math.ceil(adminAllUserIds.length / adminItemsPerPage);
-    
-    // Перевірка, щоб не вийти за межі
     if (adminCurrentPage > totalPages && totalPages > 0) adminCurrentPage = totalPages;
     if (adminCurrentPage < 1) adminCurrentPage = 1;
-
-    // Вираховуємо індекси для зрізу
     const start = (adminCurrentPage - 1) * adminItemsPerPage;
     const end = start + adminItemsPerPage;
     const usersOnPage = adminAllUserIds.slice(start, end);
 
-    // Малюємо користувачів
     usersOnPage.forEach(id => {
         const u = adminUsersData[id];
         const isOnline = u.status === 'online';
         const patronBadge = u.total_donated > 0 ? '⭐' : '';
-        
         const card = document.createElement('div');
         card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
-        
         card.innerHTML = `
             <div style="color:white; font-size:12px; display:flex; align-items:center;">
                 <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span>
-                <div>
-                    <b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br>
-                    <span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0}</span>
-                </div>
+                <div><b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0}</span></div>
             </div>
             <div style="display:flex; gap:8px;">
                 <button onclick="window.changeUserBalance('${u.id}', '${u.first_name}')" style="background:#3498db; color:white; border:none; padding:5px 8px; border-radius:3px; font-weight:bold;">±🎟️</button>
@@ -202,45 +184,24 @@ function renderAdminPage() {
         listDiv.appendChild(card);
     });
 
-    // 🔥 МАЛЮЄМО КНОПКИ НАВІГАЦІЇ (1, 2, 3...)
     if (totalPages > 1) {
         const paginationDiv = document.createElement('div');
         paginationDiv.style = "display:flex; gap:5px; justify-content:center; margin-top:15px; flex-wrap:wrap;";
-        
-        // Кнопка "Назад"
-        if (adminCurrentPage > 1) {
-            paginationDiv.innerHTML += `<button onclick="window.changeAdminPage(${adminCurrentPage - 1})" style="padding:5px 10px; background:#444; color:white; border:none; border-radius:3px;">❮</button>`;
-        }
-
-        // Номери сторінок (показуємо, наприклад, 5 найближчих, щоб не було 100 кнопок)
+        if (adminCurrentPage > 1) paginationDiv.innerHTML += `<button onclick="window.changeAdminPage(${adminCurrentPage - 1})" style="padding:5px 10px; background:#444; color:white; border:none; border-radius:3px;">❮</button>`;
         let startPage = Math.max(1, adminCurrentPage - 2);
         let endPage = Math.min(totalPages, adminCurrentPage + 2);
-
         if (startPage > 1) paginationDiv.innerHTML += `<span style="color:#666; align-self:center;">...</span>`;
-
         for (let i = startPage; i <= endPage; i++) {
             const isActive = i === adminCurrentPage;
             paginationDiv.innerHTML += `<button onclick="window.changeAdminPage(${i})" style="padding:5px 10px; background:${isActive ? '#e50914' : '#444'}; color:white; border:none; border-radius:3px;">${i}</button>`;
         }
-
         if (endPage < totalPages) paginationDiv.innerHTML += `<span style="color:#666; align-self:center;">...</span>`;
-
-        // Кнопка "Вперед"
-        if (adminCurrentPage < totalPages) {
-            paginationDiv.innerHTML += `<button onclick="window.changeAdminPage(${adminCurrentPage + 1})" style="padding:5px 10px; background:#444; color:white; border:none; border-radius:3px;">❯</button>`;
-        }
-
+        if (adminCurrentPage < totalPages) paginationDiv.innerHTML += `<button onclick="window.changeAdminPage(${adminCurrentPage + 1})" style="padding:5px 10px; background:#444; color:white; border:none; border-radius:3px;">❯</button>`;
         listDiv.appendChild(paginationDiv);
     }
 }
 
-// Функція перемикання сторінки
-window.changeAdminPage = function(page) {
-    adminCurrentPage = page;
-    renderAdminPage();
-    // Прокручуємо вгору списку
-    document.getElementById('admin_modal').children[0].scrollTo(0,0);
-};
+window.changeAdminPage = function(page) { adminCurrentPage = page; renderAdminPage(); document.getElementById('admin_modal').children[0].scrollTo(0,0); };
 
 function showNotification(text) { const bar = document.getElementById('notification_bar'); const txt = document.getElementById('notif_text'); if (bar && txt) { playSound('Notification.wav'); txt.innerText = text; bar.classList.add('active'); setTimeout(() => { bar.classList.remove('active'); }, 15000); } }
 window.closeNotification = function() { document.getElementById('notification_bar')?.classList.remove('active'); };
@@ -250,3 +211,93 @@ window.openAdminPanel = function() { const modal = document.getElementById('admi
 window.toggleMaintenanceMode = function() { if(currentSettings) db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); };
 window.toggleUserBlock = function(userId, status) { if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); };
 function updateMaintenanceBtnUI(m) { const b = document.getElementById('maint_toggle_btn'); if(b){ b.innerText = m ? 'ВИМКНУТИ ТЕХРОБОТИ' : 'УВІМКНУТИ ТЕХРОБОТИ'; b.style.background = m ? '#e50914' : '#fff'; b.style.color = m ? '#fff' : '#000'; } }
+
+// 🔥 ФУНКЦІЇ ДЛЯ ПРОМОКОДІВ
+
+// 1. СТВОРЕННЯ (АДМІН)
+window.createPromoCode = function() {
+    const name = document.getElementById('promo_name')?.value.trim().toUpperCase();
+    const reward = parseFloat(document.getElementById('promo_reward')?.value);
+    const limit = parseInt(document.getElementById('promo_limit')?.value);
+
+    if (!name || !reward || !limit) {
+        alert("Заповніть всі поля!");
+        return;
+    }
+
+    db.ref('promos/' + name).set({
+        reward: reward,
+        limit: limit,
+        used_count: 0,
+        created_at: Date.now()
+    }).then(() => {
+        alert(`✅ Код ${name} створено!\nНагорода: ${reward} 🎟️\nМісць: ${limit}`);
+        document.getElementById('promo_name').value = '';
+        document.getElementById('promo_reward').value = '';
+        document.getElementById('promo_limit').value = '';
+    }).catch(e => alert("Помилка: " + e.message));
+};
+
+// 2. АКТИВАЦІЯ (КОРИСТУВАЧ)
+window.activatePromoCode = function() {
+    const codeInput = document.getElementById('user_promo_input');
+    const code = codeInput?.value.trim().toUpperCase();
+    const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+
+    if (!code || !user) return;
+
+    const promoRef = db.ref('promos/' + code);
+    const userPromoRef = db.ref(`users/${user.id}/used_promos/${code}`);
+
+    // Перевірка: чи вводив раніше?
+    userPromoRef.once('value', (snapshot) => {
+        if (snapshot.exists()) {
+            alert("❌ Ви вже використали цей код!");
+            return;
+        }
+
+        // Перевірка коду і лімітів
+        promoRef.transaction((promo) => {
+            if (promo) {
+                if (promo.used_count < promo.limit) {
+                    promo.used_count++; 
+                    return promo;
+                } else {
+                    return; // Ліміт все
+                }
+            }
+            return 0; // Коду немає
+        }, (error, committed, snapshot) => {
+            if (error) {
+                alert("Помилка мережі.");
+            } else if (!committed) {
+                const val = snapshot.val();
+                if (!val) alert("❌ Такого коду не існує!");
+                else alert("⚠️ Цей код вже закінчився (ліміт вичерпано)!");
+            } else {
+                // Нараховуємо нагороду
+                const reward = snapshot.val().reward;
+                
+                db.ref(`users/${user.id}/tickets`).transaction((current) => (current || 0) + reward);
+                userPromoRef.set(true);
+
+                document.getElementById('promo_input_modal').style.display = 'none';
+                codeInput.value = '';
+                alert(`🎉 ВІТАЄМО!\nВи отримали +${reward} Tickets!`);
+                playSound('Notification.wav');
+                window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+            }
+        });
+    });
+};
+
+// 3. ВІДКРИТТЯ ВІКНА
+window.openPromoModal = function() {
+    const m = document.getElementById('promo_input_modal');
+    if(m) {
+        m.style.display = 'flex';
+        // Ховаємо меню
+        document.getElementById('side_menu').classList.remove('active');
+        document.getElementById('menu_overlay').style.display = 'none';
+    }
+};

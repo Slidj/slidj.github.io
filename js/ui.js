@@ -195,29 +195,15 @@ window.showDailyBonus = (type) => {
 
     const titleEl = document.getElementById('bonus_title');
     const msgEl = document.getElementById('bonus_msg');
-    
-    // Перевірка мови
-    const lang = localStorage.getItem('mediaHubLang') || 'uk';
-    const isEn = lang === 'en';
 
-    // Тексти для перекладу
-    const texts = {
-        title: "+0.5 Ticket",
-        halfMsg: isEn 
-            ? `Lucky you! You found half a ticket.<br><span style="color: #aaa; font-size: 14px;">Come back tomorrow to get the second half!</span>`
-            : `Вам пощастило! Ви знайшли половинку квитка.<br><span style="color: #aaa; font-size: 14px;">Зайдіть завтра, щоб гарантовано забрати другу частину!</span>`,
-        fullMsg: isEn
-            ? `Welcome back! Ticket completed.<br><span style="color: #46d369; font-weight: bold;">(Total +1.0)</span>`
-            : `Ви повернулися! Квиток зібрано повністю.<br><span style="color: #46d369; font-weight: bold;">(Разом +1.0)</span>`
-    };
-
+    // 🔥 ТЕПЕР БЕРЕМО ТЕКСТ ІЗ СЛОВНИКА t
     if (type === 'full') {
-        titleEl.innerText = texts.title;
-        msgEl.innerHTML = texts.fullMsg;
+        titleEl.innerText = t.bonusTitle;
+        msgEl.innerHTML = t.bonusFullMsg;
         playSound('Notification.wav'); 
     } else {
-        titleEl.innerText = texts.title;
-        msgEl.innerHTML = texts.halfMsg;
+        titleEl.innerText = t.bonusTitle;
+        msgEl.innerHTML = t.bonusHalfMsg;
         playSound('Notification.wav');
     }
 

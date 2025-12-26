@@ -19,13 +19,12 @@ body {
 
 #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
 
-/* --- 🔥 ВИПРАВЛЕНА КНОПКА АДМІНА --- */
+/* --- 🔥 КНОПКА АДМІНА --- */
 .admin-toggle {
     position: absolute; 
-    /* Опускаємо кнопку вниз, щоб не перекривала інтерфейс Телеграм */
-    top: 90px;          
+    top: 90px;          /* Зсунута вниз */
     left: 15px;         
-    z-index: 1000;      /* Високий пріоритет */
+    z-index: 1000;      
     
     background: rgba(0,0,0,0.6); border: 1px solid #444; color: white;
     width: 44px; height: 44px; border-radius: 50%; font-size: 22px; cursor: pointer;
@@ -108,11 +107,15 @@ body {
 .shop-btn { background: var(--accent); color: white; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 13px; z-index: 5; }
 .shop-btn:disabled { background: #333; color: #555; }
 
-/* ADMIN PANEL */
+/* ADMIN PANEL (ВИПРАВЛЕНО ВІДСТУП) */
 .admin-panel {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #111; z-index: 10000; display: none;
-    flex-direction: column; padding: 20px 20px 100px 20px; 
+    flex-direction: column; 
+    
+    /* 🔥 БУЛО 20px -> СТАЛО 80px (Щоб не перекривав Telegram) */
+    padding: 80px 20px 100px 20px; 
+    
     box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 .admin-panel.open { display: flex; }

@@ -32,7 +32,7 @@ export async function initAdminSystem() {
     userRef.once('value', (snapshot) => {
         const data = snapshot.val() || {};
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0]; // 2024-12-26
+        const todayStr = now.toISOString().split('T')[0];
         
         const updateData = { 
             id: user.id, 
@@ -43,38 +43,30 @@ export async function initAdminSystem() {
         if (!data.created_at) updateData.created_at = todayStr;
 
         const lastBonusDate = data.last_bonus_date;
-        const bonusState = data.bonus_state; // 'half' або null
+        const bonusState = data.bonus_state;
 
-        // Якщо сьогодні ще не отримував бонус
         if (lastBonusDate !== todayStr) {
             let giveBonus = false;
-            let bonusType = ''; // 'half' або 'full'
+            let bonusType = ''; 
 
             if (bonusState === 'half') {
-                // Перевіряємо, чи це НАСТУПНИЙ день
                 const d1 = new Date(lastBonusDate);
                 const d2 = new Date(todayStr);
                 const diffTime = d2 - d1;
                 const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
-                if (diffDays === 1 || diffDays < 1.1) { // Іноді бувають похибки в годинах, <1.1 це "наступний день"
-                    // ✅ УСПІХ! Ланцюжок замкнувся
+                if (diffDays === 1 || diffDays < 1.1) { 
                     giveBonus = true;
                     bonusType = 'full';
                 } else {
-                    // ❌ Ланцюжок розірвано (пройшло більше 1 дня)
-                    // Але даємо шанс почати новий ланцюжок одразу (щоб не було сумно)
                     if (Math.random() < 0.25) { 
                         giveBonus = true;
                         bonusType = 'half';
-                    }
-                    // Якщо не пощастило - просто скидаємо статус
-                    else {
+                    } else {
                         updateData.bonus_state = null; 
                     }
                 }
             } else {
-                // Немає активного ланцюжка. Кидаємо кубик (шанс 25%)
                 if (Math.random() < 0.25) {
                     giveBonus = true;
                     bonusType = 'half';
@@ -85,20 +77,13 @@ export async function initAdminSystem() {
                 const currentTickets = (data.tickets && !isNaN(parseFloat(data.tickets))) ? parseFloat(data.tickets) : 0;
                 updateData.tickets = currentTickets + 0.5;
                 updateData.last_bonus_date = todayStr;
-                
-                if (bonusType === 'half') {
-                    updateData.bonus_state = 'half';
-                } else {
-                    updateData.bonus_state = null; // Цикл завершено
-                }
+                updateData.bonus_state = (bonusType === 'half') ? 'half' : null;
 
-                // Показуємо вікно із затримкою
                 setTimeout(() => {
                     if (window.showDailyBonus) window.showDailyBonus(bonusType);
                 }, 2000);
             }
         }
-
         userRef.update(updateData);
     });
 
@@ -123,6 +108,31 @@ export async function initAdminSystem() {
 }
 
 window.saveDonation = function(stars) { const user = window.Telegram?.WebApp?.initDataUnsafe?.user; if(!user) return; const userRef = db.ref('users/' + user.id); userRef.child('donations').push({ amount: stars, date: new Date().toISOString(), type: 'stars' }); userRef.child('total_donated').transaction((current) => { return (current || 0) + stars; }); if (stars >= 50) { userRef.update({ is_patron: true }); } };
+
+// 🔥 НОВА ФУНКЦІЯ: Зміна балансу (Адмінка)
+window.changeUserBalance = function(userId, userName) {
+    const input = prompt(`Зміна балансу для ${userName}.\n\nВведіть суму:\n👉 10 (щоб додати)\n👉 -10 (щоб відняти)`, "0");
+    
+    if (input === null) return; // Натиснули "Скасувати"
+    
+    const amount = parseFloat(input);
+    if (isNaN(amount) || amount === 0) {
+        alert("Введіть коректне число (не нуль).");
+        return;
+    }
+
+    db.ref('users/' + userId + '/tickets').transaction((current) => {
+        let newBal = (current || 0) + amount;
+        if (newBal < 0) newBal = 0; // Не даємо піти в мінус
+        return newBal;
+    }, (error, committed, snapshot) => {
+        if (error) {
+            alert("Помилка оновлення бази.");
+        } else if (committed) {
+            alert(`Успішно! Новий баланс: ${snapshot.val()}`);
+        }
+    });
+};
 
 function formatRelativeDate(isoString) {
     if (!isoString) return '<span style="color:gray">Невідомо</span>';
@@ -152,7 +162,21 @@ async function loadAdminData() {
                 const patronBadge = u.total_donated > 0 ? '⭐' : '';
                 const card = document.createElement('div');
                 card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
-                card.innerHTML = `<div style="color:white; font-size:12px; display:flex; align-items:center;"><span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span><div><b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0}</span></div></div><button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
+                
+                // 🔥 ОНОВЛЕНИЙ HTML КАРТКИ: Додана кнопка [±🎟️]
+                card.innerHTML = `
+                    <div style="color:white; font-size:12px; display:flex; align-items:center;">
+                        <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span>
+                        <div>
+                            <b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br>
+                            <span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0}</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="window.changeUserBalance('${u.id}', '${u.first_name}')" style="background:#3498db; color:white; border:none; padding:5px 8px; border-radius:3px; font-weight:bold;">±🎟️</button>
+                        <button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>
+                    </div>
+                `;
                 listDiv.appendChild(card);
             });
         }

@@ -28,21 +28,44 @@ export async function initAdminSystem() {
         }
     });
 
-    // 1. Одноразовий запис дати входу (щоб не перезаписувати постійно)
+    // 🔥 ЛОГІКА ЩОДЕННОГО БОНУСУ (оновлена)
     userRef.once('value', (snapshot) => {
-        const data = snapshot.val();
-        const now = new Date().toISOString();
-        if (!data || !data.created_at) userRef.update({ created_at: now.split('T')[0] });
-        userRef.update({ id: user.id, first_name: user.first_name || '', username: user.username || '', last_visit: now });
+        const data = snapshot.val() || {}; // Якщо даних немає, беремо пустий об'єкт
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0]; // Формат 2024-12-26
+        
+        const updateData = { 
+            id: user.id, 
+            first_name: user.first_name || '', 
+            username: user.username || '', 
+            last_visit: now.toISOString() 
+        };
+        
+        if (!data.created_at) updateData.created_at = todayStr;
+
+        // Перевіряємо, чи отримував бонус сьогодні
+        if (data.last_bonus_date !== todayStr) {
+            // Бонус ще не отримано!
+            const currentTickets = (data.tickets && !isNaN(parseFloat(data.tickets))) ? parseFloat(data.tickets) : 0;
+            
+            updateData.tickets = currentTickets + 0.5; // Додаємо половинку
+            updateData.last_bonus_date = todayStr;     // Запам'ятовуємо, що сьогодні вже видали
+            
+            // Запускаємо красиве вікно через 2 секунди (щоб інтерфейс встиг прогрузитись)
+            setTimeout(() => {
+                if (window.showDailyBonus) window.showDailyBonus();
+            }, 2000);
+        }
+
+        userRef.update(updateData);
     });
 
-    // 2. 🔥 СЛУХАЧ ДАНИХ (для оновлення квитків в реальному часі)
+    // 2. Слухач даних (для оновлення квитків в реальному часі)
     userRef.on('value', (snapshot) => {
         const data = snapshot.val();
         const balanceEl = document.getElementById('user_ticket_balance');
         if (balanceEl && data) {
-            // Якщо є поле tickets, показуємо його, інакше 0
-            balanceEl.innerText = data.tickets || 0;
+            balanceEl.innerText = data.tickets !== undefined ? data.tickets : 0;
         }
     });
 
@@ -84,60 +107,35 @@ export async function initAdminSystem() {
     });
 }
 
-// 🔥 НОВА ФУНКЦІЯ: Збереження донату
+// Збереження донату
 window.saveDonation = function(stars) {
     const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
     if(!user) return;
-    
     const userRef = db.ref('users/' + user.id);
-    
-    // 1. Додаємо запис в історію донатів
-    userRef.child('donations').push({
-        amount: stars,
-        date: new Date().toISOString(),
-        type: 'stars'
-    });
-
-    // 2. Оновлюємо загальну суму
-    userRef.child('total_donated').transaction((current) => {
-        return (current || 0) + stars;
-    });
-
-    // 3. Якщо сума велика, даємо статус "Patron"
-    if (stars >= 50) {
-        userRef.update({ is_patron: true });
-    }
+    userRef.child('donations').push({ amount: stars, date: new Date().toISOString(), type: 'stars' });
+    userRef.child('total_donated').transaction((current) => { return (current || 0) + stars; });
+    if (stars >= 50) { userRef.update({ is_patron: true }); }
 };
 
-// 🔥 ВИПРАВЛЕНА ФУНКЦІЯ ДАТИ (З ЦИФРАМИ І ВІДМІНЮВАННЯМ)
+// Форматування дати
 function formatRelativeDate(isoString) {
     if (!isoString) return '<span style="color:gray">Невідомо</span>';
-    
     const date = new Date(isoString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Форматуємо час (11:00)
     const time = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
 
     if (diffDays === 0) return `<span style="color:#46d369">Сьогодні о ${time}</span>`;
     if (diffDays === 1) return `<span style="color:#FFD700">Вчора о ${time}</span>`;
     
-    // Виправляємо закінчення: 2 дні, 5 днів
     let suffix = 'днів';
     const lastDigit = diffDays % 10;
     const lastTwoDigits = diffDays % 100;
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 19) { suffix = 'днів'; } 
+    else if (lastDigit === 1) { suffix = 'день'; } 
+    else if (lastDigit >= 2 && lastDigit <= 4) { suffix = 'дні'; }
 
-    if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
-        suffix = 'днів';
-    } else if (lastDigit === 1) {
-        suffix = 'день';
-    } else if (lastDigit >= 2 && lastDigit <= 4) {
-        suffix = 'дні';
-    }
-
-    // Тепер точно повертаємо цифру!
     return `<span style="color:#aaa">${diffDays} ${suffix} тому о ${time}</span>`;
 }
 
@@ -153,13 +151,10 @@ async function loadAdminData() {
             ids.reverse().forEach(id => {
                 const u = users[id];
                 const isOnline = u.status === 'online';
-                // Відображаємо зірочку, якщо донатив
                 const patronBadge = u.total_donated > 0 ? '⭐' : '';
-                
                 const card = document.createElement('div');
                 card.style = "background:#333; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;";
-                // Тут викликаємо нашу нову функцію formatRelativeDate
-                card.innerHTML = `<div style="color:white; font-size:12px; display:flex; align-items:center;"><span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span><div><b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)}</span></div></div><button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
+                card.innerHTML = `<div style="color:white; font-size:12px; display:flex; align-items:center;"><span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span><div><b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0}</span></div></div><button onclick="window.toggleUserBlock('${u.id}', ${u.blocked || false})" style="background:${u.blocked ? '#e50914' : '#444'}; color:white; border:none; padding:5px 10px; border-radius:3px;">${u.blocked ? 'РОЗБАН' : 'БАН'}</button>`;
                 listDiv.appendChild(card);
             });
         }
@@ -196,24 +191,7 @@ async function updateMenuStats() {
     });
 }
 
-window.openAdminPanel = function() { 
-    const modal = document.getElementById('admin_modal');
-    if (modal) { modal.style.display = 'block'; loadAdminData(); }
-};
-
-window.toggleMaintenanceMode = function() { 
-    if(currentSettings) db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); 
-};
-
-window.toggleUserBlock = function(userId, status) { 
-    if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); 
-};
-
-function updateMaintenanceBtnUI(m) { 
-    const b = document.getElementById('maint_toggle_btn'); 
-    if(b){ 
-        b.innerText = m ? 'ВИМКНУТИ ТЕХРОБОТИ' : 'УВІМКНУТИ ТЕХРОБОТИ'; 
-        b.style.background = m ? '#e50914' : '#fff'; 
-        b.style.color = m ? '#fff' : '#000'; 
-    } 
-}
+window.openAdminPanel = function() { const modal = document.getElementById('admin_modal'); if (modal) { modal.style.display = 'block'; loadAdminData(); } };
+window.toggleMaintenanceMode = function() { if(currentSettings) db.ref('settings/isMaintenance').set(!currentSettings.isMaintenance); };
+window.toggleUserBlock = function(userId, status) { if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); };
+function updateMaintenanceBtnUI(m) { const b = document.getElementById('maint_toggle_btn'); if(b){ b.innerText = m ? 'ВИМКНУТИ ТЕХРОБОТИ' : 'УВІМКНУТИ ТЕХРОБОТИ'; b.style.background = m ? '#e50914' : '#fff'; b.style.color = m ? '#fff' : '#000'; } }

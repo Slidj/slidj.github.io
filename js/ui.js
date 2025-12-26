@@ -5,7 +5,6 @@ import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
 
-// Змінна для таймера кнопки
 let playerIdleTimer = null;
 
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
@@ -200,7 +199,7 @@ export async function openMoviePage(movie) {
             similarHtml = `<div class="similar-section"><div class="similar-title">${t.moreLikeThis}</div><div class="similar-row">${similar.map(m => `<div class="similar-card" onclick="window.ui_openSimilar('${m.id}','${m.type}')"><img src="${m.img}" loading="lazy"><div class="similar-rating">${m.rating}</div></div>`).join('')}</div></div>`;
         }
 
-        // Розрахунок рейтингу
+        // 🔥 РОЗРАХУНОК РЕЙТИНГУ (з TMDB)
         let matchPercent = ''; 
         if (details.rating && details.rating !== 'N/A') {
             const numericRating = parseFloat(details.rating);
@@ -293,80 +292,30 @@ export function closeMoviePage() {
     setTimeout(() => { modal.style.display = 'none'; content.innerHTML = ''; state.activeMovie = null; if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide(); }, 300);
 }
 
-// 🔥 ОНОВЛЕНО: ЛОГІКА ПОВНОГО ЕКРАНУ + ТАЙМЕР КНОПКИ
 export function openPremiumPlayer(tmdbId, btn) {
     playSound('Click.wav');
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.currentHeroMovie;
     if (!movie) return;
-    
-    // Формуємо посилання
     let url = PLAYER_BASE_URL.replace(/\/$/, '') + `?tmdb_id=${movie.id}&title=${encodeURIComponent(movie.original_title || movie.title)}`;
     if (movie.imdb_id) url += `&imdb_id=${movie.imdb_id}`;
-    
-    const p = document.getElementById('player_modal');
-    const f = document.getElementById('video_frame');
+    const p = document.getElementById('player_modal'), f = document.getElementById('video_frame');
     const closeBtn = document.querySelector('.close-player-btn');
-    
-    // Ховаємо деталі фільму
     const details = document.getElementById('movie_details_modal');
     if(details) details.style.display = 'none';
-    
-    // 1. Повний екран
-    if (window.Telegram?.WebApp?.requestFullscreen) {
-        window.Telegram.WebApp.requestFullscreen();
-    }
-    // 2. Блокуємо орієнтацію та ховаємо хедер
-    if (window.Telegram?.WebApp?.expand) {
-        window.Telegram.WebApp.expand();
-    }
-
-    f.src = url; 
-    p.style.display = 'flex';
-
-    // 🔥 ЛОГІКА "ПРИВИДА": Кнопка зникає через 3.5 сек
-    if (closeBtn) {
-        closeBtn.classList.remove('faded');
-        if (playerIdleTimer) clearTimeout(playerIdleTimer);
-        
-        playerIdleTimer = setTimeout(() => {
-            closeBtn.classList.add('faded');
-        }, 3500); // 3.5 секунди затримки
-    }
+    if (window.Telegram?.WebApp?.requestFullscreen) window.Telegram.WebApp.requestFullscreen();
+    if (window.Telegram?.WebApp?.expand) window.Telegram.WebApp.expand();
+    f.src = url; p.style.display = 'flex';
+    if (closeBtn) { closeBtn.classList.remove('faded'); if (playerIdleTimer) clearTimeout(playerIdleTimer); playerIdleTimer = setTimeout(() => { closeBtn.classList.add('faded'); }, 3500); }
 }
 
 export function closePlayer() {
-    const p = document.getElementById('player_modal');
-    const f = document.getElementById('video_frame');
-    const closeBtn = document.querySelector('.close-player-btn');
-    
-    p.style.display = 'none'; 
-    f.src = ''; 
-    
-    // Скидаємо таймер і клас привида
-    if (playerIdleTimer) clearTimeout(playerIdleTimer);
-    if (closeBtn) closeBtn.classList.remove('faded');
-    
-    // 1. ПІДТВЕРДЖУЄМО повний екран (не виходимо)
-    if (window.Telegram?.WebApp?.requestFullscreen) {
-        window.Telegram.WebApp.requestFullscreen();
-    }
-    
-    // І переконуємось, що додаток розгорнуто
-    if (window.Telegram?.WebApp?.expand) {
-        window.Telegram.WebApp.expand();
-    }
-
-    // Тримаємо хедер чорним
-    if (window.Telegram?.WebApp?.setHeaderColor) {
-        window.Telegram.WebApp.setHeaderColor('#000000');
-        window.Telegram.WebApp.setBackgroundColor('#000000');
-    }
-
-    // Повертаємо вікно з деталями
-    if(state.activeMovie) {
-        const details = document.getElementById('movie_details_modal');
-        if(details) details.style.display = 'block';
-    }
+    const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'), closeBtn = document.querySelector('.close-player-btn');
+    p.style.display = 'none'; f.src = ''; 
+    if (playerIdleTimer) clearTimeout(playerIdleTimer); if (closeBtn) closeBtn.classList.remove('faded');
+    if (window.Telegram?.WebApp?.requestFullscreen) window.Telegram.WebApp.requestFullscreen();
+    if (window.Telegram?.WebApp?.expand) window.Telegram.WebApp.expand();
+    if (window.Telegram?.WebApp?.setHeaderColor) { window.Telegram.WebApp.setHeaderColor('#000000'); window.Telegram.WebApp.setBackgroundColor('#000000'); }
+    if(state.activeMovie) document.getElementById('movie_details_modal').style.display = 'block';
 }
 
 export function renderHistorySection(items) {
@@ -377,10 +326,6 @@ export function renderHistorySection(items) {
     window.ui_openHistory = (id) => { const m = items.find(i => i.id == id); if(m) openMoviePage(m); };
     return section;
 }
-
-// ==========================================
-// 🎄 ЛОГІКА СВЯТКОВОЇ ІКОНКИ
-// ==========================================
 
 window.saveHolidayIcon = (filename) => {
     if (!window.firebase) return;
@@ -419,7 +364,6 @@ const checkFirebaseInterval = setInterval(() => {
     }
 }, 500);
 
-// 🔥 Слухаємо кліки по меню в index.html, щоб ховати кнопку FAB
 document.querySelectorAll('.nav-item').forEach(el => {
     el.addEventListener('click', (e) => {
         const fab = document.getElementById('random_fab');
@@ -427,3 +371,33 @@ document.querySelectorAll('.nav-item').forEach(el => {
         if(fab) fab.style.display = isHome ? 'flex' : 'none';
     });
 });
+
+// 🔥 ФУНКЦІЇ ДЛЯ ЩОДЕННОГО БОНУСУ
+window.showDailyBonus = () => {
+    const m = document.getElementById('daily_bonus_modal');
+    if (m) {
+        m.style.display = 'flex';
+        playSound('Notification.wav');
+        if(window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        }
+    }
+};
+
+window.closeDailyBonus = () => {
+    const m = document.getElementById('daily_bonus_modal');
+    if (m) {
+        const box = m.querySelector('.bonus-content-box');
+        if(box) {
+            box.style.transform = 'scale(0.8)';
+            box.style.opacity = '0';
+        }
+        setTimeout(() => {
+            m.style.display = 'none';
+            if(box) {
+                box.style.transform = '';
+                box.style.opacity = '';
+            }
+        }, 300);
+    }
+};

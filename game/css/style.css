@@ -19,10 +19,10 @@ body {
 
 #visual-hero { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 10; transition: 0.5s; }
 
-/* --- 🔥 КНОПКА АДМІНА (Правильне місце) --- */
+/* ADMIN TOGGLE */
 .admin-toggle {
     position: absolute; 
-    top: 90px;          /* Опущено нижче кнопок Телеграм */
+    top: 90px;          
     left: 15px;         
     z-index: 1000;      
     background: rgba(0,0,0,0.6); border: 1px solid #444; color: white;
@@ -52,7 +52,7 @@ body {
 .section-title { color: #666; font-size: 12px; margin-bottom: 10px; }
 .empty-msg { text-align: center; color: #555; margin-top: 20px; display: none; }
 
-/* MAP & PINS */
+/* MAP */
 .map-wrapper {
     position: relative; width: 100%; height: 350px;
     background: #222; border-radius: 20px; border: 2px solid #444; overflow: hidden;
@@ -111,7 +111,6 @@ body {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #111; z-index: 10000; display: none;
     flex-direction: column; 
-    /* 🔥 Відступ для шапки */
     padding: 80px 20px 100px 20px; 
     box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
@@ -149,7 +148,7 @@ select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;c
 #action-sheet.open { bottom: 0; }
 .sheet-btn { width: 100%; padding: 15px; margin-top: 10px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; background: #333; color: white; }
 
-/* --- 🤢 ЕФЕКТ "ХАОТИЧНИЙ РІЙ" (SWARM) 🤢 --- */
+/* --- 🤢 ЕФЕКТ "ЩІЛЬНИЙ РІЙ" (TIGHT SWARM) 🤢 --- */
 
 /* 1. Бейдж смітника */
 .trash-badge {
@@ -185,38 +184,61 @@ select.admin-inp { appearance: none; background-image: url("data:image/svg+xml;c
     position: absolute;
     top: 50%; left: 50%;
     
-    /* Великі плями */
-    width: 170%; height: 170%;
+    /* Великі, але не гігантські плями */
+    width: 150%; height: 150%;
     
     /* Робимо їх хмароподібними */
     border-radius: 45%; 
-    filter: blur(12px); /* М'який газ */
+    filter: blur(10px); /* М'який газ */
     opacity: 0.6;
     pointer-events: none;
     z-index: 1; /* Газ виходить з-під кнопки */
 }
 
-/* Хмара 1: Рухається хаотично */
+/* Хмара 1: Морфінг зліва */
 .spoiled-wrapper::before {
-    background: radial-gradient(circle at 30% 30%, rgba(50, 255, 50, 0.6), transparent 60%);
-    animation: swarm-1 5s infinite ease-in-out alternate;
+    background: radial-gradient(circle at 30% 30%, rgba(50, 255, 50, 0.6), transparent 70%);
+    animation: swarm-tight-1 6s infinite ease-in-out alternate;
 }
 
-/* Хмара 2: Рухається хаотично в інший бік */
+/* Хмара 2: Морфінг справа */
 .spoiled-wrapper::after {
-    background: radial-gradient(circle at 70% 70%, rgba(150, 255, 50, 0.4), transparent 60%);
-    animation: swarm-2 6s infinite ease-in-out alternate;
+    background: radial-gradient(circle at 70% 70%, rgba(150, 255, 50, 0.4), transparent 70%);
+    animation: swarm-tight-2 7s infinite ease-in-out alternate;
 }
 
-/* Анімація: Морфінг форми (перетікання) */
-@keyframes swarm-1 {
-    0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
-    50% { transform: translate(-60%, -60%) scale(1.1) rotate(90deg); border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%; }
-    100% { transform: translate(-40%, -40%) scale(1) rotate(180deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+/* Анімація: Рухаємося тільки трохи від центру (-50%), 
+   щоб газ не втікав далеко, а "кипів" навколо кнопки.
+*/
+@keyframes swarm-tight-1 {
+    0% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    }
+    50% {
+        /* Трохи вліво-вгору, але недалеко */
+        transform: translate(-55%, -55%) scale(1.1) rotate(60deg);
+        border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%;
+    }
+    100% {
+        /* Трохи вправо-вниз */
+        transform: translate(-45%, -45%) scale(1.05) rotate(120deg);
+        border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    }
 }
 
-@keyframes swarm-2 {
-    0% { transform: translate(-50%, -50%) scale(1.1) rotate(0deg); border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%; }
-    50% { transform: translate(-40%, -40%) scale(0.9) rotate(-90deg); border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
-    100% { transform: translate(-60%, -60%) scale(1.1) rotate(-180deg); border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%; }
+@keyframes swarm-tight-2 {
+    0% {
+        transform: translate(-50%, -50%) scale(1.1) rotate(0deg);
+        border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%;
+    }
+    50% {
+        /* Трохи вправо-вгору */
+        transform: translate(-45%, -60%) scale(1) rotate(-60deg);
+    }
+    100% {
+        /* Трохи вліво-вниз */
+        transform: translate(-55%, -40%) scale(1.2) rotate(-120deg);
+        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    }
 }

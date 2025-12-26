@@ -188,25 +188,36 @@ export function initHolidayIconListener() { if (!window.firebase) return; const 
 const checkFirebaseInterval = setInterval(() => { if (window.firebase) { clearInterval(checkFirebaseInterval); initHolidayIconListener(); } }, 500);
 document.querySelectorAll('.nav-item').forEach(el => { el.addEventListener('click', (e) => { const fab = document.getElementById('random_fab'), isHome = e.currentTarget.innerText.includes('Головна') || e.currentTarget.innerText.includes('Home'); if(fab) fab.style.display = isHome ? 'flex' : 'none'; }); });
 
-// 🔥 ОНОВЛЕНІ ФУНКЦІЇ ДЛЯ БОНУСУ
-// type: 'half' (0.5) або 'full' (1.0)
+// 🔥 ОНОВЛЕНІ ФУНКЦІЇ БОНУСУ З ПЕРЕКЛАДОМ (UK/EN)
 window.showDailyBonus = (type) => {
     const m = document.getElementById('daily_bonus_modal');
     if (!m) return;
 
     const titleEl = document.getElementById('bonus_title');
     const msgEl = document.getElementById('bonus_msg');
+    
+    // Перевірка мови
+    const lang = localStorage.getItem('mediaHubLang') || 'uk';
+    const isEn = lang === 'en';
+
+    // Тексти для перекладу
+    const texts = {
+        title: "+0.5 Ticket",
+        halfMsg: isEn 
+            ? `Lucky you! You found half a ticket.<br><span style="color: #aaa; font-size: 14px;">Come back tomorrow to get the second half!</span>`
+            : `Вам пощастило! Ви знайшли половинку квитка.<br><span style="color: #aaa; font-size: 14px;">Зайдіть завтра, щоб гарантовано забрати другу частину!</span>`,
+        fullMsg: isEn
+            ? `Welcome back! Ticket completed.<br><span style="color: #46d369; font-weight: bold;">(Total +1.0)</span>`
+            : `Ви повернулися! Квиток зібрано повністю.<br><span style="color: #46d369; font-weight: bold;">(Разом +1.0)</span>`
+    };
 
     if (type === 'full') {
-        // Якщо це гарантований другий день
-        titleEl.innerText = '+0.5 Ticket';
-        msgEl.innerHTML = `Ви повернулися! Квиток зібрано повністю.<br><span style="color: #46d369; font-weight: bold;">(Разом +1.0)</span>`;
-        // Ефект конфеті (звук)
+        titleEl.innerText = texts.title;
+        msgEl.innerHTML = texts.fullMsg;
         playSound('Notification.wav'); 
     } else {
-        // Якщо це випадковий дроп (перший день)
-        titleEl.innerText = '+0.5 Ticket';
-        msgEl.innerHTML = `Вам пощастило! Ви знайшли половинку квитка.<br><span style="color: #aaa; font-size: 14px;">Зайдіть завтра, щоб гарантовано забрати другу частину!</span>`;
+        titleEl.innerText = texts.title;
+        msgEl.innerHTML = texts.halfMsg;
         playSound('Notification.wav');
     }
 

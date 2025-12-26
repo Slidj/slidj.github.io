@@ -56,13 +56,15 @@ function renderHome() {
             const div = document.createElement('div');
             div.className = 'app-card';
             div.innerHTML = `<div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">${meta.icon}</span></div><svg class="progress-svg" viewBox="0 0 76 76"><rect class="squircle ring-bg-inner" x="8" y="8" width="60" height="60" rx="16" opacity="0.3"></rect><rect class="squircle ring-hp" x="8" y="8" width="60" height="60" rx="16" stroke="${item.hp > 50 ? '#30d158' : '#ff453a'}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${hpOff}"></rect><rect class="squircle ring-timer" id="timer-${item.id}" x="3" y="3" width="70" height="70" rx="20" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></rect></svg><div class="app-badge" id="badge-${item.id}">${item.hp}%</div></div><div class="app-label">${meta.name}</div>`;
-            div.onclick = function() { startAction(item.id, item.id === 'pc' ? 'work' : 'sleep'); };
+            
+            // 🔥 КЛІК ВІДКРИВАЄ МЕНЮ
+            div.onclick = function() { openRoomMenu(item.id); };
+            
             grid.appendChild(div);
         });
     }
 }
 
-// 🔥 ФУНКЦІЯ 1: ПОВНИЙ РЕНДЕР (Викликається рідко)
 function renderGrid() {
     const grid = document.getElementById('inventory-grid');
     if(!grid) return; grid.innerHTML = "";
@@ -80,7 +82,7 @@ function renderGrid() {
 
         if(item.isSpoiled) { 
             emoji = "🤢"; color = "#555"; offset = 100;
-            wrapClass += " spoiled-wrapper"; // Вмикає дим
+            wrapClass += " spoiled-wrapper";
             badge = `<div class="trash-badge">🗑️</div>`;
         } else {
             const left = Math.max(0, item.expireTime - Date.now());
@@ -91,12 +93,14 @@ function renderGrid() {
         const div = document.createElement('div');
         div.className = 'app-card';
         div.innerHTML = `<div class="${wrapClass}" id="inv-item-${index}"><div class="app-bg"><span class="app-emoji">${emoji}</span></div><svg class="progress-svg" viewBox="0 0 76 76"><rect class="squircle" x="5" y="5" width="66" height="66" rx="18" fill="none" stroke="${color}" stroke-width="5" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}"></rect></svg>${badge}</div><div class="app-label">${meta.name}</div>`;
-        div.onclick = function() { useFood(index); };
+        
+        // 🔥 КЛІК ВІДКРИВАЄ МЕНЮ
+        div.onclick = function() { openInventoryMenu(index); };
+        
         grid.appendChild(div);
     });
 }
 
-// 🔥 ФУНКЦІЯ 2: ОНОВЛЕННЯ ТАЙМЕРІВ (Щоб не ламати анімацію)
 function updateInventoryVisuals() {
     if(!game || !game.inventory) return;
     game.inventory.forEach((item, index) => {

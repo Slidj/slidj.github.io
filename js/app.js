@@ -40,10 +40,10 @@ async function initApp() {
             if(tg.requestFullscreen) tg.requestFullscreen();
             tg.setHeaderColor?.('#000000'); tg.setBackgroundColor?.('#000000');
             
-            // 🔥 СПРОБА 1: Отримати користувача
+            // 🔥 СПРОБА 1: Отримати ім'я та аватар
             updateUserProfile();
 
-            // 🔥 СПРОБА 2 (ПЛАН Б): Повторна спроба через 0.5 сек
+            // 🔥 СПРОБА 2 (ПЛАН Б): Повторна спроба через 0.5 сек (на випадок лагів ТГ)
             setTimeout(() => updateUserProfile(), 500);
 
             // Слухач оплати
@@ -69,13 +69,13 @@ async function initApp() {
     } catch (e) { console.error(e); }
 }
 
-// 🔥 ФУНКЦІЯ ОНОВЛЕННЯ ПРОФІЛЮ З КВИТКАМИ
+// 🔥 ВИПРАВЛЕНА ФУНКЦІЯ: Більше не чіпає баланс!
 function updateUserProfile() {
     let user = tg?.initDataUnsafe?.user;
 
     // ДЕМО-РЕЖИМ для браузера
     if (!user && !tg.initData) {
-        // user = { first_name: "Media", last_name: "Fan", photo_url: null, tickets: 999 }; // Тест
+        // user = { first_name: "Media", last_name: "Fan", photo_url: null }; 
     }
 
     if (user) {
@@ -97,12 +97,8 @@ function updateUserProfile() {
         if (menuName) menuName.innerText = user.first_name + (user.last_name ? ' ' + user.last_name : '');
         if (menuAvatar) menuAvatar.src = photoUrl;
 
-        // 3. 🔥 ВАЛЮТА (TICKETS) - Початкове значення
-        const balanceEl = document.getElementById('user_ticket_balance');
-        if (balanceEl) {
-            // Беремо те, що є в об'єкті user, або 0
-            balanceEl.innerText = user.tickets !== undefined ? user.tickets : "0";
-        }
+        // ❌ ПРИБРАНО: Код, який ставив "0 Tickets", бо Телеграм не знає про квитки.
+        // Тепер за це відповідає тільки firebase-logic.js
     }
 }
 

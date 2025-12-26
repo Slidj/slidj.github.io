@@ -40,20 +40,39 @@ async function initApp() {
             if(tg.requestFullscreen) tg.requestFullscreen();
             tg.setHeaderColor?.('#000000'); tg.setBackgroundColor?.('#000000');
             const user = tg.initDataUnsafe?.user;
-            if(user && user.photo_url) {
-                const avatarImg = document.getElementById('user_avatar');
-                const defaultDiv = document.getElementById('default_avatar');
-                if (avatarImg && defaultDiv) {
-                    avatarImg.src = user.photo_url;
-                    avatarImg.style.display = 'block';
-                    defaultDiv.style.display = 'none';
+            
+            // 🔥 ОНОВЛЕННЯ ПРОФІЛЮ (ХЕДЕР + БОКОВЕ МЕНЮ)
+            if(user) {
+                // 1. Хедер
+                if(user.photo_url) {
+                    const avatarImg = document.getElementById('user_avatar');
+                    const defaultDiv = document.getElementById('default_avatar');
+                    if (avatarImg && defaultDiv) {
+                        avatarImg.src = user.photo_url;
+                        avatarImg.style.display = 'block';
+                        defaultDiv.style.display = 'none';
+                    }
+                }
+                
+                // 2. 🔥 НОВЕ БОКОВЕ МЕНЮ
+                const menuName = document.getElementById('menu_username_text');
+                const menuAvatar = document.getElementById('menu_avatar_img');
+                
+                if (menuName) menuName.innerText = user.first_name || 'Гість';
+                
+                if (menuAvatar) {
+                    if (user.photo_url) {
+                        menuAvatar.src = user.photo_url;
+                    } else {
+                        // Якщо немає фото - генеруємо красиву заглушку з ініціалами
+                        menuAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=333&color=fff`;
+                    }
                 }
             }
 
-            // 🔥 СЛУХАЧ ОПЛАТИ (ДЛЯ МАЙБУТНЬОГО РЕАЛЬНОГО БОТА)
+            // Слухач оплати
             tg.onEvent('invoiceClosed', (object) => {
                 if (object.status === 'paid') {
-                    // Оплата пройшла успішно через Telegram!
                     const stars = parseInt(sessionStorage.getItem('pending_donation')) || 0;
                     if(stars > 0) window.processSuccessfulDonation(stars);
                 }

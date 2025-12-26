@@ -1,5 +1,3 @@
-// js/logic.js (FULL)
-
 document.addEventListener("DOMContentLoaded", function() {
     if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.expand();
@@ -64,9 +62,9 @@ function gameLoop() {
     if(document.getElementById('tab-home').classList.contains('active')) renderHome();
 }
 
-// --- 🔥 НОВІ ФУНКЦІЇ МЕНЮ (BOTTOM SHEET) 🔥 ---
+// --- 🔥 МЕНЮ ДІЙ (ACTION SHEET) 🔥 ---
 
-// 1. Меню для Їжі (Рюкзак)
+// Відкрити меню для їжі
 window.openInventoryMenu = function(index) {
     const item = game.inventory[index];
     const meta = gameData.items.find(x => x.id === item.id) || item;
@@ -94,7 +92,7 @@ window.openInventoryMenu = function(index) {
     container.classList.add('open');
 };
 
-// 2. Меню для Меблів (Кімната)
+// Відкрити меню для кімнати
 window.openRoomMenu = function(itemId) {
     const item = game.room.find(i => i.id === itemId);
     const meta = gameData.items.find(x => x.id === itemId);
@@ -103,38 +101,25 @@ window.openRoomMenu = function(itemId) {
     const sheet = document.getElementById('sheet-content');
     const container = document.getElementById('action-sheet');
     
-    // Ціна ремонту і продажу
     const repairCost = Math.max(10, Math.floor((100 - item.hp) * 1.5)); 
     const sellPrice = Math.floor(meta.price * 0.5);
-
-    let actionType = itemId === 'pc' ? 'work' : 'sleep';
-    let actionName = itemId === 'pc' ? 'Працювати 💼' : 'Спати 💤';
+    const actionType = itemId === 'pc' ? 'work' : 'sleep';
+    const actionName = itemId === 'pc' ? 'Працювати 💼' : 'Спати 💤';
 
     sheet.innerHTML = `
         <div class="sheet-header">
             <div style="font-size:40px; margin-bottom:10px">${meta.icon}</div>
             <div class="sheet-title">${meta.name}</div>
-            <div class="sheet-subtitle">Стан: ${item.hp}% | ${item.hp < 30 ? '⚠️ Потребує ремонту' : 'Все добре'}</div>
+            <div class="sheet-subtitle">Стан: ${item.hp}%</div>
         </div>
-        
-        <button class="sheet-btn btn-primary" onclick="startAction('${itemId}', '${actionType}'); closeSheet()">
-            ▶️ ${actionName}
-        </button>
-        
-        <button class="sheet-btn btn-neutral" onclick="repairItem('${itemId}', ${repairCost}); closeSheet()">
-            🛠️ Ремонт (${repairCost}$)
-        </button>
-        
-        <button class="sheet-btn btn-danger" onclick="sellItem('${itemId}', ${sellPrice}); closeSheet()">
-            💸 Продати (${sellPrice}$)
-        </button>
-        
+        <button class="sheet-btn btn-primary" onclick="startAction('${itemId}', '${actionType}'); closeSheet()">▶️ ${actionName}</button>
+        <button class="sheet-btn btn-neutral" onclick="repairItem('${itemId}', ${repairCost}); closeSheet()">🛠️ Ремонт (${repairCost}$)</button>
+        <button class="sheet-btn btn-danger" onclick="sellItem('${itemId}', ${sellPrice}); closeSheet()">💸 Продати (${sellPrice}$)</button>
         <button class="sheet-btn btn-cancel" onclick="closeSheet()">Скасувати</button>
     `;
     container.classList.add('open');
 };
 
-// --- Дії з меню ---
 window.discardItem = function(index) {
     game.inventory.splice(index, 1);
     save(); render(); renderGrid();
@@ -143,31 +128,22 @@ window.discardItem = function(index) {
 window.repairItem = function(itemId, cost) {
     const item = game.room.find(i => i.id === itemId);
     if(!item) return;
-    if(item.hp >= 100) return alert("Предмет повністю цілий!");
-    if(game.money < cost) return alert(`Немає грошей! Треба ${cost}$`);
-    
-    game.money -= cost;
-    item.hp = 100;
+    if(item.hp >= 100) return alert("Ціле!");
+    if(game.money < cost) return alert("Нема грошей!");
+    game.money -= cost; item.hp = 100;
     save(); render(); renderHome();
-    alert("Відремонтовано!");
 };
 
 window.sellItem = function(itemId, price) {
     if(confirm(`Продати за ${price}$?`)) {
         const idx = game.room.findIndex(i => i.id === itemId);
-        if(idx > -1) {
-            game.room.splice(idx, 1);
-            game.money += price;
-            save(); render(); renderHome();
-        }
+        if(idx > -1) { game.room.splice(idx, 1); game.money += price; save(); render(); renderHome(); }
     }
 };
 
-window.closeSheet = function() { 
-    document.getElementById('action-sheet').classList.remove('open'); 
-};
+window.closeSheet = function() { document.getElementById('action-sheet').classList.remove('open'); };
 
-// --- СТАРІ ФУНКЦІЇ ---
+// ACTIONS (Old)
 window.buy = function(id) {
     const m = gameData.items.find(x=>x.id===id);
     if(game.money<m.price)return; game.money-=m.price;
@@ -200,7 +176,7 @@ window.startAction = function(id,type) {
     },30);
 };
 
-// ADMIN
+// ADMIN & UTILS
 window.toggleAdmin = function() { const p=document.getElementById('admin-panel'); p.style.display=p.style.display==='flex'?'none':'flex'; if(p.style.display==='flex')renderAdminList(); }
 window.createNewItem = function() { gameData.items.push({ id: "item_"+Date.now(), type: 'food', name: 'New', price: 10, icon: '📦', desc: '...', energyReward:0, moneyReward:0, hpCost:0, expireTime:30000 }); editItem(gameData.items.length-1); }
 function editItem(index) {
@@ -225,7 +201,6 @@ window.saveAdminItem = function() {
 window.cancelEdit = function(){currentEditIndex=-1;document.getElementById('admin-editor').style.display='none';document.getElementById('admin-item-list').style.display='grid';document.getElementById('admin-controls').style.display='block';}
 window.deleteItem = function(){if(currentEditIndex===-1)return;if(confirm("Delete?")){gameData.items.splice(currentEditIndex,1);db.ref('gameData').set(gameData);cancelEdit();renderShop();}}
 
-// UTILS
 window.openShopFromMap=function(){switchTab('shop');}
 window.openBank=function(){document.getElementById('action-sheet').classList.add('open');document.getElementById('sheet-content').innerHTML=`<div style="font-size:50px;text-align:center">🏦</div><div style="text-align:center;font-weight:bold">БАНК</div><div style="text-align:center;color:#888;margin-bottom:10px">Борг: ${game.debt}$</div><button class="sheet-btn" onclick="takeLoan()">Взяти 100$</button><button class="sheet-btn" onclick="closeSheet()">Закрити</button>`;}
 window.takeLoan=function(){game.money+=100;game.debt+=150;save();render();closeSheet();alert("Борг +150$");}

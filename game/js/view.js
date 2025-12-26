@@ -56,15 +56,13 @@ function renderHome() {
             const div = document.createElement('div');
             div.className = 'app-card';
             div.innerHTML = `<div class="icon-wrapper"><div class="app-bg"><span class="app-emoji">${meta.icon}</span></div><svg class="progress-svg" viewBox="0 0 76 76"><rect class="squircle ring-bg-inner" x="8" y="8" width="60" height="60" rx="16" opacity="0.3"></rect><rect class="squircle ring-hp" x="8" y="8" width="60" height="60" rx="16" stroke="${item.hp > 50 ? '#30d158' : '#ff453a'}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${hpOff}"></rect><rect class="squircle ring-timer" id="timer-${item.id}" x="3" y="3" width="70" height="70" rx="20" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></rect></svg><div class="app-badge" id="badge-${item.id}">${item.hp}%</div></div><div class="app-label">${meta.name}</div>`;
-            
-            // 🔥 КЛІК ВІДКРИВАЄ МЕНЮ
-            div.onclick = function() { openRoomMenu(item.id); };
-            
+            div.onclick = function() { openRoomMenu(item.id); }; // 🔥 МЕНЮ
             grid.appendChild(div);
         });
     }
 }
 
+// Повний рендер інвентарю
 function renderGrid() {
     const grid = document.getElementById('inventory-grid');
     if(!grid) return; grid.innerHTML = "";
@@ -93,14 +91,12 @@ function renderGrid() {
         const div = document.createElement('div');
         div.className = 'app-card';
         div.innerHTML = `<div class="${wrapClass}" id="inv-item-${index}"><div class="app-bg"><span class="app-emoji">${emoji}</span></div><svg class="progress-svg" viewBox="0 0 76 76"><rect class="squircle" x="5" y="5" width="66" height="66" rx="18" fill="none" stroke="${color}" stroke-width="5" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}"></rect></svg>${badge}</div><div class="app-label">${meta.name}</div>`;
-        
-        // 🔥 КЛІК ВІДКРИВАЄ МЕНЮ
-        div.onclick = function() { openInventoryMenu(index); };
-        
+        div.onclick = function() { openInventoryMenu(index); }; // 🔥 МЕНЮ
         grid.appendChild(div);
     });
 }
 
+// Оновлення таймерів без перемальовки (щоб не збивалася анімація газу)
 function updateInventoryVisuals() {
     if(!game || !game.inventory) return;
     game.inventory.forEach((item, index) => {

@@ -91,6 +91,7 @@ function renderHome() {
     }
 }
 
+// 🔥 ОНОВЛЕНИЙ РЕНДЕР ІНВЕНТАРЯ (З ефектами)
 function renderGrid() {
     const grid = document.getElementById('inventory-grid');
     grid.innerHTML = "";
@@ -103,19 +104,30 @@ function renderGrid() {
         let emoji = meta.icon || '🍔';
         let color = "#30d158";
         let offset = 0;
-        if(item.isSpoiled) { emoji="🤢"; color="#555"; offset=100; }
+        
+        let badgeHTML = ""; 
+        let wrapperClass = "icon-wrapper"; 
+
+        if(item.isSpoiled) { 
+            emoji = "🤢"; color = "#555"; offset = 100;
+            wrapperClass += " spoiled-wrapper"; // Додаємо клас диму
+            badgeHTML = `<div class="trash-badge">🗑️</div>`; // Додаємо бейдж
+        }
         else {
             const left = Math.max(0, item.expireTime - Date.now());
-            offset = 100 - (100 * (left/item.totalLife));
+            const total = meta.expireTime || 30000;
+            offset = 100 - (100 * (left/total));
         }
+
         const div = document.createElement('div');
         div.className = 'app-card';
         div.innerHTML = `
-            <div class="icon-wrapper">
+            <div class="${wrapperClass}">
                 <div class="app-bg"><span class="app-emoji">${emoji}</span></div>
                 <svg class="progress-svg" viewBox="0 0 76 76">
                     <rect class="squircle" x="5" y="5" width="66" height="66" rx="18" fill="none" stroke="${color}" stroke-width="5" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}"></rect>
                 </svg>
+                ${badgeHTML}
             </div>
             <div class="app-label">${meta.name}</div>`;
         div.onclick = function() { useFood(index); };

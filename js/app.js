@@ -43,7 +43,7 @@ async function initApp() {
             // 🔥 СПРОБА 1: Отримати користувача
             updateUserProfile();
 
-            // 🔥 СПРОБА 2 (ПЛАН Б): Якщо з першого разу не вийшло, пробуємо ще раз через пів секунди
+            // 🔥 СПРОБА 2 (ПЛАН Б): Повторна спроба через 0.5 сек
             setTimeout(() => updateUserProfile(), 500);
 
             // Слухач оплати
@@ -69,18 +69,17 @@ async function initApp() {
     } catch (e) { console.error(e); }
 }
 
-// 🔥 ФУНКЦІЯ ОНОВЛЕННЯ ПРОФІЛЮ (Винесена окремо для надійності)
+// 🔥 ФУНКЦІЯ ОНОВЛЕННЯ ПРОФІЛЮ З КВИТКАМИ
 function updateUserProfile() {
     let user = tg?.initDataUnsafe?.user;
 
-    // ДЕМО-РЕЖИМ для браузера (щоб ви бачили красу при тесті з ПК)
+    // ДЕМО-РЕЖИМ для браузера
     if (!user && !tg.initData) {
-        // console.log("Demo User Active");
-        // user = { first_name: "Media", last_name: "Fan", photo_url: null }; 
+        // user = { first_name: "Media", last_name: "Fan", photo_url: null, tickets: 999 }; // Тест
     }
 
     if (user) {
-        // 1. Хедер (аватарка справа зверху)
+        // 1. Хедер
         const headerAvatar = document.getElementById('user_avatar');
         const headerDefault = document.getElementById('default_avatar');
         const photoUrl = user.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=333&color=fff`;
@@ -91,12 +90,19 @@ function updateUserProfile() {
             headerDefault.style.display = 'none';
         }
         
-        // 2. Бокове меню (червона шапка)
+        // 2. Бокове меню
         const menuName = document.getElementById('menu_username_text');
         const menuAvatar = document.getElementById('menu_avatar_img');
         
         if (menuName) menuName.innerText = user.first_name + (user.last_name ? ' ' + user.last_name : '');
         if (menuAvatar) menuAvatar.src = photoUrl;
+
+        // 3. 🔥 ВАЛЮТА (TICKETS) - Початкове значення
+        const balanceEl = document.getElementById('user_ticket_balance');
+        if (balanceEl) {
+            // Беремо те, що є в об'єкті user, або 0
+            balanceEl.innerText = user.tickets !== undefined ? user.tickets : "0";
+        }
     }
 }
 

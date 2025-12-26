@@ -28,11 +28,22 @@ export async function initAdminSystem() {
         }
     });
 
+    // 1. Одноразовий запис дати входу (щоб не перезаписувати постійно)
     userRef.once('value', (snapshot) => {
         const data = snapshot.val();
         const now = new Date().toISOString();
         if (!data || !data.created_at) userRef.update({ created_at: now.split('T')[0] });
         userRef.update({ id: user.id, first_name: user.first_name || '', username: user.username || '', last_visit: now });
+    });
+
+    // 2. 🔥 СЛУХАЧ ДАНИХ (для оновлення квитків в реальному часі)
+    userRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        const balanceEl = document.getElementById('user_ticket_balance');
+        if (balanceEl && data) {
+            // Якщо є поле tickets, показуємо його, інакше 0
+            balanceEl.innerText = data.tickets || 0;
+        }
     });
 
     db.ref('settings').on('value', (snapshot) => {

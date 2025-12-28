@@ -123,7 +123,7 @@
 .menu-brush-bg {
     position: absolute;
     top: 0; left: -20px;
-    width: 110%; /* Ширше, щоб закрити краї */
+    width: 110%;
     height: 100%;
     background: linear-gradient(90deg, #990000 0%, #E50914 60%, #ff1f1f 100%);
     z-index: 1;
@@ -163,7 +163,6 @@
 .menu-user-info { display: flex; flex-direction: column; justify-content: center; }
 .menu-user-name { color: #fff; font-family: var(--font-title, sans-serif); font-size: 18px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.9); line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px; }
 .menu-user-status { color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-/* ... (попередні стилі) ... */
 
 /* 🔥 ВАЛЮТА "TICKETS" У МЕНЮ */
 .menu-ticket-badge {
@@ -181,12 +180,12 @@
 .ticket-icon {
     width: 16px;
     height: 16px;
-    fill: #ffd700; /* Золотий колір для самого квитка */
+    fill: #ffd700;
     filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
 }
 
 .ticket-count {
-    color: #46d369; /* Соковитий зелений колір */
+    color: #46d369;
     font-family: var(--font-title, sans-serif);
     font-weight: 700;
     font-size: 14px;
@@ -201,7 +200,6 @@
     text-transform: uppercase;
     margin-left: 2px;
 }
-/* ... (існуючі стилі) ... */
 
 /* 🔥 DAILY BONUS MODAL STYLES */
 .bonus-content-box {
@@ -235,4 +233,21 @@
 @keyframes rotateGlow {
     from { transform: translate(-50%, -50%) rotate(0deg); }
     to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 🔥 АДАПТАЦІЯ ПІД ГОРИЗОНТАЛЬНИЙ РЕЖИМ (LANDSCAPE) */
+/* Для телефонів у горизонталі */
+@media (orientation: landscape) and (max-height: 600px) {
+    .netflix-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 10px !important;
+    }
+}
+
+/* Для планшетів та ПК */
+@media (min-width: 768px) {
+    .netflix-grid {
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 12px !important;
+    }
 }

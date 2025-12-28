@@ -1,5 +1,5 @@
 /* ==========================================================
-   🎨 STYLE.CSS: MAIN BUNDLE (v1.9.8)
+   🎨 STYLE.CSS: MAIN BUNDLE (v1.9.9)
    ========================================================== */
 
 @import 'root.css';
@@ -12,16 +12,25 @@
 .skeleton::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0)); animation: skeleton-move 1.5s infinite; }
 @keyframes skeleton-move { 100% { transform: translateX(100%); } }
 
-/* 🔥 ПОШУКОВИЙ КОНТЕЙНЕР */
+/* 🔥 ОНОВЛЕНИЙ ПОШУК (Sticky) */
 #search_bar_container {
     display: none; 
-    margin-top: 100px; 
+    /* Фіксуємо під хедером */
+    top: calc(50px + var(--safe-top)); 
     width: 94%; 
     max-width: 800px; 
     margin-left: auto;
     margin-right: auto;
-    position: relative;
-    z-index: 100;
+    
+    /* Робимо липким */
+    position: sticky; 
+    z-index: 99;
+    
+    /* Фон щоб текст не просвічувався */
+    background: #000;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    
     box-sizing: border-box;
 }
 
@@ -30,13 +39,18 @@
     height: 40px; 
     padding: 0 15px; 
     border-radius: 8px; 
-    border: none;
-    background: #222;
+    border: 1px solid #333;
+    background: #1a1a1a;
     color: white;
     font-size: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     outline: none;
     box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+#search_input:focus {
+    border-color: #666;
 }
 
 /* ФІЛЬТРИ */
@@ -107,136 +121,30 @@
 @keyframes modal-fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(25px); } }
 .modal-closing-anim { animation: modal-fade-out 0.3s forwards; pointer-events: none; }
 
-/* 🔥 НОВИЙ СТИЛЬ ДЛЯ ПРОФІЛЮ В МЕНЮ (ПЕНЗЛИК + СКЛО) */
-.menu-profile-header {
-    position: relative;
-    width: 100%;
-    height: 90px;
-    display: flex;
-    align-items: center;
-    padding-left: 15px;
-    margin-bottom: 25px;
-    margin-top: 10px;
-    filter: drop-shadow(4px 4px 6px rgba(0,0,0,0.6));
-}
-
-.menu-brush-bg {
-    position: absolute;
-    top: 0; left: -20px;
-    width: 110%;
-    height: 100%;
-    background: linear-gradient(90deg, #990000 0%, #E50914 60%, #ff1f1f 100%);
-    z-index: 1;
-    clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%);
-}
-
-.menu-glass-overlay {
-    position: absolute;
-    top: 0; left: -20px;
-    width: 110%;
-    height: 100%;
-    z-index: 2;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.2));
-    backdrop-filter: blur(3px);
-    clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%);
-    opacity: 0.8;
-}
-
-.menu-user-content {
-    position: relative;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.menu-user-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid rgba(255,255,255,0.9);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    background: #000;
-}
-
+/* МЕНЮ ПРОФІЛЬ */
+.menu-profile-header { position: relative; width: 100%; height: 90px; display: flex; align-items: center; padding-left: 15px; margin-bottom: 25px; margin-top: 10px; filter: drop-shadow(4px 4px 6px rgba(0,0,0,0.6)); }
+.menu-brush-bg { position: absolute; top: 0; left: -20px; width: 110%; height: 100%; background: linear-gradient(90deg, #990000 0%, #E50914 60%, #ff1f1f 100%); z-index: 1; clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%); }
+.menu-glass-overlay { position: absolute; top: 0; left: -20px; width: 110%; height: 100%; z-index: 2; background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.2)); backdrop-filter: blur(3px); clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%); opacity: 0.8; }
+.menu-user-content { position: relative; z-index: 3; display: flex; align-items: center; gap: 12px; }
+.menu-user-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 4px 10px rgba(0,0,0,0.5); background: #000; }
 .menu-user-info { display: flex; flex-direction: column; justify-content: center; }
 .menu-user-name { color: #fff; font-family: var(--font-title, sans-serif); font-size: 18px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.9); line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px; }
 .menu-user-status { color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 
-/* 🔥 ВАЛЮТА "TICKETS" У МЕНЮ */
-.menu-ticket-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 4px;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 2px 8px 2px 6px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: fit-content;
-}
+/* ВАЛЮТА TICKETS */
+.menu-ticket-badge { display: flex; align-items: center; gap: 6px; margin-top: 4px; background: rgba(0, 0, 0, 0.3); padding: 2px 8px 2px 6px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); width: fit-content; }
+.ticket-icon { width: 16px; height: 16px; fill: #ffd700; filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5)); }
+.ticket-count { color: #46d369; font-family: var(--font-title, sans-serif); font-weight: 700; font-size: 14px; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(70, 211, 105, 0.4); }
+.ticket-label { color: #aaa; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-left: 2px; }
 
-.ticket-icon {
-    width: 16px;
-    height: 16px;
-    fill: #ffd700;
-    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
-}
-
-.ticket-count {
-    color: #46d369;
-    font-family: var(--font-title, sans-serif);
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.5px;
-    text-shadow: 0 0 10px rgba(70, 211, 105, 0.4);
-}
-
-.ticket-label {
-    color: #aaa;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    margin-left: 2px;
-}
-
-/* 🔥 DAILY BONUS MODAL STYLES */
-.bonus-content-box {
-    position: relative;
-    background: #141414;
-    padding: 30px 20px;
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    border: 1px solid #333;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-    transform: scale(0.8);
-    opacity: 0;
-    animation: bonusPopIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-.bonus-glow {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 150px; height: 150px;
-    background: radial-gradient(circle, rgba(70, 211, 105, 0.4) 0%, rgba(0,0,0,0) 70%);
-    z-index: 1;
-    animation: rotateGlow 5s linear infinite;
-}
-
-@keyframes bonusPopIn {
-    to { transform: scale(1); opacity: 1; }
-}
-@keyframes rotateGlow {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
-}
+/* БОНУС МОДАЛКА */
+.bonus-content-box { position: relative; background: #141414; padding: 30px 20px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.8); opacity: 0; animation: bonusPopIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.bonus-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; background: radial-gradient(circle, rgba(70, 211, 105, 0.4) 0%, rgba(0,0,0,0) 70%); z-index: 1; animation: rotateGlow 5s linear infinite; }
+@keyframes bonusPopIn { to { transform: scale(1); opacity: 1; } }
+@keyframes rotateGlow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
 
 /* 🔥 АДАПТАЦІЯ ПІД ГОРИЗОНТАЛЬНИЙ РЕЖИМ (LANDSCAPE) */
-/* Для телефонів у горизонталі */
+/* Для телефонів у горизонталі (5 карток) */
 @media (orientation: landscape) and (max-height: 600px) {
     .netflix-grid {
         grid-template-columns: repeat(5, 1fr) !important;
@@ -244,7 +152,7 @@
     }
 }
 
-/* Для планшетів та ПК */
+/* Для планшетів та ПК (6 карток) */
 @media (min-width: 768px) {
     .netflix-grid {
         grid-template-columns: repeat(6, 1fr) !important;

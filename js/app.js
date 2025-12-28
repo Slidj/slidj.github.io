@@ -1,10 +1,10 @@
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
-import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js?v=2';
-// 🔥 ЗМІНИВ ВЕРСІЮ НА v=4 (Fix Lang)
-import { t, initLanguage } from './i18n.js?v=4';
-import { initAdminSystem } from './firebase-logic.js?v=2'; 
+// 🔥 ПРИБРАНО ?v=... ЩОБ ВИПРАВИТИ ПЕРЕКЛАД
+import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
+import { t, initLanguage } from './i18n.js';
+import { initAdminSystem } from './firebase-logic.js'; 
 import { playSound } from './sounds.js';
 
 // --- ЕКСПОРТИ ---
@@ -113,6 +113,7 @@ async function switchMode(tab) {
     else if (tab === 'search') {
         if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; 
         if(search) search.style.display = 'block'; 
+        // Зберігаємо відступ для пошуку
         if(content) { content.style.display = 'grid'; content.style.paddingTop = 'calc(130px + var(--safe-top))'; }
         if(trigger) trigger.style.display = 'flex';
         

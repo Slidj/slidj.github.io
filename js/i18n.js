@@ -22,7 +22,6 @@ export const t = {
     menuAdmin: "⚙️ Admin Panel",
     menuProfile: "👤 Profile",
     menuDonate: "⭐ Support Project",
-    // 🔥 ВИПРАВЛЕНО (ПРИБРАВ СМАЙЛИК)
     menuPromo: "Enter Promo Code",
     promoTitle: "🎁 Get a Gift",
     promoInputPlaceholder: "Enter code...",
@@ -89,7 +88,6 @@ const dictionaries = {
         menuAdmin: "⚙️ Адмін-панель",
         menuProfile: "👤 Профіль",
         menuDonate: "⭐ Підтримати проект",
-        // 🔥 ВИПРАВЛЕНО (ПРИБРАВ СМАЙЛИК)
         menuPromo: "Ввести промокод",
         promoTitle: "🎁 Отримати подарунок",
         promoInputPlaceholder: "Введіть код...",
@@ -133,15 +131,28 @@ const dictionaries = {
 };
 
 export function initLanguage() {
-    const userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-    const targetLang = (userLang === 'uk') ? 'uk' : 'en'; 
+    // 1. Отримуємо мову від Телеграму або беремо 'uk' за замовчуванням
+    let userLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 'uk';
+    
+    // 2. Переводимо в нижній регістр (щоб UK-UA стало uk-ua)
+    userLang = userLang.toLowerCase();
+
+    // 3. 🔥 ВИПРАВЛЕННЯ: Перевіряємо, чи ПОЧИНАЄТЬСЯ код з 'uk'
+    // Це спрацює і для 'uk', і для 'uk-ua', і для 'uk-UA'
+    const isUkrainian = userLang.startsWith('uk') || userLang === 'ru' || userLang === 'be'; // Можна додати ru/be до української, якщо треба
+    
+    const targetLang = isUkrainian ? 'uk' : 'en'; 
+
+    // 4. Застосовуємо словник
     if (dictionaries[targetLang]) Object.assign(t, dictionaries[targetLang]);
+    
     updateStaticInterface();
 }
 
 function updateStaticInterface() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
+        // Використовуємо innerHTML, щоб працювали теги <br> і <span> в тексті
         if (t[key]) el.innerHTML = t[key]; 
     });
     

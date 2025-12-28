@@ -107,10 +107,15 @@ async function switchMode(tab) {
     else if (tab === 'search') {
         if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; 
         if(search) search.style.display = 'block'; 
-        if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
+        
+        // 🔥 ВИПРАВЛЕННЯ: Додаємо великий відступ зверху, щоб картки не ховались під пошуком
+        if(content) { 
+            content.style.display = 'grid'; 
+            content.style.paddingTop = 'calc(130px + var(--safe-top))'; 
+        }
+        
         if(trigger) trigger.style.display = 'flex';
         
-        // Відновлюємо результати або очищаємо
         if (state.searchResults.length > 0) {
             renderGrid(state.searchResults, false);
         } else {
@@ -155,13 +160,11 @@ async function loadContent(page, isAppend = false) {
     } catch(e) { removeSkeletons(); } finally { state.isLoading = false; }
 }
 
-// 🔥 ОНОВЛЕНИЙ ПОШУК
 function performSearchDelayed() {
     clearTimeout(state.searchTimeout);
     const query = document.getElementById('search_input')?.value;
     const container = document.getElementById('content_container');
 
-    // ОЧИЩЕННЯ
     if (!query || query.length < 2) {
         state.searchResults = [];
         state.currentSearchQuery = "";
@@ -187,7 +190,6 @@ function performSearchDelayed() {
     }, 600);
 }
 
-// 🔥 ПІДГРУЗКА ПОШУКУ
 async function loadSearchContent(page) {
     if (!state.currentSearchQuery) return;
     state.isLoading = true;
@@ -214,7 +216,6 @@ function setupInfiniteScroll() {
                 state.currentPage++; 
                 loadContent(state.currentPage, true); 
             } 
-            // 🔥 ДОДАНО СКРОЛ ДЛЯ ПОШУКУ
             else if (state.currentTab === 'search') {
                 state.searchPage++;
                 loadSearchContent(state.searchPage);

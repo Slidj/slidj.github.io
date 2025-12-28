@@ -15,21 +15,16 @@
 /* 🔥 ОНОВЛЕНИЙ ПОШУК (FIXED) */
 #search_bar_container {
     display: none; 
-    /* Фіксуємо позицію на екрані */
     position: fixed; 
     top: calc(50px + var(--safe-top)); /* Відступ від верху (під хедером) */
     left: 50%;
-    transform: translateX(-50%); /* Центруємо по горизонталі */
-    
+    transform: translateX(-50%); 
     width: 94%; 
     max-width: 800px; 
-    z-index: 100; /* Щоб був поверх карток */
-    
-    /* Чорний фон та тінь */
+    z-index: 100; /* Рівень 100 */
     background: #000;
     padding: 10px 0;
     box-shadow: 0 10px 20px rgba(0,0,0,0.8);
-    
     box-sizing: border-box;
 }
 
@@ -142,8 +137,15 @@
 @keyframes bonusPopIn { to { transform: scale(1); opacity: 1; } }
 @keyframes rotateGlow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
 
-/* 🔥 АДАПТАЦІЯ ПІД ГОРИЗОНТАЛЬНИЙ РЕЖИМ (LANDSCAPE) */
-/* Для телефонів у горизонталі (5 карток) */
+/* 🔥 АДАПТАЦІЯ (ГОРИЗОНТАЛЬНА + ПОШУК) */
+body.search-mode .netflix-header {
+    background: #000 !important; /* Робимо шапку чорною */
+    position: fixed; /* Фіксуємо */
+    top: 0; left: 0; width: 100%;
+    z-index: 105; /* Рівень 105 (вище пошуку) */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
 @media (orientation: landscape) and (max-height: 600px) {
     .netflix-grid {
         grid-template-columns: repeat(5, 1fr) !important;
@@ -151,7 +153,6 @@
     }
 }
 
-/* Для планшетів та ПК (6 карток) */
 @media (min-width: 768px) {
     .netflix-grid {
         grid-template-columns: repeat(6, 1fr) !important;

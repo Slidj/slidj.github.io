@@ -1,9 +1,9 @@
 import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
-import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js';
-import { t, initLanguage } from './i18n.js';
-import { initAdminSystem } from './firebase-logic.js'; 
+import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js?v=2';
+import { t, initLanguage } from './i18n.js?v=3';
+import { initAdminSystem } from './firebase-logic.js?v=2'; 
 import { playSound } from './sounds.js';
 
 // --- ЕКСПОРТИ ---
@@ -40,13 +40,9 @@ async function initApp() {
             if(tg.requestFullscreen) tg.requestFullscreen();
             tg.setHeaderColor?.('#000000'); tg.setBackgroundColor?.('#000000');
             
-            // 🔥 СПРОБА 1: Отримати ім'я та аватар
             updateUserProfile();
-
-            // 🔥 СПРОБА 2 (ПЛАН Б): Повторна спроба через 0.5 сек (на випадок лагів ТГ)
             setTimeout(() => updateUserProfile(), 500);
 
-            // Слухач оплати
             tg.onEvent('invoiceClosed', (object) => {
                 if (object.status === 'paid') {
                     const stars = parseInt(sessionStorage.getItem('pending_donation')) || 0;
@@ -69,17 +65,9 @@ async function initApp() {
     } catch (e) { console.error(e); }
 }
 
-// 🔥 ВИПРАВЛЕНА ФУНКЦІЯ: Більше не чіпає баланс!
 function updateUserProfile() {
     let user = tg?.initDataUnsafe?.user;
-
-    // ДЕМО-РЕЖИМ для браузера
-    if (!user && !tg.initData) {
-        // user = { first_name: "Media", last_name: "Fan", photo_url: null }; 
-    }
-
     if (user) {
-        // 1. Хедер
         const headerAvatar = document.getElementById('user_avatar');
         const headerDefault = document.getElementById('default_avatar');
         const photoUrl = user.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=333&color=fff`;
@@ -90,15 +78,11 @@ function updateUserProfile() {
             headerDefault.style.display = 'none';
         }
         
-        // 2. Бокове меню
         const menuName = document.getElementById('menu_username_text');
         const menuAvatar = document.getElementById('menu_avatar_img');
         
         if (menuName) menuName.innerText = user.first_name + (user.last_name ? ' ' + user.last_name : '');
         if (menuAvatar) menuAvatar.src = photoUrl;
-
-        // ❌ ПРИБРАНО: Код, який ставив "0 Tickets", бо Телеграм не знає про квитки.
-        // Тепер за це відповідає тільки firebase-logic.js
     }
 }
 
@@ -125,8 +109,17 @@ async function switchMode(tab) {
         if(search) search.style.display = 'block'; 
         if(content) { content.style.display = 'grid'; content.style.paddingTop = '0px'; }
         if(trigger) trigger.style.display = 'flex';
-        if (state.searchResults.length > 0) renderGrid(state.searchResults.slice(0, 12), false);
-        else if(content) content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
+        
+        // Відновлюємо результати або очищаємо
+        if (state.searchResults.length > 0) {
+            renderGrid(state.searchResults, false);
+        } else {
+            const input = document.getElementById('search_input');
+            if(content) {
+                if(!input || !input.value) content.innerHTML = ''; 
+                else content.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">${t.searching}</div>`;
+            }
+        }
     } 
     else if (tab === 'saved') {
         if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; if(search) search.style.display = 'none';
@@ -162,23 +155,70 @@ async function loadContent(page, isAppend = false) {
     } catch(e) { removeSkeletons(); } finally { state.isLoading = false; }
 }
 
+// 🔥 ОНОВЛЕНИЙ ПОШУК
 function performSearchDelayed() {
     clearTimeout(state.searchTimeout);
     const query = document.getElementById('search_input')?.value;
-    if (!query || query.length < 2) return;
+    const container = document.getElementById('content_container');
+
+    // ОЧИЩЕННЯ
+    if (!query || query.length < 2) {
+        state.searchResults = [];
+        state.currentSearchQuery = "";
+        if (container) container.innerHTML = '';
+        return;
+    }
+
     state.searchTimeout = setTimeout(async () => {
-        showSkeletons(6); const results = await searchMovies(query);
-        state.searchResults = results; state.searchPage = 0; removeSkeletons();
-        const container = document.getElementById('content_container');
-        if (container) { container.innerHTML = ''; if (!results.length) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`; else renderGrid(results.slice(0, 12), true); }
+        showSkeletons(6); 
+        state.currentSearchQuery = query;
+        state.searchPage = 1;
+        
+        const results = await searchMovies(query, 1);
+        state.searchResults = results; 
+        state.searchPage = 1;
+        
+        removeSkeletons();
+        if (container) { 
+            container.innerHTML = ''; 
+            if (!results.length) container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#555; padding:40px;">Нічого не знайдено</div>`; 
+            else renderGrid(results, true); 
+        }
     }, 600);
+}
+
+// 🔥 ПІДГРУЗКА ПОШУКУ
+async function loadSearchContent(page) {
+    if (!state.currentSearchQuery) return;
+    state.isLoading = true;
+    showSkeletons(3, true);
+    
+    try {
+        const results = await searchMovies(state.currentSearchQuery, page);
+        state.searchResults = [...state.searchResults, ...results];
+        removeSkeletons();
+        if (results.length > 0) renderGrid(results, true);
+    } catch(e) { 
+        removeSkeletons(); 
+    } finally { 
+        state.isLoading = false; 
+    }
 }
 
 function setupInfiniteScroll() {
     window.addEventListener('scroll', () => {
         if (state.isLoading) return;
+        
         if (document.documentElement.scrollHeight - window.scrollY - window.innerHeight < 300) {
-            if (state.currentTab === 'home') { state.currentPage++; loadContent(state.currentPage, true); } 
+            if (state.currentTab === 'home') { 
+                state.currentPage++; 
+                loadContent(state.currentPage, true); 
+            } 
+            // 🔥 ДОДАНО СКРОЛ ДЛЯ ПОШУКУ
+            else if (state.currentTab === 'search') {
+                state.searchPage++;
+                loadSearchContent(state.searchPage);
+            }
         }
     });
 }

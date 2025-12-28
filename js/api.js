@@ -22,29 +22,24 @@ async function fetchTMDB(endpoint, params = {}) {
     }
 }
 
-// 🔥 ОНОВЛЕНО: Додано параметр category
 export async function fetchHomeContent(page = 1, category = 'all') {
     let endpoint;
     let params = { page };
 
     switch (category) {
         case 'movie':
-            // Популярні фільми
             endpoint = '/movie/popular';
             break;
         case 'tv':
-            // Популярні серіали
             endpoint = '/tv/popular';
             break;
         case '16':
-            // Мультики (через Discover)
             endpoint = '/discover/movie';
             params.with_genres = '16';
             params.sort_by = 'popularity.desc';
             break;
         case 'all':
         default:
-            // Тренди (як було раніше)
             endpoint = '/trending/all/week';
             break;
     }
@@ -53,29 +48,23 @@ export async function fetchHomeContent(page = 1, category = 'all') {
     return (data?.results || []).map(formatMovie);
 }
 
-export async function searchMovies(query) {
-    const data = await fetchTMDB('/search/multi', { query, include_adult: false });
-    const firstResult = data?.results?.[0];
-
-    // Якщо це актор
-    if (firstResult && firstResult.media_type === 'person') {
-        try {
-            const credits = await fetchTMDB(`/person/${firstResult.id}/combined_credits`);
-            if (credits && credits.cast) {
-                const allWorks = credits.cast.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-                return deduplicate(allWorks.map(formatMovie));
-            }
-        } catch (e) {}
-    }
-
+// 🔥 ОНОВЛЕНО: ТЕПЕР ПРИЙМАЄ PAGE
+export async function searchMovies(query, page = 1) {
+    // Використовуємо multi-search
+    const data = await fetchTMDB('/search/multi', { 
+        query, 
+        page: page, 
+        include_adult: false 
+    });
+    
     let results = [];
     (data?.results || []).forEach(item => {
-        if (item.media_type === 'person') {
-            if (item.known_for) results.push(...item.known_for);
-        } else {
+        // Фільтруємо тільки фільми та серіали, що мають постер
+        if ((item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path) {
             results.push(item);
         }
     });
+    
     return deduplicate(results.map(formatMovie));
 }
 
@@ -101,7 +90,6 @@ export async function fetchSimilar(id, type) {
     return (data?.results || []).map(formatMovie);
 }
 
-// 🔥 ПОТУЖНИЙ ПОШУК ID
 export async function fetchKpId(movie) {
     if (movie.kpId) return movie.kpId;
 

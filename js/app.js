@@ -89,6 +89,11 @@ function updateUserProfile() {
 async function switchMode(tab) {
     playSound('Tap.wav');
     state.currentTab = tab;
+    
+    // 🔥 НОВЕ: Вмикаємо "Режим пошуку" (чорна шапка) тільки для вкладки search
+    if (tab === 'search') document.body.classList.add('search-mode');
+    else document.body.classList.remove('search-mode');
+
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const navs = document.querySelectorAll('.nav-item');
     if(tab==='home') navs[0].classList.add('active');
@@ -107,13 +112,7 @@ async function switchMode(tab) {
     else if (tab === 'search') {
         if(hero) hero.style.display = 'none'; if(filters) filters.style.display = 'none'; 
         if(search) search.style.display = 'block'; 
-        
-        // 🔥 ВИПРАВЛЕННЯ: Додаємо великий відступ зверху, щоб картки не ховались під пошуком
-        if(content) { 
-            content.style.display = 'grid'; 
-            content.style.paddingTop = 'calc(130px + var(--safe-top))'; 
-        }
-        
+        if(content) { content.style.display = 'grid'; content.style.paddingTop = 'calc(130px + var(--safe-top))'; }
         if(trigger) trigger.style.display = 'flex';
         
         if (state.searchResults.length > 0) {

@@ -12,24 +12,23 @@
 .skeleton::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0)); animation: skeleton-move 1.5s infinite; }
 @keyframes skeleton-move { 100% { transform: translateX(100%); } }
 
-/* 🔥 ОНОВЛЕНИЙ ПОШУК (Sticky) */
+/* 🔥 ОНОВЛЕНИЙ ПОШУК (FIXED) */
 #search_bar_container {
     display: none; 
-    /* Фіксуємо під хедером */
-    top: calc(50px + var(--safe-top)); 
+    /* Фіксуємо позицію на екрані */
+    position: fixed; 
+    top: calc(50px + var(--safe-top)); /* Відступ від верху (під хедером) */
+    left: 50%;
+    transform: translateX(-50%); /* Центруємо по горизонталі */
+    
     width: 94%; 
     max-width: 800px; 
-    margin-left: auto;
-    margin-right: auto;
+    z-index: 100; /* Щоб був поверх карток */
     
-    /* Робимо липким */
-    position: sticky; 
-    z-index: 99;
-    
-    /* Фон щоб текст не просвічувався */
+    /* Чорний фон та тінь */
     background: #000;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding: 10px 0;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
     
     box-sizing: border-box;
 }

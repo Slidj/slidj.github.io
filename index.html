@@ -12,13 +12,26 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
-    <link rel="stylesheet" href="css/style.css?v=130">
+    <link rel="stylesheet" href="css/style.css?v=2001">
     <link rel="stylesheet" href="css/intro.css">
 
     <style>
-        body, html { background-color: #000000 !important; height: 100%; }
-        .netflix-header { background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%); background-color: transparent; }
-        .logo { color: #E50914 !important; font-weight: 800; letter-spacing: 1px; }
+        /* Глобальний глибокий чорний фон */
+        body, html {
+            background-color: #000000 !important;
+            height: 100%;
+        }
+
+        /* Стиль хедеру під Netflix */
+        .netflix-header {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            background-color: transparent;
+        }
+        .logo {
+            color: #E50914 !important;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -119,10 +132,13 @@
         <div class="menu-profile-header">
             <div class="menu-brush-bg"></div>
             <div class="menu-glass-overlay"></div>
+            
             <div class="menu-user-content">
                 <img id="menu_avatar_img" src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="menu-user-avatar">
+                
                 <div class="menu-user-info">
                     <span id="menu_username_text" class="menu-user-name">Гість</span>
+                    
                     <div class="menu-ticket-badge">
                         <svg class="ticket-icon" viewBox="0 0 24 24">
                             <path d="M21 9.5c0-.83.67-1.5 1.5-1.5V6c0-1.1-.9-2-2-2H3.5C2.4 4 1.5 4.9 1.5 6v2c.83 0 1.5.67 1.5 1.5S2.33 11 1.5 11v2c0 1.1.9 2 2 2h17c1.1 0 2-.9 2-2v-2c-.83 0-1.5-.67-1.5-1.5zM9 13H5v-2h4v2zm6 0h-4v-2h4v2zm4 0h-2v-2h2v2z"/>
@@ -157,11 +173,13 @@
                 <h2 style="color:white; margin:0;">Адмін-панель</h2>
                 <button onclick="window.closeAdminPanel()" style="background:none; border:none; color:white; font-size:30px;">×</button>
             </div>
+            
             <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
                 <h3 style="color:white; font-size:14px; margin-top:0;">📣 Надіслати сповіщення</h3>
                 <input type="text" id="notif_input" placeholder="Текст сповіщення..." style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; margin-bottom:10px;">
                 <button onclick="window.sendBroadcastNotification()" style="width:100%; padding:10px; background:#e50914; color:white; border:none; border-radius:5px; font-weight:bold;">ВІДПРАВИТИ ВСІМ</button>
             </div>
+
             <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
                 <h3 style="color:white; font-size:14px; margin-top:0;">🎟️ Створити Промокод</h3>
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
@@ -171,6 +189,7 @@
                 <input type="number" id="promo_limit" placeholder="Ліміт людей (напр. 50)" style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; margin-bottom:10px;">
                 <button onclick="window.createPromoCode()" style="width:100%; padding:10px; background:#46d369; color:black; border:none; border-radius:5px; font-weight:bold;">СТВОРИТИ КОД</button>
             </div>
+
             <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px;">
                 <h3 style="color:white; font-size:14px; margin-top:0;">🎄 Святкова іконка</h3>
                 <select id="holiday_select" onchange="window.saveHolidayIcon(this.value)" style="width:100%; padding:10px; border-radius:5px; border:none; background:#333; color:white; font-size:16px;">
@@ -183,6 +202,7 @@
                 </select>
                 <div style="margin-top:10px; color:#666; font-size:12px;">Файли мають бути в папці images/holidays/</div>
             </div>
+
             <div id="admin_stats" style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; color:#aaa; font-size:13px;"></div>
             <button id="maint_toggle_btn" onclick="window.toggleMaintenanceMode()" style="width:100%; padding:12px; border-radius:5px; border:none; font-weight:bold; margin-bottom:20px; cursor:pointer;"></button>
             <h3 style="color:white; font-size:16px;">Користувачі:</h3>
@@ -232,10 +252,11 @@
             const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
             if (tgUser && tgUser.language_code) {
                 const userLang = tgUser.language_code.toLowerCase();
-                if (userLang !== 'uk') {
-                    localStorage.setItem('mediaHubLang', 'en');
-                } else {
+                // Якщо код ПОЧИНАЄТЬСЯ з 'uk' (uk, uk-ua, uk-UA), то це українська
+                if (userLang.startsWith('uk') || userLang === 'ru' || userLang === 'be') {
                     localStorage.setItem('mediaHubLang', 'uk');
+                } else {
+                    localStorage.setItem('mediaHubLang', 'en');
                 }
             }
         } catch (e) {
@@ -243,6 +264,6 @@
         }
     </script>
 
-    <script type="module" src="js/app.js?v=130"></script>
+    <script type="module" src="js/app.js?v=4"></script>
 </body>
 </html>

@@ -2,7 +2,8 @@ import { state } from './state.js';
 import { loadCloudData, toggleSave } from './storage.js';
 import { fetchHomeContent, searchMovies, fetchMovieDetails } from './api.js';
 import { renderGrid, setupHero, openMoviePage, closeMoviePage, openPremiumPlayer, closePlayer, showSkeletons, removeSkeletons, renderHistorySection } from './ui.js?v=2';
-import { t, initLanguage } from './i18n.js?v=3';
+// 🔥 ЗМІНИВ ВЕРСІЮ НА v=4 (Fix Lang)
+import { t, initLanguage } from './i18n.js?v=4';
 import { initAdminSystem } from './firebase-logic.js?v=2'; 
 import { playSound } from './sounds.js';
 
@@ -90,7 +91,7 @@ async function switchMode(tab) {
     playSound('Tap.wav');
     state.currentTab = tab;
     
-    // 🔥 НОВЕ: Вмикаємо "Режим пошуку" (чорна шапка) тільки для вкладки search
+    // Вмикаємо "Режим пошуку"
     if (tab === 'search') document.body.classList.add('search-mode');
     else document.body.classList.remove('search-mode');
 

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Hub (Stable)</title>
+    <title>Media Hub UA</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { margin: 0; background-color: #121212; color: #fff; font-family: -apple-system, sans-serif; }
         
-        /* ПЛЕЄР */
+        /* ПЛЕЄР (Закріплений зверху) */
         #player-area { 
             display: none; 
             position: sticky; top: 0; background: #000; z-index: 100; 
@@ -21,27 +21,42 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
         }
         
-        .control-bar { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: #1f1f1f; }
+        .control-bar { padding: 12px; display: flex; justify-content: space-between; align-items: center; background: #1f1f1f; }
         .btn-close { 
             background: #d32f2f; color: white; border: none; 
             padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;
         }
 
+        /* ЗАГОЛОВОК */
+        .header { 
+            padding: 15px; font-size: 18px; font-weight: bold; 
+            border-bottom: 1px solid #333; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 4px; background: #333; color: #aaa; }
+
         /* СПИСОК */
-        .header { padding: 15px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #333; }
         .list { padding: 10px; display: flex; flex-direction: column; gap: 15px; }
         
         .card { 
             background: #1e1e1e; border-radius: 12px; overflow: hidden; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer;
+            transition: opacity 0.2s;
         }
-        .card:active { opacity: 0.8; }
+        .card:active { opacity: 0.7; }
         
-        .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; }
+        .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #222; }
         .thumb { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .duration { 
+            position: absolute; bottom: 8px; right: 8px; 
+            background: rgba(0,0,0,0.8); color: white; 
+            padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold;
+        }
+        
         .info { padding: 12px; }
-        .title { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
-        .sub { color: #aaa; font-size: 13px; }
+        .title { font-size: 15px; font-weight: 600; margin-bottom: 6px; line-height: 1.35; }
+        .sub { color: #aaa; font-size: 13px; display: flex; align-items: center; gap: 6px;}
+        .views { color: #888; font-size: 12px; margin-top: 4px;}
     </style>
 </head>
 <body>
@@ -56,47 +71,114 @@
         </div>
     </div>
 
-    <div class="header">Тренди (Стабільна версія)</div>
+    <div class="header">
+        Тренди Україна
+        <span id="status" class="status-badge">Завантаження...</span>
+    </div>
+
     <div id="list" class="list"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Статичний список найкращих відео для тесту
-        const VIDEOS = [
-            { id: "LXb3EKWsInQ", title: "Природа 4K HDR", author: "Jacob + Katie Schwarz", img: "https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg" },
-            { id: "jfKfPfyJRdk", title: "Lofi Girl - Radio", author: "Lofi Girl", img: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg" },
-            { id: "5qap5aO4i9A", title: "Lofi Hip Hop - Beats to Relax", author: "Lofi Girl", img: "https://i.ytimg.com/vi/5qap5aO4i9A/hqdefault.jpg" },
-            { id: "aqz-KE-bpKQ", title: "Big Buck Bunny", author: "Blender", img: "https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg" }
+        // --- НАЛАШТУВАННЯ ДЖЕРЕЛ (Дзеркала Invidious) ---
+        // Ми будемо пробувати їх по черзі, поки не отримаємо дані
+        const API_MIRRORS = [
+            'https://inv.tux.pizza/api/v1/trending?region=UA',
+            'https://vid.puffyan.us/api/v1/trending?region=UA',
+            'https://invidious.drgns.space/api/v1/trending?region=UA',
+            'https://inv.bp.projectsegfau.lt/api/v1/trending?region=UA'
+        ];
+
+        // Проксі для обходу блокування на GitHub Pages
+        const PROXY_URL = 'https://api.allorigins.win/get?url=';
+
+        // Запасні відео (якщо всі сервери зайняті)
+        const FALLBACK_VIDEOS = [
+            { videoId: "LXb3EKWsInQ", title: "Тест: Природа 4K (Сервери зайняті)", author: "Backup", lengthSeconds: 300, videoThumbnails: [{url: "https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg"}] },
+            { videoId: "jfKfPfyJRdk", title: "Тест: Lofi Radio", author: "Backup", lengthSeconds: 0, videoThumbnails: [{url: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg"}] }
         ];
 
         const listEl = document.getElementById('list');
+        const statusEl = document.getElementById('status');
         const playerArea = document.getElementById('player-area');
         const placeholder = document.getElementById('player-placeholder');
 
-        function init() {
+        // 1. Головна функція завантаження
+        async function loadTrends() {
+            statusEl.innerText = "Пошук сервера...";
+            
+            for (let mirror of API_MIRRORS) {
+                try {
+                    console.log("Checking:", mirror);
+                    // Використовуємо проксі allorigins, щоб отримати JSON
+                    const response = await fetch(PROXY_URL + encodeURIComponent(mirror));
+                    if (!response.ok) throw new Error("Proxy error");
+                    
+                    const data = await response.json();
+                    // allorigins повертає дані в полі .contents як рядок
+                    const realData = JSON.parse(data.contents);
+
+                    if (realData && realData.length > 0) {
+                        statusEl.innerText = "● LIVE";
+                        statusEl.style.color = "#4caf50"; // Зелений
+                        renderList(realData);
+                        return; // Успіх, виходимо
+                    }
+                } catch (e) {
+                    console.warn("Mirror failed:", mirror);
+                }
+            }
+
+            // Якщо нічого не спрацювало
+            statusEl.innerText = "Офлайн (Демо)";
+            statusEl.style.color = "orange";
+            renderList(FALLBACK_VIDEOS);
+        }
+
+        // 2. Малювання списку
+        function renderList(videos) {
             listEl.innerHTML = '';
-            VIDEOS.forEach(v => {
+            videos.forEach(v => {
                 const el = document.createElement('div');
                 el.className = 'card';
+                
+                // Обробка даних (іноді картинки приходять по-різному)
+                let thumb = "https://via.placeholder.com/320x180?text=No+Image";
+                if (v.videoThumbnails && v.videoThumbnails.length > 0) {
+                    thumb = v.videoThumbnails[0].url; 
+                }
+                
+                // Форматуємо час
+                const time = formatTime(v.lengthSeconds);
+
                 el.innerHTML = `
-                    <div class="thumb-wrapper"><img class="thumb" src="${v.img}"></div>
-                    <div class="info"><div class="title">${v.title}</div><div class="sub">${v.author}</div></div>
+                    <div class="thumb-wrapper">
+                        <img class="thumb" src="${thumb}" loading="lazy">
+                        <div class="duration">${time}</div>
+                    </div>
+                    <div class="info">
+                        <div class="title">${v.title}</div>
+                        <div class="sub">${v.author}</div>
+                        ${v.viewCount ? `<div class="views">${formatViews(v.viewCount)} переглядів</div>` : ''}
+                    </div>
                 `;
-                el.onclick = () => playVideo(v.id);
+                el.onclick = () => playVideo(v.videoId);
                 listEl.appendChild(el);
             });
         }
 
+        // 3. Плеєр (Офіційний YouTube)
         function playVideo(id) {
             playerArea.style.display = 'block';
             window.scrollTo(0,0);
             
-            // Офіційний Iframe. Це працюватиме завжди.
+            // Використовуємо звичайний YouTube Embed
+            // Це дозволить перевірити рекламу
             placeholder.innerHTML = `
                 <iframe 
-                    src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0" 
+                    src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&modestbranding=1&rel=0" 
                     frameborder="0" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                     allowfullscreen>
@@ -105,11 +187,26 @@
         }
 
         function closePlayer() {
-            placeholder.innerHTML = ''; 
+            placeholder.innerHTML = '';
             playerArea.style.display = 'none';
         }
 
-        init();
+        // Допоміжні функції
+        function formatTime(sec) {
+            if (!sec) return "LIVE";
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function formatViews(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num;
+        }
+
+        // Старт
+        loadTrends();
     </script>
 </body>
 </html>

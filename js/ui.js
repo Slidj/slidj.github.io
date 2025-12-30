@@ -103,7 +103,6 @@ window.playRandomMovie = () => {
     window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
     openMoviePage(randomItem);
 };
-
 export async function setupHero(movie) {
     state.currentHeroMovie = movie;
     const hero = document.getElementById('hero_section'), title = document.getElementById('hero_title'), meta = document.getElementById('hero_meta');
@@ -174,7 +173,6 @@ export function closeMoviePage() {
     content.classList.add('modal-closing-anim');
     setTimeout(() => { modal.style.display = 'none'; content.innerHTML = ''; state.activeMovie = null; if (window.Telegram?.WebApp?.BackButton) window.Telegram.WebApp.BackButton.hide(); }, 300);
 }
-
 export function openPremiumPlayer(tmdbId, btn) {
     playSound('Click.wav');
     let movie = state.activeMovie || state.feedMovies.find(m => m.id == tmdbId) || state.currentHeroMovie;
@@ -227,7 +225,66 @@ export function renderHistorySection(items) {
 }
 
 window.saveHolidayIcon = (filename) => { if (!window.firebase) return; firebase.database().ref('settings/holiday_icon').set(filename).then(() => { window.Telegram?.WebApp?.showAlert('Іконку змінено!'); }).catch(e => console.error(e)); };
-export function initHolidayIconListener() { if (!window.firebase) return; const iconEl = document.getElementById('holiday_icon'), selectEl = document.getElementById('holiday_select'); firebase.database().ref('settings/holiday_icon').on('value', (snapshot) => { const filename = snapshot.val(); if (filename && filename !== "") { iconEl.src = `images/holidays/${filename}`; iconEl.style.display = 'block'; iconEl.classList.add('logo-anim'); } else { iconEl.style.display = 'none'; iconEl.src = ''; iconEl.classList.remove('logo-anim'); } if (selectEl) selectEl.value = filename || ""; }); }
+
+// 🔥 ОНОВЛЕНА ФУНКЦІЯ СЛУХАЧА НАЛАШТУВАНЬ (Іконка + Декор)
+export function initHolidayIconListener() { 
+    if (!window.firebase) return; 
+    
+    // Елементи для іконки
+    const iconEl = document.getElementById('holiday_icon');
+    const selectIconEl = document.getElementById('holiday_select');
+    
+    // Елементи для декору
+    const decorLayer = document.getElementById('holiday_decor_layer');
+    const selectDecorEl = document.getElementById('decor_select');
+
+    // 1. Слухаємо ІКОНКУ
+    firebase.database().ref('settings/holiday_icon').on('value', (snapshot) => { 
+        const filename = snapshot.val(); 
+        if (filename && filename !== "") { 
+            iconEl.src = `images/holidays/${filename}`; 
+            iconEl.style.display = 'block'; 
+            iconEl.classList.add('logo-anim'); 
+        } else { 
+            iconEl.style.display = 'none'; 
+            iconEl.src = ''; 
+            iconEl.classList.remove('logo-anim'); 
+        } 
+        if (selectIconEl) selectIconEl.value = filename || ""; 
+    });
+
+    // 2. Слухаємо ДЕКОР
+    firebase.database().ref('settings/decor_mode').on('value', (snapshot) => {
+        const mode = snapshot.val() || 'none';
+        
+        if (selectDecorEl) selectDecorEl.value = mode;
+
+        if (mode === 'none') {
+            if(decorLayer) {
+                decorLayer.style.display = 'none';
+                decorLayer.innerHTML = '';
+            }
+        } 
+        else if (mode === 'winter') {
+            if(decorLayer) {
+                decorLayer.style.display = 'block';
+                // Генеруємо гірлянду (20 лампочок)
+                let bulbsHtml = '';
+                for(let i=0; i<20; i++) {
+                    bulbsHtml += `<div class="garland-bulb"></div>`;
+                }
+                decorLayer.innerHTML = `<div class="garland-rope">${bulbsHtml}</div>`;
+            }
+        } 
+        else if (mode === 'universal') {
+            if(decorLayer) {
+                decorLayer.style.display = 'block';
+                decorLayer.innerHTML = `<div class="universal-decor"></div>`;
+            }
+        }
+    });
+}
+
 const checkFirebaseInterval = setInterval(() => { if (window.firebase) { clearInterval(checkFirebaseInterval); initHolidayIconListener(); } }, 500);
 document.querySelectorAll('.nav-item').forEach(el => { el.addEventListener('click', (e) => { const fab = document.getElementById('random_fab'), isHome = e.currentTarget.innerText.includes('Головна') || e.currentTarget.innerText.includes('Home'); if(fab) fab.style.display = isHome ? 'flex' : 'none'; }); });
 

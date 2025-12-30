@@ -16,11 +16,50 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 let currentSettings = null;
 
-// 🔥 ЗМІННІ ДЛЯ ПОСТОРІНКОВОЇ НАВІГАЦІЇ
+// Змінні адмінки
 let adminAllUserIds = [];   
 let adminUsersData = {};    
 let adminCurrentPage = 1;   
 const adminItemsPerPage = 10; 
+
+// 🔥 НОВА ФУНКЦІЯ: НАРАХУВАННЯ ХВИЛИН (HEARTBEAT)
+export function processWatchHeartbeat(minutesToAdd) {
+    const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (!user) return;
+
+    const userRef = db.ref('users/' + user.id);
+
+    // Використовуємо транзакцію для атомарної зміни даних
+    userRef.transaction((userData) => {
+        if (!userData) return userData; // Якщо юзера ще немає (рідкісний кейс), нічого не робимо
+
+        // 1. Додаємо хвилини
+        let minutes = (userData.watch_minutes || 0) + minutesToAdd;
+        let tickets = (userData.tickets || 0);
+        
+        // 2. Перевіряємо, чи набралась година (60 хв)
+        if (minutes >= 60) {
+            const hoursToAdd = Math.floor(minutes / 60); // Скільки повних годин
+            const reward = hoursToAdd * 0.5; // 0.5 тікета за годину
+            
+            minutes = minutes % 60; // Залишаємо решту хвилин (напр. 65 -> 5)
+            tickets += reward;
+        }
+
+        // 3. Зберігаємо оновлені дані
+        userData.watch_minutes = minutes;
+        userData.tickets = tickets;
+        
+        return userData;
+    }, (error, committed, snapshot) => {
+        if (error) {
+            console.error("Heartbeat error:", error);
+        } else if (committed) {
+            // Тут можна додати логіку сповіщення, якщо баланс змінився,
+            // але краще робити це тихо, щоб не відволікати від фільму.
+        }
+    });
+}
 
 export async function initAdminSystem() {
     const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
@@ -34,7 +73,7 @@ export async function initAdminSystem() {
         }
     });
 
-    // 🔥 ГОЛОВНА ЛОГІКА БОНУСІВ (STREAK SYSTEM)
+    // ЛОГІКА БОНУСІВ (STREAK SYSTEM)
     userRef.once('value', (snapshot) => {
         const data = snapshot.val() || {};
         const now = new Date();
@@ -97,7 +136,8 @@ export async function initAdminSystem() {
         const data = snapshot.val();
         const balanceEl = document.getElementById('user_ticket_balance');
         if (balanceEl && data) {
-            balanceEl.innerText = data.tickets !== undefined ? data.tickets : 0;
+            // Показуємо тікети, округлені до 1 знаку (якщо треба) або як є
+            balanceEl.innerText = data.tickets !== undefined ? Number(data.tickets).toString() : 0;
         }
     });
 
@@ -143,7 +183,7 @@ function formatRelativeDate(isoString) {
     return `<span style="color:#aaa">${diffDays} ${suffix} тому о ${time}</span>`;
 }
 
-// 🔥 ЗАВАНТАЖЕННЯ ДАНИХ (ПАГІНАЦІЯ)
+// ПАГІНАЦІЯ АДМІНКИ
 async function loadAdminData() {
     const statsDiv = document.getElementById('admin_stats');
     db.ref('users').on('value', (snapshot) => {
@@ -174,7 +214,7 @@ function renderAdminPage() {
         card.innerHTML = `
             <div style="color:white; font-size:12px; display:flex; align-items:center;">
                 <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}"></span>
-                <div><b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0}</span></div>
+                <div><b>${u.first_name} ${patronBadge}</b> (@${u.username || '---'})<br><span style="color:#888; font-size:10px;">${formatRelativeDate(u.last_visit)} | 🎟️ ${u.tickets || 0} (watch: ${u.watch_minutes || 0}m)</span></div>
             </div>
             <div style="display:flex; gap:8px;">
                 <button onclick="window.changeUserBalance('${u.id}', '${u.first_name}')" style="background:#3498db; color:white; border:none; padding:5px 8px; border-radius:3px; font-weight:bold;">±🎟️</button>
@@ -212,9 +252,7 @@ window.toggleMaintenanceMode = function() { if(currentSettings) db.ref('settings
 window.toggleUserBlock = function(userId, status) { if(confirm("Змінити статус?")) db.ref(`users/${userId}/blocked`).set(!status); };
 function updateMaintenanceBtnUI(m) { const b = document.getElementById('maint_toggle_btn'); if(b){ b.innerText = m ? 'ВИМКНУТИ ТЕХРОБОТИ' : 'УВІМКНУТИ ТЕХРОБОТИ'; b.style.background = m ? '#e50914' : '#fff'; b.style.color = m ? '#fff' : '#000'; } }
 
-// 🔥 ФУНКЦІЇ ДЛЯ ПРОМОКОДІВ
-
-// 1. СТВОРЕННЯ (АДМІН)
+// ПРОМОКОДИ
 window.createPromoCode = function() {
     const name = document.getElementById('promo_name')?.value.trim().toUpperCase();
     const reward = parseFloat(document.getElementById('promo_reward')?.value);
@@ -238,7 +276,6 @@ window.createPromoCode = function() {
     }).catch(e => alert("Помилка: " + e.message));
 };
 
-// 2. АКТИВАЦІЯ (КОРИСТУВАЧ)
 window.activatePromoCode = function() {
     const codeInput = document.getElementById('user_promo_input');
     const code = codeInput?.value.trim().toUpperCase();
@@ -249,24 +286,22 @@ window.activatePromoCode = function() {
     const promoRef = db.ref('promos/' + code);
     const userPromoRef = db.ref(`users/${user.id}/used_promos/${code}`);
 
-    // Перевірка: чи вводив раніше?
     userPromoRef.once('value', (snapshot) => {
         if (snapshot.exists()) {
             alert("❌ Ви вже використали цей код!");
             return;
         }
 
-        // Перевірка коду і лімітів
         promoRef.transaction((promo) => {
             if (promo) {
                 if (promo.used_count < promo.limit) {
                     promo.used_count++; 
                     return promo;
                 } else {
-                    return; // Ліміт все
+                    return; 
                 }
             }
-            return 0; // Коду немає
+            return 0; 
         }, (error, committed, snapshot) => {
             if (error) {
                 alert("Помилка мережі.");
@@ -275,9 +310,7 @@ window.activatePromoCode = function() {
                 if (!val) alert("❌ Такого коду не існує!");
                 else alert("⚠️ Цей код вже закінчився (ліміт вичерпано)!");
             } else {
-                // Нараховуємо нагороду
                 const reward = snapshot.val().reward;
-                
                 db.ref(`users/${user.id}/tickets`).transaction((current) => (current || 0) + reward);
                 userPromoRef.set(true);
 
@@ -291,12 +324,10 @@ window.activatePromoCode = function() {
     });
 };
 
-// 3. ВІДКРИТТЯ ВІКНА
 window.openPromoModal = function() {
     const m = document.getElementById('promo_input_modal');
     if(m) {
         m.style.display = 'flex';
-        // Ховаємо меню
         document.getElementById('side_menu').classList.remove('active');
         document.getElementById('menu_overlay').style.display = 'none';
     }

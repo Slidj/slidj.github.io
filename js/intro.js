@@ -1,10 +1,15 @@
 // js/intro.js
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Створюємо HTML елементи програмно
+    // 1. Створюємо HTML елементи програмно (Лого + Сканер)
     const loaderHTML = `
         <div id="intro-loader">
-            <h1 class="netflix-title-splash">MEDIA-HUB</h1>
+            <div class="intro-wrapper">
+                <h1 class="netflix-title-splash">MEDIA-HUB</h1>
+                <div class="cylon-track">
+                    <div class="cylon-eye"></div>
+                </div>
+            </div>
         </div>
     `;
     

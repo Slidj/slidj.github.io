@@ -3,120 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trading Mini App</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <title>Trading Debug</title>
     
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+
     <style>
         body {
             background-color: #131722;
             color: #d1d4dc;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: sans-serif;
             margin: 0;
-            padding: 0;
-            overflow: hidden; /* Щоб не скролилось */
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
-
-        /* Верхня панель: Баланс і Актив */
-        .header {
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #1e222d;
-            border-bottom: 1px solid #2a2e39;
-        }
-        .asset-info { font-weight: bold; font-size: 18px; color: #fff; }
-        .balance { font-size: 14px; color: #4caf50; }
-        .price-display { font-size: 20px; font-weight: bold; }
-        .price-up { color: #089981; }
-        .price-down { color: #f23645; }
-
-        /* Контейнер графіка */
+        .header { padding: 15px; background: #1e222d; display: flex; justify-content: space-between; }
+        
+        /* 2. Даємо контейнеру колір, щоб бачити його межі, якщо графік не прогрузиться */
         #chart-container {
             flex-grow: 1;
             width: 100%;
+            background-color: #2a2e39; /* Тимчасовий фон */
             position: relative;
         }
-
-        /* Нижня панель кнопок */
-        .controls {
-            padding: 20px;
-            display: flex;
-            gap: 15px;
-            background: #1e222d;
-            padding-bottom: 40px; /* Відступ для iPhone */
-        }
-
-        .btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            text-transform: uppercase;
-        }
-        .btn:active { opacity: 0.7; transform: scale(0.98); }
-        .btn-up { background-color: #089981; box-shadow: 0 4px 15px rgba(8, 153, 129, 0.4); }
-        .btn-down { background-color: #f23645; box-shadow: 0 4px 15px rgba(242, 54, 69, 0.4); }
-
-        /* Спливаюче повідомлення */
-        #toast {
-            visibility: hidden;
-            min-width: 250px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 8px;
-            padding: 16px;
-            position: fixed;
-            z-index: 100;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 16px;
-        }
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
         
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 50%; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 50%; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        .controls { padding: 20px; background: #1e222d; display: flex; gap: 10px; min-height: 60px; }
+        button { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; color: white; }
+        .btn-up { background: #089981; }
+        .btn-down { background: #f23645; }
     </style>
 </head>
 <body>
 
+    <script>
+        window.onerror = function(msg, url, line) {
+            alert("Помилка: " + msg + "\nРядок: " + line);
+        };
+    </script>
+
     <div class="header">
-        <div>
-            <div class="asset-info">BTC/USDT</div>
-            <div class="balance">Demo: $10,000</div>
-        </div>
-        <div id="current-price" class="price-display">Connecting...</div>
+        <span>BTC/USDT</span>
+        <span id="price">Loading...</span>
     </div>
 
     <div id="chart-container"></div>
 
     <div class="controls">
-        <button class="btn btn-up" onclick="placeBet('UP')">UP 🟢</button>
-        <button class="btn btn-down" onclick="placeBet('DOWN')">DOWN 🔴</button>
+        <button class="btn-up" onclick="alert('UP')">UP</button>
+        <button class="btn-down" onclick="alert('DOWN')">DOWN</button>
     </div>
 
-    <div id="toast">Bet Placed!</div>
-
     <script>
-        // 1. Ініціалізація Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Розгорнути на весь екран
-        tg.MainButton.hide();
+        // Перевірка, чи завантажилась бібліотека
+        if (!window.LightweightCharts) {
+            alert("Бібліотека графіків не завантажилась! Перевір інтернет.");
+        }
 
-        // 2. Налаштування графіка (Lightweight Charts)
-        const chartContainer = document.getElementById('chart-container');
-        const chart = LightweightCharts.createChart(chartContainer, {
+        const container = document.getElementById('chart-container');
+        
+        // Створюємо графік
+        const chart = LightweightCharts.createChart(container, {
+            // Важливо: задаємо авто-розмір
+            width: container.clientWidth,
+            height: container.clientHeight,
             layout: {
                 background: { type: 'solid', color: '#131722' },
                 textColor: '#d1d4dc',
@@ -125,80 +74,41 @@
                 vertLines: { color: '#2a2e39' },
                 horzLines: { color: '#2a2e39' },
             },
-            rightPriceScale: {
-                borderVisible: false,
-            },
             timeScale: {
-                borderVisible: false,
                 timeVisible: true,
                 secondsVisible: true,
             },
-            crosshair: {
-                vertLine: { labelVisible: false }, 
-            }
         });
 
-        // Створюємо Area Series (лінійний графік з заливкою, як в додатках)
-        const areaSeries = chart.addAreaSeries({
-            topColor: 'rgba(33, 150, 243, 0.56)',
-            bottomColor: 'rgba(33, 150, 243, 0.04)',
-            lineColor: 'rgba(33, 150, 243, 1)',
-            lineWidth: 2,
+        const series = chart.addAreaSeries({
+            lineColor: '#2962FF',
+            topColor: '#2962FF',
+            bottomColor: 'rgba(41, 98, 255, 0.28)',
         });
 
-        // Адаптивність розміру
-        window.addEventListener('resize', () => {
-            chart.resize(chartContainer.clientWidth, chartContainer.clientHeight);
-        });
-
-        // 3. Підключення до Binance WebSocket (API)
-        const binanceSocket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
-        const priceElement = document.getElementById('current-price');
-        let currentPrice = 0;
-
-        binanceSocket.onmessage = function(event) {
-            const message = JSON.parse(event.data);
-            const price = parseFloat(message.p); // p = price
-            const time = message.T / 1000; // T = timestamp ms
-
-            // Оновлюємо колір ціни (зелений/червоний)
-            if (price > currentPrice) {
-                priceElement.className = 'price-display price-up';
-            } else if (price < currentPrice) {
-                priceElement.className = 'price-display price-down';
-            }
-            currentPrice = price;
-            priceElement.innerText = price.toFixed(2);
-
-            // Оновлюємо графік
-            areaSeries.update({
-                time: time,
-                value: price
+        // Адаптивність при зміні розміру вікна
+        window.onresize = function() {
+            chart.applyOptions({ 
+                width: container.clientWidth,
+                height: container.clientHeight 
             });
         };
 
-        // 4. Логіка ставок (Імітація)
-        function placeBet(direction) {
-            // Вібрація (працює в Telegram App)
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        // Підключення до Binance
+        const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
+        const priceLabel = document.getElementById('price');
 
-            const entryPrice = currentPrice;
-            showToast(`Ставка ${direction} прийнята по ${entryPrice}`);
-
-            // Тут пізніше буде відправка на сервер
-            // Поки що просто імітуємо результат через 3 секунди
-            setTimeout(() => {
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                alert(`Результат угоди: ${direction}\nЦіна входу: ${entryPrice}\nПоточна: ${currentPrice}`);
-            }, 3000);
-        }
-
-        function showToast(message) {
-            const x = document.getElementById("toast");
-            x.innerText = message;
-            x.className = "show";
-            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
-        }
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const price = parseFloat(data.p);
+            
+            priceLabel.innerText = price.toFixed(2);
+            
+            series.update({
+                time: data.T / 1000,
+                value: price
+            });
+        };
     </script>
 </body>
 </html>

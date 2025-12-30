@@ -3,199 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Telegram Tube</title>
+    <title>My Tube App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <style>
-        /* --- 1. СТИЛІ (ДИЗАЙН) --- */
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #1c1c1e; /* Темний фон як у ТГ */
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        body { margin: 0; background-color: #1c1c1e; color: #fff; font-family: sans-serif; }
+        
+        /* Плеєр */
+        #player-box { 
+            display: none; 
+            position: sticky; 
+            top: 0; 
+            background: #000; 
+            z-index: 99; 
+        }
+        video { width: 100%; display: block; }
+        .close-btn { 
+            width: 100%; padding: 15px; background: #ff3b30; 
+            color: white; border: none; font-weight: bold; cursor: pointer;
         }
 
-        /* Плеєр (спочатку прихований) */
-        #player-container {
-            display: none; /* Ховаємо, поки немає відео */
-            position: sticky;
-            top: 0;
-            background: #000;
-            z-index: 100;
-            border-bottom: 1px solid #333;
-        }
-
-        video {
-            width: 100%;
-            height: auto;
-            max-height: 40vh; /* Щоб не займало весь екран */
-            display: block;
-        }
-
-        .close-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: #ff3b30;
-            color: white;
-            border: none;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-        }
-
-        /* Список відео */
-        .video-list {
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .video-card {
-            background-color: #2c2c2e;
-            border-radius: 12px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .video-card:active {
-            transform: scale(0.98); /* Ефект натискання */
-        }
-
-        .thumb {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .info {
-            padding: 12px;
-        }
-
-        .title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 5px;
-            line-height: 1.3;
-        }
-
-        .author {
-            font-size: 13px;
-            color: #aaaaaa;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #888;
-        }
+        /* Список */
+        .list { padding: 10px; display: flex; flex-direction: column; gap: 15px; }
+        .card { background: #2c2c2e; border-radius: 10px; overflow: hidden; cursor: pointer; }
+        .thumb { width: 100%; height: 180px; object-fit: cover; background: #333; }
+        .info { padding: 10px; }
+        .title { font-weight: bold; margin-bottom: 5px; }
+        .sub { color: #aaa; font-size: 0.9em; }
+        
+        /* Статус */
+        #status { padding: 10px; text-align: center; font-size: 12px; color: #aaa; }
     </style>
 </head>
 <body>
 
-    <div id="player-container">
-        <video id="main-player" controls playsinline autoplay></video>
-        <button class="close-btn" onclick="closePlayer()">Закрити відео</button>
+    <div id="player-box">
+        <video id="video-el" controls playsinline autoplay></video>
+        <button class="close-btn" onclick="closeVideo()">ЗАКРИТИ</button>
     </div>
 
-    <h2 style="padding-left: 10px;">Тренди (UA)</h2>
-    <div id="video-list" class="video-list">
-        <div class="loading">Завантаження відео...</div>
-    </div>
+    <div id="status">Ініціалізація...</div>
+
+    <div class="list" id="list"></div>
 
     <script>
-        // Ініціалізація Telegram WebApp
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Розгортаємо на весь екран
-        
-        // API сервер (публічний Piped)
-        // const API_BASE = 'https://api.piped.privacy.com.de';
-        const API_BASE = 'https://pipedapi.drgns.space';
-        // const API_BASE = 'https://pipedapi.kavin.rocks'; 
+        tg.expand();
 
-        const videoListEl = document.getElementById('video-list');
-        const playerContainer = document.getElementById('player-container');
-        const player = document.getElementById('main-player');
+        // 1. СПИСОК СЕРВЕРІВ (Якщо один не працює, спробуйте поміняти місцями)
+        // Invidious API часто стабільніші за Piped для списків
+        const API_URL = 'https://inv.bp.projectsegfau.lt/api/v1/trending?region=UA';
+        // const API_URL = 'https://invidious.jing.rocks/api/v1/trending?region=UA';
 
-        // 1. Функція запуску (стартує при відкритті)
-        async function init() {
+        // 2. ЗАПАСНІ ВІДЕО (Якщо інтернет не працює)
+        const FALLBACK_VIDEOS = [
+            { title: "Запасне: Природа (тест)", author: "Nature", videoId: "LXb3EKWsInQ", thumb: "https://img.youtube.com/vi/LXb3EKWsInQ/hqdefault.jpg" },
+            { title: "Запасне: Музика Lofi", author: "Lofi Girl", videoId: "jfKfPfyJRdk", thumb: "https://img.youtube.com/vi/jfKfPfyJRdk/hqdefault.jpg" },
+            { title: "Запасне: Кіберпанк", author: "Music", videoId: "P1k500i7m40", thumb: "https://img.youtube.com/vi/P1k500i7m40/hqdefault.jpg" }
+        ];
+
+        const listEl = document.getElementById('list');
+        const statusEl = document.getElementById('status');
+        const playerBox = document.getElementById('player-box');
+        const videoEl = document.getElementById('video-el');
+
+        async function start() {
+            statusEl.innerText = "Завантаження трендів...";
+            
             try {
-                // Отримуємо тренди України
-                const response = await fetch(`${API_BASE}/trending?region=UA`);
-                const videos = await response.json();
+                // Пробуємо отримати дані з інтернету
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error("Server Error");
                 
-                renderVideos(videos);
-            } catch (error) {
-                videoListEl.innerHTML = `<div class="loading" style="color:red">Помилка: ${error.message}<br>Спробуйте оновити.</div>`;
+                const data = await res.json();
+                statusEl.innerText = "Тренди YouTube (Онлайн)";
+                render(data); // Invidious віддає масив об'єктів
+                
+            } catch (e) {
+                // ЯКЩО ПОМИЛКА - ВАНТАЖИМО ЗАПАСНІ
+                console.error(e);
+                statusEl.innerHTML = `<span style="color:orange">Помилка з'єднання: ${e.message}.<br>Показано тестові відео.</span>`;
+                render(FALLBACK_VIDEOS);
             }
         }
 
-        // 2. Функція малювання карток
-        function renderVideos(videos) {
-            videoListEl.innerHTML = ''; // Очистити "Завантаження..."
+        function render(videos) {
+            listEl.innerHTML = '';
+            videos.forEach(v => {
+                const el = document.createElement('div');
+                el.className = 'card';
+                // Invidious і Piped мають трохи різні поля, унифікуємо:
+                const title = v.title;
+                const author = v.author || v.uploaderName || "Unknown";
+                // Якщо це Invidious, там videoId, якщо Piped - url
+                let id = v.videoId; 
+                if (!id && v.url) id = v.url.split('v=')[1];
+                
+                // Картинка: беремо з об'єкта або генеруємо стандартну
+                let thumb = v.thumb || v.thumbnail || `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+                // Якщо картинка прийшла як масив (Invidious)
+                if (Array.isArray(v.videoThumbnails)) thumb = v.videoThumbnails[1].url;
 
-            videos.forEach(video => {
-                // Створюємо HTML для однієї картки
-                const card = document.createElement('div');
-                card.className = 'video-card';
-                // video.url виглядає як "/watch?v=ID" -> беремо тільки ID
-                const videoId = video.url.split('v=')[1];
-
-                card.innerHTML = `
-                    <img class="thumb" src="${video.thumbnail}" alt="${video.title}">
+                el.innerHTML = `
+                    <img class="thumb" src="${thumb}">
                     <div class="info">
-                        <div class="title">${video.title}</div>
-                        <div class="author">${video.uploaderName}</div>
+                        <div class="title">${title}</div>
+                        <div class="sub">${author}</div>
                     </div>
                 `;
-
-                // При кліку - запускаємо відео
-                card.onclick = () => loadAndPlay(videoId);
-                videoListEl.appendChild(card);
+                el.onclick = () => play(id);
+                listEl.appendChild(el);
             });
         }
 
-        // 3. Функція отримання прямого посилання (mp4) і старту
-        async function loadAndPlay(videoId) {
-            // Показуємо плеєр, але поки чорний екран
-            playerContainer.style.display = 'block';
-            window.scrollTo(0, 0); // Прокрутка вгору
-            
+        async function play(id) {
+            playerBox.style.display = 'block';
+            window.scrollTo(0,0);
+            statusEl.innerText = "Отримання посилання на відео...";
+
+            // Для плеєра використовуємо стабільний Piped інстанс
+            const STREAM_API = `https://pipedapi.kavin.rocks/streams/${id}`;
+
             try {
-                // Запит деталей відео
-                const response = await fetch(`${API_BASE}/streams/${videoId}`);
-                const data = await response.json();
-
-                // Шукаємо потік mp4 (відео + звук)
-                const stream = data.videoStreams.find(s => s.format === 'MPEG-4' && s.videoOnly === false);
-
+                const res = await fetch(STREAM_API);
+                const data = await res.json();
+                // Шукаємо mp4
+                const stream = data.videoStreams.find(s => s.format === 'MPEG-4' && !s.videoOnly);
+                
                 if (stream) {
-                    player.src = stream.url;
-                    player.play();
+                    videoEl.src = stream.url;
+                    statusEl.innerText = "Відтворення...";
                 } else {
-                    alert("На жаль, прямий потік для цього відео не знайдено.");
-                    closePlayer();
+                    alert("Потік не знайдено!");
+                    closeVideo();
                 }
-
-            } catch (error) {
-                console.error(error);
-                alert("Не вдалося завантажити відео.");
-                closePlayer();
+            } catch (e) {
+                alert("Не вдалося завантажити відеофайл. Сервер перевантажений.");
+                closeVideo();
             }
         }
 
-        // 4. Закрити плеєр
-        function closePlayer() {
-            player.pause();
-            player.src = "";
-            playerContainer.style.display = 'none';
+        function closeVideo() {
+            videoEl.pause();
+            videoEl.src = "";
+            playerBox.style.display = 'none';
+            statusEl.innerText = "";
         }
 
-        // Запускаємо все
-        init();
-
+        start();
     </script>
 </body>
 </html>

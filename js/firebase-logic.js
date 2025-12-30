@@ -31,7 +31,7 @@ export function processWatchHeartbeat(minutesToAdd) {
 
     // Використовуємо транзакцію для атомарної зміни даних
     userRef.transaction((userData) => {
-        if (!userData) return userData; // Якщо юзера ще немає (рідкісний кейс), нічого не робимо
+        if (!userData) return userData; 
 
         // 1. Додаємо хвилини
         let minutes = (userData.watch_minutes || 0) + minutesToAdd;
@@ -42,7 +42,7 @@ export function processWatchHeartbeat(minutesToAdd) {
             const hoursToAdd = Math.floor(minutes / 60); // Скільки повних годин
             const reward = hoursToAdd * 0.5; // 0.5 тікета за годину
             
-            minutes = minutes % 60; // Залишаємо решту хвилин (напр. 65 -> 5)
+            minutes = minutes % 60; // Залишаємо решту хвилин
             tickets += reward;
         }
 
@@ -54,9 +54,6 @@ export function processWatchHeartbeat(minutesToAdd) {
     }, (error, committed, snapshot) => {
         if (error) {
             console.error("Heartbeat error:", error);
-        } else if (committed) {
-            // Тут можна додати логіку сповіщення, якщо баланс змінився,
-            // але краще робити це тихо, щоб не відволікати від фільму.
         }
     });
 }
@@ -136,7 +133,6 @@ export async function initAdminSystem() {
         const data = snapshot.val();
         const balanceEl = document.getElementById('user_ticket_balance');
         if (balanceEl && data) {
-            // Показуємо тікети, округлені до 1 знаку (якщо треба) або як є
             balanceEl.innerText = data.tickets !== undefined ? Number(data.tickets).toString() : 0;
         }
     });
@@ -331,4 +327,12 @@ window.openPromoModal = function() {
         document.getElementById('side_menu').classList.remove('active');
         document.getElementById('menu_overlay').style.display = 'none';
     }
+};
+
+// 🔥 ЗБЕРЕЖЕННЯ РЕЖИМУ ДЕКОРУ
+window.saveDecorMode = function(mode) {
+    if (!window.firebase) return;
+    firebase.database().ref('settings/decor_mode').set(mode)
+        .then(() => { window.Telegram?.WebApp?.showAlert('Режим декору змінено!'); })
+        .catch(e => console.error(e));
 };

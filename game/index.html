@@ -3,112 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trading Debug</title>
-    
+    <title>Trading App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
         body {
             background-color: #131722;
             color: #d1d4dc;
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
+            overflow: hidden;
+            user-select: none; /* Заборона виділення тексту */
         }
-        .header { padding: 15px; background: #1e222d; display: flex; justify-content: space-between; }
         
-        /* 2. Даємо контейнеру колір, щоб бачити його межі, якщо графік не прогрузиться */
+        /* HEADER */
+        .header {
+            padding: 16px;
+            background: #1e222d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2a2e39;
+        }
+        .asset { font-size: 18px; font-weight: 700; color: #fff; }
+        .balance { font-size: 14px; color: #ff9800; margin-top: 4px; }
+        .price { font-size: 20px; font-weight: bold; font-family: monospace; }
+        .green { color: #089981; }
+        .red { color: #f23645; }
+
+        /* CHART */
         #chart-container {
             flex-grow: 1;
             width: 100%;
-            background-color: #2a2e39; /* Тимчасовий фон */
             position: relative;
         }
-        
-        .controls { padding: 20px; background: #1e222d; display: flex; gap: 10px; min-height: 60px; }
-        button { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; color: white; }
-        .btn-up { background: #089981; }
-        .btn-down { background: #f23645; }
+
+        /* CONTROLS */
+        .controls {
+            padding: 16px;
+            background: #1e222d;
+            display: flex;
+            gap: 12px;
+            padding-bottom: 30px; /* Відступ для iOS */
+        }
+        .btn {
+            flex: 1;
+            height: 54px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 800;
+            color: white;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-up { background-color: #089981; box-shadow: 0 4px 12px rgba(8, 153, 129, 0.3); }
+        .btn-down { background-color: #f23645; box-shadow: 0 4px 12px rgba(242, 54, 69, 0.3); }
+
+        /* POPUP RESULT */
+        #result-popup {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: #2a2e39;
+            padding: 20px 40px;
+            border-radius: 16px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            z-index: 10;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #result-popup.win { border: 2px solid #089981; }
+        #result-popup.loss { border: 2px solid #f23645; }
+        #result-popup.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .result-amount { font-size: 24px; font-weight: bold; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <script>
-        window.onerror = function(msg, url, line) {
-            alert("Помилка: " + msg + "\nРядок: " + line);
-        };
-    </script>
-
     <div class="header">
-        <span>BTC/USDT</span>
-        <span id="price">Loading...</span>
+        <div>
+            <div class="asset">BTC/USDT</div>
+            <div class="balance" id="balance">Balance: $1,000</div>
+        </div>
+        <div class="price" id="price">...</div>
     </div>
 
     <div id="chart-container"></div>
 
+    <div id="result-popup">
+        <div id="result-title">RESULT</div>
+        <div id="result-amount" class="result-amount">$0</div>
+    </div>
+
     <div class="controls">
-        <button class="btn-up" onclick="alert('UP')">UP</button>
-        <button class="btn-down" onclick="alert('DOWN')">DOWN</button>
+        <button class="btn btn-up" onclick="startTrade('UP')">UP 🟢</button>
+        <button class="btn btn-down" onclick="startTrade('DOWN')">DOWN 🔴</button>
     </div>
 
     <script>
-        // Перевірка, чи завантажилась бібліотека
-        if (!window.LightweightCharts) {
-            alert("Бібліотека графіків не завантажилась! Перевір інтернет.");
-        }
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
+        // --- 1. НАЛАШТУВАННЯ ГРАФІКА ---
         const container = document.getElementById('chart-container');
-        
-        // Створюємо графік
         const chart = LightweightCharts.createChart(container, {
-            // Важливо: задаємо авто-розмір
-            width: container.clientWidth,
-            height: container.clientHeight,
-            layout: {
-                background: { type: 'solid', color: '#131722' },
-                textColor: '#d1d4dc',
-            },
-            grid: {
-                vertLines: { color: '#2a2e39' },
-                horzLines: { color: '#2a2e39' },
-            },
-            timeScale: {
-                timeVisible: true,
-                secondsVisible: true,
-            },
+            layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
+            grid: { vertLines: { color: '#2a2e39' }, horzLines: { color: '#2a2e39' } },
+            timeScale: { timeVisible: true, secondsVisible: true, borderColor: '#2a2e39' },
+            rightPriceScale: { borderColor: '#2a2e39' },
+            crosshair: { vertLine: { labelVisible: false } } // Ховаємо мітку часу
         });
 
         const series = chart.addAreaSeries({
-            lineColor: '#2962FF',
-            topColor: '#2962FF',
-            bottomColor: 'rgba(41, 98, 255, 0.28)',
+            topColor: 'rgba(33, 150, 243, 0.56)',
+            bottomColor: 'rgba(33, 150, 243, 0.04)',
+            lineColor: 'rgba(33, 150, 243, 1)',
+            lineWidth: 2,
         });
 
-        // Адаптивність при зміні розміру вікна
-        window.onresize = function() {
-            chart.applyOptions({ 
-                width: container.clientWidth,
-                height: container.clientHeight 
-            });
+        // Адаптивність
+        window.onresize = () => {
+            chart.resize(container.clientWidth, container.clientHeight);
         };
 
-        // Підключення до Binance
+        // --- 2. ДАНІ BINANCE ---
         const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
         const priceLabel = document.getElementById('price');
+        let currentPrice = 0;
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             const price = parseFloat(data.p);
-            
+            currentPrice = price;
+
+            // Оновлення кольору ціни
+            priceLabel.style.color = !window.lastPrice || price >= window.lastPrice ? '#089981' : '#f23645';
+            window.lastPrice = price;
             priceLabel.innerText = price.toFixed(2);
-            
-            series.update({
-                time: data.T / 1000,
-                value: price
-            });
+
+            series.update({ time: data.T / 1000, value: price });
         };
+
+        // --- 3. ЛОГІКА ТРЕЙДИНГУ ---
+        let balance = 1000;
+        let isTrading = false;
+        let betLine = null;
+
+        function startTrade(direction) {
+            if (isTrading) return; // Заборона подвійного кліку
+            isTrading = true;
+            
+            // Вібрація
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+            const entryPrice = currentPrice;
+            const betAmount = 50; // Фіксована ставка
+
+            // Малюємо лінію входу на графіку
+            const lineColor = direction === 'UP' ? '#089981' : '#f23645';
+            betLine = series.createPriceLine({
+                price: entryPrice,
+                color: lineColor,
+                lineWidth: 2,
+                lineStyle: 2, // Пунктир
+                axisLabelVisible: true,
+                title: direction,
+            });
+
+            // Таймер 3 секунди (імітація швидкої угоди)
+            setTimeout(() => {
+                finishTrade(direction, entryPrice, betAmount);
+            }, 3000); // 3000 мс = 3 секунди
+        }
+
+        function finishTrade(direction, entryPrice, betAmount) {
+            let win = false;
+
+            if (direction === 'UP' && currentPrice > entryPrice) win = true;
+            else if (direction === 'DOWN' && currentPrice < entryPrice) win = true;
+
+            // Оновлюємо баланс
+            if (win) balance += betAmount * 0.8; // +80% профіт
+            else balance -= betAmount;
+
+            document.getElementById('balance').innerText = `Balance: $${balance.toFixed(0)}`;
+            
+            // Видаляємо лінію
+            if (betLine) {
+                series.removePriceLine(betLine);
+                betLine = null;
+            }
+
+            // Показуємо результат
+            showResult(win, win ? `+$${(betAmount * 0.8).toFixed(0)}` : `-$${betAmount}`);
+            
+            // Вібрація результату
+            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(win ? 'success' : 'error');
+            
+            isTrading = false;
+        }
+
+        function showResult(win, text) {
+            const popup = document.getElementById('result-popup');
+            const title = document.getElementById('result-title');
+            const amount = document.getElementById('result-amount');
+
+            popup.className = win ? 'win show' : 'loss show';
+            title.innerText = win ? 'YOU WON!' : 'YOU LOST';
+            title.style.color = win ? '#089981' : '#f23645';
+            amount.innerText = text;
+
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 2000);
+        }
     </script>
 </body>
 </html>

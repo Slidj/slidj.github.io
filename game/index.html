@@ -26,7 +26,7 @@
 
         /* СПИСОК */
         .header { padding: 15px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #333; }
-        .status-msg { font-size: 12px; color: #aaa; margin-left: 10px; font-weight: normal; }
+        .status-msg { font-size: 12px; color: #4caf50; margin-left: 10px; font-weight: normal; }
         
         .list { padding: 10px; display: flex; flex-direction: column; gap: 15px; }
         
@@ -36,14 +36,13 @@
         }
         .card:active { opacity: 0.8; }
         
-        .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; /* 16:9 aspect ratio */ background: #333; }
+        .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #333; }
         .thumb { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         
         .info { padding: 12px; }
         .title { font-size: 15px; font-weight: 600; margin-bottom: 5px; line-height: 1.4; }
         .sub { color: #aaa; font-size: 13px; }
 
-        /* Error Banner */
         .offline-badge {
             background-color: #ff9800; color: black; padding: 10px; text-align: center;
             font-size: 13px; font-weight: bold; display: none;
@@ -55,17 +54,15 @@
     <div id="player-area">
         <video id="main-video" controls playsinline autoplay></video>
         <div class="control-bar">
-            <span>Відтворення</span>
+            <span id="player-status">Відтворення</span>
             <button class="btn-close" onclick="closePlayer()">Закрити</button>
         </div>
     </div>
 
-    <div id="offline-msg" class="offline-badge">
-        Сервер недоступний. Показано демо-режим.
-    </div>
+    <div id="offline-msg" class="offline-badge">Демо-режим (Усі сервери зайняті)</div>
 
     <div class="header">
-        Головна <span id="status" class="status-msg">...</span>
+        Media Hub <span id="status" class="status-msg"></span>
     </div>
 
     <div id="list" class="list"></div>
@@ -74,91 +71,84 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- КОНФІГУРАЦІЯ ---
-        // Використовуємо проксі, щоб обійти CORS
+        // --- СПИСОК СЕРВЕРІВ (Якщо один не працює, пробуємо наступний) ---
+        const SERVERS = [
+            'https://api.piped.privacy.com.de',
+            'https://pipedapi.kavin.rocks',
+            'https://piped-api.garudalinux.org',
+            'https://pa.il.ax',
+            'https://pipedapi.drgns.space'
+        ];
+        
+        // Проксі для обходу блокування
         const PROXY = 'https://api.allorigins.win/raw?url=';
-        
-        // Спробуємо інший сервер (більш стабільний для Європи)
-        const API_SERVER = 'https://pipedapi.drgns.space'; 
-        
-        // ЗАПАСНІ ВІДЕО (Якщо сервер впав - покажемо це)
+
+        // Змінна, яка запам'ятає, який сервер зараз працює
+        let activeServer = '';
+
+        // ЗАПАСНІ ВІДЕО
         const FALLBACK_DATA = [
-            {
-                title: "🔴 [ТЕСТ] Природа 4K (Сервер не відповів)",
-                uploaderName: "Demo Channel",
-                thumbnail: "https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg",
-                url: "/watch?v=LXb3EKWsInQ",
-                duration: 120
-            },
-            {
-                title: "🎵 Lofi Hip Hop Radio",
-                uploaderName: "Lofi Girl",
-                thumbnail: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg",
-                url: "/watch?v=jfKfPfyJRdk",
-                duration: 3600
-            },
-            {
-                title: "🔥 Cyberpunk Music",
-                uploaderName: "Music Lab",
-                thumbnail: "https://i.ytimg.com/vi/P1k500i7m40/hqdefault.jpg",
-                url: "/watch?v=P1k500i7m40",
-                duration: 300
-            }
+            { title: "🔴 Демо: Природа", uploaderName: "Test", thumbnail: "https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg", url: "/watch?v=LXb3EKWsInQ" },
+            { title: "🔴 Демо: Музика", uploaderName: "Test", thumbnail: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg", url: "/watch?v=jfKfPfyJRdk" }
         ];
 
-        // Елементи
         const listEl = document.getElementById('list');
         const statusEl = document.getElementById('status');
         const offlineMsg = document.getElementById('offline-msg');
         const playerArea = document.getElementById('player-area');
         const videoEl = document.getElementById('main-video');
 
-        // 1. ГОЛОВНА ФУНКЦІЯ
+        // 1. ПОШУК РОБОЧОГО СЕРВЕРА
         async function init() {
-            statusEl.innerText = "Завантаження...";
-            
-            try {
-                // Формуємо посилання через проксі
-                const target = `${API_SERVER}/trending?region=UA`;
-                const finalUrl = PROXY + encodeURIComponent(target);
+            statusEl.innerText = "Пошук сервера...";
+            statusEl.style.color = "orange";
 
-                // Ставимо тайм-аут 5 секунд (якщо сервер довго думає - кидаємо помилку)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
+            for (let server of SERVERS) {
+                try {
+                    console.log("Checking server:", server);
+                    // Пробуємо завантажити тренди
+                    const target = `${server}/trending?region=UA`;
+                    const finalUrl = PROXY + encodeURIComponent(target);
+                    
+                    // Тайм-аут 3 секунди на сервер
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), 3000);
+                    
+                    const res = await fetch(finalUrl, { signal: controller.signal });
+                    clearTimeout(id);
 
-                const response = await fetch(finalUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                if (!response.ok) throw new Error("Помилка API");
-                
-                const data = await response.json();
-                statusEl.innerText = "";
-                renderList(data);
-
-            } catch (error) {
-                console.warn("API Error:", error);
-                // ЯКЩО ПОМИЛКА -> ВКЛЮЧАЄМО ЗАПАСНИЙ ПЛАН
-                useFallbackMode();
+                    if (res.ok) {
+                        const data = await res.json();
+                        // Якщо дійшли сюди - сервер робочий!
+                        activeServer = server;
+                        statusEl.innerText = "● Онлайн";
+                        statusEl.style.color = "#4caf50"; // Зелений
+                        renderList(data);
+                        return; // Виходимо з функції, успіх
+                    }
+                } catch (e) {
+                    console.warn("Server failed:", server);
+                }
             }
+
+            // Якщо цикл закінчився і нічого не знайшли:
+            useFallbackMode();
         }
 
-        // 2. РЕЖИМ "ОФЛАЙН" (ДЕМО)
         function useFallbackMode() {
-            statusEl.innerText = "(Демо)";
-            offlineMsg.style.display = 'block'; // Показуємо помаранчеву плашку
+            statusEl.innerText = "● Офлайн";
+            statusEl.style.color = "red";
+            offlineMsg.style.display = 'block';
             renderList(FALLBACK_DATA);
         }
 
-        // 3. МАЛЮВАННЯ КАРТОК
         function renderList(videos) {
             listEl.innerHTML = '';
             videos.forEach(v => {
                 const el = document.createElement('div');
                 el.className = 'card';
-                
-                // Витягуємо ID
                 let id = v.url.split('v=')[1];
-                if(!id) return; // Пропускаємо биті
+                if(!id) return;
 
                 el.innerHTML = `
                     <div class="thumb-wrapper">
@@ -169,40 +159,40 @@
                         <div class="sub">${v.uploaderName}</div>
                     </div>
                 `;
-                
                 el.onclick = () => playVideo(id);
                 listEl.appendChild(el);
             });
         }
 
-        // 4. ВІДТВОРЕННЯ
+        // 2. ВІДТВОРЕННЯ
         async function playVideo(id) {
             playerArea.style.display = 'block';
             window.scrollTo(0,0);
-            
-            // Скидаємо старе
             videoEl.src = "";
             
-            // Якщо це тестове відео, можемо хардкодити посилання (для стабільності тесту)
-            // Але спробуємо отримати чесний потік спочатку
+            // Якщо ми в демо-режимі (немає активного сервера), граємо тестове посилання напряму
+            if (!activeServer) {
+               // Для тесту підставимо прямий лінк (хак для демо)
+               alert("В демо режимі відео може не грати, бо немає зв'язку з API.");
+               return;
+            }
+
             try {
-                const target = `${API_SERVER}/streams/${id}`;
+                const target = `${activeServer}/streams/${id}`;
                 const finalUrl = PROXY + encodeURIComponent(target);
                 
                 const res = await fetch(finalUrl);
                 const data = await res.json();
-                
-                // Шукаємо mp4
                 const stream = data.videoStreams.find(s => s.format === 'MPEG-4' && !s.videoOnly);
                 
                 if (stream) {
                     videoEl.src = stream.url;
                     videoEl.play();
                 } else {
-                    alert("Не вдалося знайти потік відео. Спробуйте інше.");
+                    alert("Потік не знайдено.");
                 }
             } catch (e) {
-                alert("Сервер відео перевантажений. Спробуйте пізніше.");
+                alert("Помилка завантаження потоку.");
                 closePlayer();
             }
         }
@@ -213,9 +203,7 @@
             playerArea.style.display = 'none';
         }
 
-        // Старт
         init();
-
     </script>
 </body>
 </html>

@@ -22,13 +22,19 @@
         
         /* HEADER */
         .header {
+            /* --- ВИПРАВЛЕННЯ ВІДСТУПУ --- */
             padding: 12px 16px;
+            padding-top: 50px; /* Примусовий відступ для системних кнопок */
+            padding-top: calc(20px + env(safe-area-inset-top)); /* Адаптація під iPhone */
+            
             background: #1e222d;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #2a2e39;
-            height: 60px;
+            /* Прибрали фіксовану висоту, щоб контент не обрізався */
+            min-height: 60px; 
+            z-index: 20;
         }
 
         /* Профіль користувача */
@@ -41,7 +47,7 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: #2a2e39; /* Заглушка, поки не завантажиться фото */
+            background: #2a2e39;
             object-fit: cover;
         }
         .user-info {
@@ -62,12 +68,12 @@
             background: #2a2e39;
             color: white;
             border: none;
-            padding: 4px 8px;
+            padding: 6px 10px; /* Трохи збільшив кнопки для зручності */
             border-radius: 6px;
             font-weight: 700;
             font-size: 14px;
             outline: none;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             cursor: pointer;
         }
         .price { font-size: 16px; font-weight: bold; font-family: monospace; }
@@ -91,7 +97,7 @@
             opacity: 0;
             pointer-events: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 10;
+            z-index: 100; /* Підняв вище */
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
         #result-popup.win { border: 2px solid #089981; }
@@ -105,7 +111,7 @@
             background: #1e222d;
             display: flex;
             gap: 12px;
-            padding-bottom: 30px; /* Для iPhone */
+            padding-bottom: 40px; /* Збільшив нижній відступ для нових iPhone */
         }
         .btn {
             flex: 1;
@@ -123,7 +129,6 @@
         .btn-up { background-color: #089981; box-shadow: 0 4px 15px rgba(8, 153, 129, 0.3); }
         .btn-down { background-color: #f23645; box-shadow: 0 4px 15px rgba(242, 54, 69, 0.3); }
 
-        /* Спіннер завантаження */
         .loader { border: 2px solid #2a2e39; border-top: 2px solid #ff9800; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -165,8 +170,10 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        // Встановлюємо колір хедера під колір фону додатку, щоб виглядало цільно
+        tg.setHeaderColor('#1e222d'); 
 
-        // --- 1. ІНІЦІАЛІЗАЦІЯ ЮЗЕРА (TELEGRAM) ---
+        // --- 1. ІНІЦІАЛІЗАЦІЯ ЮЗЕРА ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name + (user.last_name ? ' ' + user.last_name : '');
@@ -175,7 +182,7 @@
             }
         }
 
-        // --- 2. ГРАФІК (CANDLESTICK) ---
+        // --- 2. ГРАФІК ---
         const container = document.getElementById('chart-container');
         const chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
@@ -185,38 +192,28 @@
             crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
         });
 
-        // Створюємо серію СВІЧОК
         let series = chart.addCandlestickSeries({
-            upColor: '#089981',
-            downColor: '#f23645',
-            borderVisible: false,
-            wickUpColor: '#089981',
-            wickDownColor: '#f23645',
+            upColor: '#089981', downColor: '#f23645', borderVisible: false, wickUpColor: '#089981', wickDownColor: '#f23645',
         });
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
 
-        // --- 3. ПІДКЛЮЧЕННЯ WEBSOCKET (СВІЧКИ) ---
+        // --- 3. BINANCE ---
         let ws = null;
         let currentPrice = 0;
-        let lastCandleTime = 0;
         const priceLabel = document.getElementById('price');
         const assetSelect = document.getElementById('asset-select');
 
         function connectWebSocket(symbol) {
-            if (ws) ws.close(); // Закриваємо старе з'єднання
-            
-            // Очищаємо графік
+            if (ws) ws.close();
             series.setData([]);
             priceLabel.innerHTML = '<span class="loader"></span>';
 
-            // Підключаємось до потоку 1-секундних свічок (kline_1s)
             ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@kline_1s`);
             
             ws.onmessage = (event) => {
                 const message = JSON.parse(event.data);
-                const k = message.k; // Дані свічки
-
+                const k = message.k;
                 const candle = {
                     time: k.t / 1000,
                     open: parseFloat(k.o),
@@ -224,30 +221,19 @@
                     low: parseFloat(k.l),
                     close: parseFloat(k.c),
                 };
-
                 currentPrice = candle.close;
-                
-                // Оновлюємо ціну в хедері
                 priceLabel.style.color = !window.lastPrice || currentPrice >= window.lastPrice ? '#089981' : '#f23645';
                 window.lastPrice = currentPrice;
-                // Форматуємо ціну (більше знаків для дешевих монет типу DOGE)
                 const digits = currentPrice < 1 ? 5 : 2;
                 priceLabel.innerText = currentPrice.toFixed(digits);
-
-                // Оновлюємо графік
                 series.update(candle);
             };
         }
 
-        // Слухаємо зміну валюти
-        assetSelect.addEventListener('change', (e) => {
-            connectWebSocket(e.target.value);
-        });
-
-        // Стартуємо з BTC
+        assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- 4. ЛОГІКА СТАВОК ---
+        // --- 4. СТАВКИ ---
         let balance = 1000;
         let isTrading = false;
         let betLine = null;
@@ -261,36 +247,25 @@
             const betAmount = 50;
             const lineColor = direction === 'UP' ? '#089981' : '#f23645';
 
-            // Малюємо лінію входу
             betLine = series.createPriceLine({
                 price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 2, title: direction,
             });
 
-            // Таймер 3 секунди
-            setTimeout(() => {
-                finishTrade(direction, entryPrice, betAmount);
-            }, 3000);
+            setTimeout(() => { finishTrade(direction, entryPrice, betAmount); }, 3000);
         }
 
         function finishTrade(direction, entryPrice, betAmount) {
             let win = false;
-            // Порівнюємо поточну ціну закриття свічки з ціною входу
             if (direction === 'UP' && currentPrice > entryPrice) win = true;
             else if (direction === 'DOWN' && currentPrice < entryPrice) win = true;
 
-            // Оновлюємо баланс
             if (win) balance += betAmount * 0.8;
             else balance -= betAmount;
 
             document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;
             
-            // Видаляємо лінію
-            if (betLine) {
-                series.removePriceLine(betLine);
-                betLine = null;
-            }
+            if (betLine) { series.removePriceLine(betLine); betLine = null; }
 
-            // Показуємо результат
             const popup = document.getElementById('result-popup');
             const title = document.getElementById('result-title');
             const amount = document.getElementById('result-amount');
@@ -302,10 +277,7 @@
             
             if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(win ? 'success' : 'error');
             
-            setTimeout(() => {
-                popup.classList.remove('show');
-                isTrading = false;
-            }, 2000);
+            setTimeout(() => { popup.classList.remove('show'); isTrading = false; }, 2000);
         }
     </script>
 </body>

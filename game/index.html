@@ -8,138 +8,108 @@
     <style>
         body { margin: 0; background-color: #121212; color: #fff; font-family: -apple-system, sans-serif; }
         
-        /* ПЛЕЄР */
+        /* ПЛЕЄР (IFRAME) */
         #player-area { 
             display: none; 
             position: sticky; 
             top: 0; 
             background: #000; 
             z-index: 100; 
+            width: 100%;
+            padding-bottom: 5px;
             border-bottom: 2px solid #333;
         }
-        video { width: 100%; display: block; max-height: 40vh; }
-        .control-bar { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: #1f1f1f; }
+        
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+        }
+        
+        .iframe-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .control-bar { padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; background: #1f1f1f; }
         .btn-close { 
             background: #d32f2f; color: white; border: none; 
-            padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;
+            padding: 6px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;
         }
 
         /* СПИСОК */
-        .header { padding: 15px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #333; }
-        .status-msg { font-size: 12px; color: #4caf50; margin-left: 10px; font-weight: normal; }
+        .header { padding: 15px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #333; display: flex; justify-content: space-between;}
+        .status-dot { width: 10px; height: 10px; background: #4caf50; border-radius: 50%; display: inline-block; }
         
         .list { padding: 10px; display: flex; flex-direction: column; gap: 15px; }
         
         .card { 
             background: #1e1e1e; border-radius: 12px; overflow: hidden; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer;
+            transition: transform 0.1s;
         }
-        .card:active { opacity: 0.8; }
+        .card:active { transform: scale(0.98); }
         
         .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #333; }
         .thumb { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         
         .info { padding: 12px; }
-        .title { font-size: 15px; font-weight: 600; margin-bottom: 5px; line-height: 1.4; }
+        .title { font-size: 15px; font-weight: 600; margin-bottom: 5px; line-height: 1.3; }
         .sub { color: #aaa; font-size: 13px; }
-
-        .offline-badge {
-            background-color: #ff9800; color: black; padding: 10px; text-align: center;
-            font-size: 13px; font-weight: bold; display: none;
-        }
     </style>
 </head>
 <body>
 
     <div id="player-area">
-        <video id="main-video" controls playsinline autoplay></video>
+        <div class="iframe-container">
+            <div id="player-placeholder"></div>
+        </div>
         <div class="control-bar">
-            <span id="player-status">Відтворення</span>
-            <button class="btn-close" onclick="closePlayer()">Закрити</button>
+            <span>YouTube Player</span>
+            <button class="btn-close" onclick="closePlayer()">ЗАКРИТИ</button>
         </div>
     </div>
 
-    <div id="offline-msg" class="offline-badge">Демо-режим (Усі сервери зайняті)</div>
-
     <div class="header">
-        Media Hub <span id="status" class="status-msg"></span>
+        Media Hub <span class="status-dot"></span>
     </div>
 
-    <div id="list" class="list"></div>
+    <div id="list" class="list">
+        <div style="padding:20px; text-align:center; color:#666;">Завантаження списку...</div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- СПИСОК СЕРВЕРІВ (Якщо один не працює, пробуємо наступний) ---
-        const SERVERS = [
-            'https://api.piped.privacy.com.de',
-            'https://pipedapi.kavin.rocks',
-            'https://piped-api.garudalinux.org',
-            'https://pa.il.ax',
-            'https://pipedapi.drgns.space'
-        ];
-        
-        // Проксі для обходу блокування
+        // Використовуємо стабільний Invidious API для списку (через проксі)
         const PROXY = 'https://api.allorigins.win/raw?url=';
-
-        // Змінна, яка запам'ятає, який сервер зараз працює
-        let activeServer = '';
-
-        // ЗАПАСНІ ВІДЕО
-        const FALLBACK_DATA = [
-            { title: "🔴 Демо: Природа", uploaderName: "Test", thumbnail: "https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg", url: "/watch?v=LXb3EKWsInQ" },
-            { title: "🔴 Демо: Музика", uploaderName: "Test", thumbnail: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg", url: "/watch?v=jfKfPfyJRdk" }
-        ];
+        // Цей сервер зазвичай віддає списки без проблем
+        const API_URL = 'https://inv.bp.projectsegfau.lt/api/v1/trending?region=UA';
 
         const listEl = document.getElementById('list');
-        const statusEl = document.getElementById('status');
-        const offlineMsg = document.getElementById('offline-msg');
         const playerArea = document.getElementById('player-area');
-        const videoEl = document.getElementById('main-video');
+        const placeholder = document.getElementById('player-placeholder');
 
-        // 1. ПОШУК РОБОЧОГО СЕРВЕРА
         async function init() {
-            statusEl.innerText = "Пошук сервера...";
-            statusEl.style.color = "orange";
-
-            for (let server of SERVERS) {
-                try {
-                    console.log("Checking server:", server);
-                    // Пробуємо завантажити тренди
-                    const target = `${server}/trending?region=UA`;
-                    const finalUrl = PROXY + encodeURIComponent(target);
-                    
-                    // Тайм-аут 3 секунди на сервер
-                    const controller = new AbortController();
-                    const id = setTimeout(() => controller.abort(), 3000);
-                    
-                    const res = await fetch(finalUrl, { signal: controller.signal });
-                    clearTimeout(id);
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        // Якщо дійшли сюди - сервер робочий!
-                        activeServer = server;
-                        statusEl.innerText = "● Онлайн";
-                        statusEl.style.color = "#4caf50"; // Зелений
-                        renderList(data);
-                        return; // Виходимо з функції, успіх
-                    }
-                } catch (e) {
-                    console.warn("Server failed:", server);
-                }
+            try {
+                // Запитуємо список
+                const res = await fetch(PROXY + encodeURIComponent(API_URL));
+                const data = await res.json();
+                
+                renderList(data);
+            } catch (e) {
+                console.error(e);
+                listEl.innerHTML = `<div style="padding:20px; text-align:center; color:orange;">
+                    Не вдалося отримати тренди.<br>
+                    <button onclick="location.reload()" style="margin-top:10px; padding:10px; background:#333; color:white; border:none; border-radius:5px;">Спробувати ще раз</button>
+                </div>`;
             }
-
-            // Якщо цикл закінчився і нічого не знайшли:
-            useFallbackMode();
-        }
-
-        function useFallbackMode() {
-            statusEl.innerText = "● Офлайн";
-            statusEl.style.color = "red";
-            offlineMsg.style.display = 'block';
-            renderList(FALLBACK_DATA);
         }
 
         function renderList(videos) {
@@ -147,60 +117,54 @@
             videos.forEach(v => {
                 const el = document.createElement('div');
                 el.className = 'card';
-                let id = v.url.split('v=')[1];
-                if(!id) return;
+                
+                // Invidious віддає videoId
+                let id = v.videoId;
+                // Картинка (беремо середню якість для швидкості)
+                let thumb = v.videoThumbnails ? v.videoThumbnails[0].url : `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 
                 el.innerHTML = `
                     <div class="thumb-wrapper">
-                        <img class="thumb" src="${v.thumbnail}" loading="lazy">
+                        <img class="thumb" src="${thumb}" loading="lazy">
                     </div>
                     <div class="info">
                         <div class="title">${v.title}</div>
-                        <div class="sub">${v.uploaderName}</div>
+                        <div class="sub">${v.author} • ${formatTime(v.lengthSeconds)}</div>
                     </div>
                 `;
+                
                 el.onclick = () => playVideo(id);
                 listEl.appendChild(el);
             });
         }
 
-        // 2. ВІДТВОРЕННЯ
-        async function playVideo(id) {
+        function playVideo(id) {
             playerArea.style.display = 'block';
             window.scrollTo(0,0);
-            videoEl.src = "";
             
-            // Якщо ми в демо-режимі (немає активного сервера), граємо тестове посилання напряму
-            if (!activeServer) {
-               // Для тесту підставимо прямий лінк (хак для демо)
-               alert("В демо режимі відео може не грати, бо немає зв'язку з API.");
-               return;
-            }
-
-            try {
-                const target = `${activeServer}/streams/${id}`;
-                const finalUrl = PROXY + encodeURIComponent(target);
-                
-                const res = await fetch(finalUrl);
-                const data = await res.json();
-                const stream = data.videoStreams.find(s => s.format === 'MPEG-4' && !s.videoOnly);
-                
-                if (stream) {
-                    videoEl.src = stream.url;
-                    videoEl.play();
-                } else {
-                    alert("Потік не знайдено.");
-                }
-            } catch (e) {
-                alert("Помилка завантаження потоку.");
-                closePlayer();
-            }
+            // Вставляємо офіційний Iframe
+            // autoplay=1 запускає відео
+            // modestbranding=1 прибирає частину логотипів
+            placeholder.innerHTML = `
+                <iframe 
+                    src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&modestbranding=1&rel=0" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            `;
         }
 
         function closePlayer() {
-            videoEl.pause();
-            videoEl.src = "";
+            placeholder.innerHTML = ''; // Видаляємо iframe, щоб зупинити звук
             playerArea.style.display = 'none';
+        }
+
+        function formatTime(seconds) {
+            if(!seconds) return "";
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
         }
 
         init();

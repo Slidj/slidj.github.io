@@ -22,17 +22,17 @@
         
         /* HEADER */
         .header {
-            /* --- ВИПРАВЛЕННЯ ВІДСТУПУ --- */
             padding: 12px 16px;
-            padding-top: 50px; /* Примусовий відступ для системних кнопок */
-            padding-top: calc(20px + env(safe-area-inset-top)); /* Адаптація під iPhone */
+            
+            /* --- РАДИКАЛЬНЕ ЗБІЛЬШЕННЯ ВІДСТУПУ --- */
+            padding-top: 80px; 
+            padding-top: calc(80px + env(safe-area-inset-top));
             
             background: #1e222d;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-end; /* Вирівнювання по низу хедера */
             border-bottom: 1px solid #2a2e39;
-            /* Прибрали фіксовану висоту, щоб контент не обрізався */
             min-height: 60px; 
             z-index: 20;
         }
@@ -44,17 +44,18 @@
             gap: 10px;
         }
         .user-avatar {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: #2a2e39;
             object-fit: cover;
+            border: 2px solid #2a2e39;
         }
         .user-info {
             display: flex;
             flex-direction: column;
         }
-        .user-name { font-weight: 700; font-size: 14px; color: #fff; line-height: 1.2; }
+        .user-name { font-weight: 700; font-size: 15px; color: #fff; line-height: 1.2; }
         .balance { font-size: 13px; color: #ff9800; font-weight: 600; }
 
         /* Селектор валют та ціна */
@@ -67,16 +68,19 @@
         #asset-select {
             background: #2a2e39;
             color: white;
-            border: none;
-            padding: 6px 10px; /* Трохи збільшив кнопки для зручності */
-            border-radius: 6px;
+            border: 1px solid #363a45;
+            padding: 8px 12px;
+            border-radius: 8px;
             font-weight: 700;
             font-size: 14px;
             outline: none;
             margin-bottom: 4px;
             cursor: pointer;
+            appearance: none; /* Прибирає стандартну стрілку браузера */
+            -webkit-appearance: none;
+            text-align: center;
         }
-        .price { font-size: 16px; font-weight: bold; font-family: monospace; }
+        .price { font-size: 16px; font-weight: bold; font-family: monospace; margin-top: 2px;}
 
         /* CHART */
         #chart-container {
@@ -97,7 +101,7 @@
             opacity: 0;
             pointer-events: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 100; /* Підняв вище */
+            z-index: 100;
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
         #result-popup.win { border: 2px solid #089981; }
@@ -111,11 +115,11 @@
             background: #1e222d;
             display: flex;
             gap: 12px;
-            padding-bottom: 40px; /* Збільшив нижній відступ для нових iPhone */
+            padding-bottom: 50px; /* Також збільшив відступ знизу */
         }
         .btn {
             flex: 1;
-            height: 54px;
+            height: 56px;
             border: none;
             border-radius: 12px;
             font-size: 18px;
@@ -146,10 +150,10 @@
         
         <div class="market-info">
             <select id="asset-select">
-                <option value="btcusdt">BTC/USDT</option>
-                <option value="ethusdt">ETH/USDT</option>
-                <option value="solusdt">SOL/USDT</option>
-                <option value="dogeusdt">DOGE/USDT</option>
+                <option value="btcusdt">BTC / USDT</option>
+                <option value="ethusdt">ETH / USDT</option>
+                <option value="solusdt">SOL / USDT</option>
+                <option value="dogeusdt">DOGE / USDT</option>
             </select>
             <div class="price" id="price">Loading...</div>
         </div>
@@ -170,7 +174,6 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        // Встановлюємо колір хедера під колір фону додатку, щоб виглядало цільно
         tg.setHeaderColor('#1e222d'); 
 
         // --- 1. ІНІЦІАЛІЗАЦІЯ ЮЗЕРА ---

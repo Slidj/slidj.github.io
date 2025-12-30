@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Feed</title>
+    <title>Media Hub UA</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { margin: 0; background-color: #0f0f0f; color: #fff; font-family: Roboto, Arial, sans-serif; }
+        body { margin: 0; background-color: #0f0f0f; color: #fff; font-family: -apple-system, sans-serif; }
         
         /* ПЛЕЄР */
         #player-area { 
@@ -20,43 +20,39 @@
         .iframe-container iframe {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
         }
-        .control-bar { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; }
+        .control-bar { padding: 12px; display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; }
         .btn-close { 
-            background: transparent; color: #aaa; border: 1px solid #aaa; 
-            padding: 6px 12px; border-radius: 15px; font-size: 12px; cursor: pointer;
+            background: #d32f2f; color: white; border: none; 
+            padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;
         }
 
-        /* ЗАГОЛОВОК */
+        /* ШАПКА */
         .header { 
-            padding: 10px 15px; background: #0f0f0f;
-            border-bottom: 1px solid #2a2a2a; 
-            display: flex; align-items: center; gap: 10px;
+            padding: 15px; background: #0f0f0f; border-bottom: 1px solid #2a2a2a; 
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .logo { font-weight: bold; font-size: 18px; letter-spacing: -1px; }
-        .logo span { color: red; }
+        .logo { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; }
+        .logo span { color: #ff0000; }
+        .region { font-size: 12px; background: #333; padding: 4px 8px; border-radius: 4px; color: #aaa; }
 
         /* СПИСОК */
         .list { padding: 0; display: flex; flex-direction: column; }
         
         .card { 
-            margin-bottom: 20px; cursor: pointer;
-            background: #0f0f0f;
+            margin-bottom: 15px; cursor: pointer; background: #0f0f0f;
         }
         .card:active { background: #1f1f1f; }
         
         .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #222; }
         .thumb { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        .duration { 
-            position: absolute; bottom: 8px; right: 8px; 
-            background: rgba(0,0,0,0.8); color: white; 
-            padding: 2px 4px; border-radius: 4px; font-size: 11px; font-weight: bold;
-        }
         
-        .info { padding: 12px 12px 0 12px; display: flex; gap: 12px; }
-        .avatar { width: 36px; height: 36px; border-radius: 50%; background: #333; flex-shrink: 0; }
+        .info { padding: 12px 12px 5px 12px; display: flex; gap: 12px; }
         .details { flex-grow: 1; }
-        .title { font-size: 14px; font-weight: 500; margin-bottom: 4px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;}
-        .sub { color: #aaa; font-size: 12px; }
+        .title { font-size: 15px; font-weight: 500; margin-bottom: 6px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;}
+        .sub { color: #aaa; font-size: 13px; }
+        .stat { color: #888; font-size: 12px; margin-top: 4px; }
+
+        .error-box { padding: 20px; text-align: center; color: #ff5252; }
     </style>
 </head>
 <body>
@@ -66,57 +62,88 @@
             <div id="player-placeholder"></div>
         </div>
         <div class="control-bar">
-            <span style="font-size: 12px; color:#aaa;">YouTube Playback</span>
+            <span>Відтворення</span>
             <button class="btn-close" onclick="closePlayer()">Закрити</button>
         </div>
     </div>
 
     <div class="header">
-        <div class="logo">You<span>Tube</span> Test</div>
+        <div class="logo">Media<span>Hub</span></div>
+        <div class="region">UA Trends</div>
     </div>
 
-    <div id="list" class="list"></div>
+    <div id="list" class="list">
+        <div style="padding:20px; text-align:center; color:#666;">Завантаження трендів...</div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // ІМІТАЦІЯ СТРІЧКИ (Різні жанри, щоб було схоже на реальність)
-        // Всі ID - це реальні популярні відео з YouTube
-        const FEED = [
-            { id: "jfKfPfyJRdk", title: "lofi hip hop radio - beats to relax/study to", author: "Lofi Girl", views: "65K watching", time: "LIVE", img: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg" },
-            { id: "7ghhUEeZkiE", title: "Study Nature - Focus Music & Rain", author: "Nature Sound", views: "1.2M views", time: "3:00:00", img: "https://i.ytimg.com/vi/7ghhUEeZkiE/hqdefault.jpg" },
-            { id: "SqcY0GlETPk", title: "The 100 Year War | Avatar", author: "Avatar", views: "8.5M views", time: "20:15", img: "https://i.ytimg.com/vi/SqcY0GlETPk/hqdefault.jpg" },
-            { id: "LXb3EKWsInQ", title: "COSTA RICA IN 4K 60fps HDR (ULTRA HD)", author: "Jacob + Katie Schwarz", views: "120M views", time: "5:14", img: "https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg" },
-            { id: "M7FIvfx5J10", title: "Adele - Easy On Me (Official Video)", author: "Adele", views: "400M views", time: "5:31", img: "https://i.ytimg.com/vi/M7FIvfx5J10/hqdefault.jpg" },
-            { id: "aqz-KE-bpKQ", title: "Big Buck Bunny - Animation", author: "Blender Foundation", views: "12M views", time: "10:34", img: "https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg" },
-            { id: "hHW1oY26kxQ", title: "Ludovico Einaudi - Nuvole Bianche", author: "Ludovico Einaudi", views: "55M views", time: "6:00", img: "https://i.ytimg.com/vi/hHW1oY26kxQ/hqdefault.jpg" },
-            { id: "G1IbRujko-A", title: "Gundam Build Metaverse - Episode 1", author: "GundamInfo", views: "1.1M views", time: "24:00", img: "https://i.ytimg.com/vi/G1IbRujko-A/hqdefault.jpg" }
-        ];
+        // ==========================================
+        // ВСТАВТЕ ВАШ КЛЮЧ СЮДИ МІЖ ЛАПКАМИ ''
+        const API_KEY = ''; 
+        // ==========================================
 
         const listEl = document.getElementById('list');
         const playerArea = document.getElementById('player-area');
         const placeholder = document.getElementById('player-placeholder');
 
-        function init() {
+        async function init() {
+            // Перевірка наявності ключа
+            if (!API_KEY) {
+                listEl.innerHTML = `
+                    <div class="error-box">
+                        <h3>Потрібен ключ!</h3>
+                        <p>Щоб бачити реальні тренди, вставте Google API Key у рядок 87 (всередині index.html).</p>
+                    </div>`;
+                return;
+            }
+
+            try {
+                // Запит до YouTube: Найпопулярніші відео в Україні (regionCode=UA)
+                const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=UA&maxResults=20&key=${API_KEY}`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
+
+                renderList(data.items);
+
+            } catch (e) {
+                console.error(e);
+                listEl.innerHTML = `<div class="error-box">Помилка API: ${e.message}</div>`;
+            }
+        }
+
+        function renderList(videos) {
             listEl.innerHTML = '';
-            FEED.forEach(v => {
+            videos.forEach(item => {
                 const el = document.createElement('div');
                 el.className = 'card';
+                
+                const snip = item.snippet;
+                const stats = item.statistics;
+                
+                // Форматуємо цифри (наприклад 1.2M)
+                const views = formatViews(stats.viewCount);
+
                 el.innerHTML = `
                     <div class="thumb-wrapper">
-                        <img class="thumb" src="${v.img}">
-                        <div class="duration">${v.time}</div>
+                        <img class="thumb" src="${snip.thumbnails.medium.url}">
                     </div>
                     <div class="info">
-                        <div class="avatar"></div>
                         <div class="details">
-                            <div class="title">${v.title}</div>
-                            <div class="sub">${v.author} • ${v.views}</div>
+                            <div class="title">${snip.title}</div>
+                            <div class="sub">${snip.channelTitle}</div>
+                            <div class="stat">${views} переглядів</div>
                         </div>
                     </div>
                 `;
-                el.onclick = () => playVideo(v.id);
+                el.onclick = () => playVideo(item.id);
                 listEl.appendChild(el);
             });
         }
@@ -125,12 +152,9 @@
             playerArea.style.display = 'block';
             window.scrollTo(0,0);
             
-            // ОФІЦІЙНИЙ ПЛЕЄР
-            // autoplay=1: намагається запустити зразу
-            // playsinline=1: щоб не відкривалося на весь екран в iOS зразу
             placeholder.innerHTML = `
                 <iframe 
-                    src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&modestbranding=1" 
+                    src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&modestbranding=1&rel=0" 
                     frameborder="0" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                     allowfullscreen>
@@ -141,6 +165,13 @@
         function closePlayer() {
             placeholder.innerHTML = ''; 
             playerArea.style.display = 'none';
+        }
+
+        function formatViews(num) {
+            if (!num) return "0";
+            if (num > 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num > 1000) return (num / 1000).toFixed(0) + 'K';
+            return num;
         }
 
         init();

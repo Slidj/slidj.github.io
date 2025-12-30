@@ -4,10 +4,43 @@ import { fetchMovieDetails, fetchSimilar } from './api.js';
 import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
-// 🔥 ДОДАВ ІМПОРТ ФУНКЦІЇ ДЛЯ ТАЙМЕРА
 import { processWatchHeartbeat } from './firebase-logic.js'; 
 
 let playerIdleTimer = null;
+
+// 🔥 СЛУХАЧ ПОДІЙ ВІД ПЛЕЄРА (PAUSE/PLAY)
+window.onPlayerMessage = (event) => {
+    try {
+        // Багато плеєрів надсилають дані у форматі JSON або об'єкта
+        let data = event.data;
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch(e) {}
+        }
+
+        // Перевіряємо події (стандартні для Alloha/Collaps/Videocdn)
+        // Вони можуть надсилати 'pause', 'play', або об'єкт { event: 'pause' }
+        const eventName = data.event || data;
+
+        if (eventName === 'pause') {
+            console.log('Player paused: Stopping timer');
+            if (state.playerHeartbeatTimer) {
+                clearInterval(state.playerHeartbeatTimer);
+                state.playerHeartbeatTimer = null;
+            }
+        } 
+        else if (eventName === 'play' || eventName === 'playing') {
+            console.log('Player playing: Starting timer');
+            // Перезапускаємо таймер, якщо він не активний
+            if (!state.playerHeartbeatTimer) {
+                state.playerHeartbeatTimer = setInterval(() => {
+                    processWatchHeartbeat(1); 
+                }, 60000); 
+            }
+        }
+    } catch (e) {
+        // Ігноруємо помилки парсингу від чужих фреймів
+    }
+};
 
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
@@ -164,10 +197,13 @@ export function openPremiumPlayer(tmdbId, btn) {
     if (window.Telegram?.WebApp?.expand) window.Telegram.WebApp.expand();
     f.src = url; p.style.display = 'flex';
     
-    // 🔥 СТАРТУЄМО ТАЙМЕР СЕРЦЕБИТТЯ (РАЗ НА 60 СЕКУНД)
+    // 🔥 ПІДПИСУЄМОСЬ НА ПОВІДОМЛЕННЯ ВІД ПЛЕЄРА (PAUSE/PLAY)
+    window.addEventListener('message', window.onPlayerMessage);
+
+    // СТАРТУЄМО ТАЙМЕР ЗА ЗАМОВЧУВАННЯМ (ЯКЩО ПЛЕЄР МОВЧИТЬ, ТО РАХУЄМО)
     if (state.playerHeartbeatTimer) clearInterval(state.playerHeartbeatTimer);
     state.playerHeartbeatTimer = setInterval(() => {
-        processWatchHeartbeat(1); // Додаємо 1 хвилину
+        processWatchHeartbeat(1); 
     }, 60000); 
 
     if (closeBtn) { closeBtn.classList.remove('faded'); if (playerIdleTimer) clearTimeout(playerIdleTimer); playerIdleTimer = setTimeout(() => { closeBtn.classList.add('faded'); }, 3500); }
@@ -177,7 +213,8 @@ export function closePlayer() {
     const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'), closeBtn = document.querySelector('.close-player-btn');
     p.style.display = 'none'; f.src = ''; 
     
-    // 🔥 ЗУПИНЯЄМО ТАЙМЕР
+    // 🔥 ВІДПИСУЄМОСЬ ТА ЗУПИНЯЄМО ТАЙМЕР
+    window.removeEventListener('message', window.onPlayerMessage);
     if (state.playerHeartbeatTimer) {
         clearInterval(state.playerHeartbeatTimer);
         state.playerHeartbeatTimer = null;

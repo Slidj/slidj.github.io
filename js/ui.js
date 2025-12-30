@@ -4,41 +4,35 @@ import { fetchMovieDetails, fetchSimilar } from './api.js';
 import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
+// 🔥 ІМПОРТ ФУНКЦІЇ СЕРЦЕБИТТЯ
 import { processWatchHeartbeat } from './firebase-logic.js'; 
 
 let playerIdleTimer = null;
 
-// 🔥 ФУНКЦІЯ ДЛЯ ВІДСТЕЖЕННЯ СТАНУ ПЛЕЄРА (PAUSE/PLAY)
-window.onPlayerMessage = (event) => {
-    try {
-        let data = event.data;
-        if (typeof data === 'string') {
-            try { data = JSON.parse(data); } catch(e) {}
-        }
-
-        // Плеєри Alloha/Collaps надсилають події 'pause' або 'play'
-        const eventName = data.event || data;
-
-        if (eventName === 'pause') {
-            // 🛑 ПАУЗА: ЗУПИНЯЄМО ТАЙМЕР
+// 🔥 ЛОГІКА "РОЗУМНОГО" ТАЙМЕРА (ЗГОРТАННЯ ДОДАТКУ)
+// Якщо користувач згорнув Телеграм або перейшов в іншу вкладку — зупиняємо таймер
+document.addEventListener("visibilitychange", () => {
+    const playerModal = document.getElementById('player_modal');
+    // Якщо плеєр відкритий...
+    if (playerModal && playerModal.style.display === 'flex') {
+        if (document.hidden) {
+            // ...і додаток згорнули -> ПАУЗА ТАЙМЕРА
             if (state.playerHeartbeatTimer) {
                 clearInterval(state.playerHeartbeatTimer);
                 state.playerHeartbeatTimer = null;
-                console.log("Timer paused (Pause clicked)");
+                console.log("App backgrounded: Timer paused");
             }
-        } 
-        else if (eventName === 'play' || eventName === 'playing' || eventName === 'timeupdate') {
-            // ▶️ ВІДТВОРЕННЯ: ЗАПУСКАЄМО ТАЙМЕР (ЯКЩО ЩЕ НЕ ЙДЕ)
-            // Додав 'timeupdate', бо деякі плеєри спамлять цим, коли відео йде
+        } else {
+            // ...і додаток розгорнули -> ВІДНОВЛЮЄМО ТАЙМЕР
             if (!state.playerHeartbeatTimer) {
                 state.playerHeartbeatTimer = setInterval(() => {
                     processWatchHeartbeat(1); 
-                }, 60000); 
-                console.log("Timer started (Playing detected)");
+                }, 60000);
+                console.log("App foregrounded: Timer resumed");
             }
         }
-    } catch (e) { }
-};
+    }
+});
 
 window.openDonateMenu = () => { window.toggleSideMenu(); playSound('Pop.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'flex'; };
 window.closeDonateMenu = () => { playSound('Bubble.wav'); const m = document.getElementById('donate_modal'); if (m) m.style.display = 'none'; };
@@ -195,8 +189,12 @@ export function openPremiumPlayer(tmdbId, btn) {
     if (window.Telegram?.WebApp?.expand) window.Telegram.WebApp.expand();
     f.src = url; p.style.display = 'flex';
     
-    // 🔥 ТЕПЕР ТАЙМЕР ЗАПУСКАЄТЬСЯ ТІЛЬКИ ПРИ "PLAY", ТУТ МИ ЛИШЕ СЛУХАЄМО
-    window.addEventListener('message', window.onPlayerMessage);
+    // 🔥 СТАРТУЄМО ТАЙМЕР ВІДРАЗУ, ЯК ВІДКРИЛИ ВІКНО
+    // (Раз на 60 секунд)
+    if (state.playerHeartbeatTimer) clearInterval(state.playerHeartbeatTimer);
+    state.playerHeartbeatTimer = setInterval(() => {
+        processWatchHeartbeat(1); // +1 хвилина
+    }, 60000); 
 
     if (closeBtn) { closeBtn.classList.remove('faded'); if (playerIdleTimer) clearTimeout(playerIdleTimer); playerIdleTimer = setTimeout(() => { closeBtn.classList.add('faded'); }, 3500); }
 }
@@ -205,8 +203,7 @@ export function closePlayer() {
     const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'), closeBtn = document.querySelector('.close-player-btn');
     p.style.display = 'none'; f.src = ''; 
     
-    // 🔥 ВІДПИСУЄМОСЬ ТА ЗУПИНЯЄМО ТАЙМЕР
-    window.removeEventListener('message', window.onPlayerMessage);
+    // 🔥 ЗУПИНЯЄМО ТАЙМЕР ПРИ ЗАКРИТТІ
     if (state.playerHeartbeatTimer) {
         clearInterval(state.playerHeartbeatTimer);
         state.playerHeartbeatTimer = null;

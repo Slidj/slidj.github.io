@@ -8,44 +8,51 @@
     <style>
         body { margin: 0; background-color: #0f0f0f; color: #fff; font-family: -apple-system, sans-serif; }
         
-        /* --- 1. ПЛЕЄР (КОНТЕЙНЕР) --- */
+        /* --- ПЛЕЄР --- */
         #player-area { 
             display: none; 
             position: sticky; top: 0; background: #000; z-index: 100; 
             width: 100%; border-bottom: 1px solid #333;
         }
 
-        /* Місце для YouTube Iframe */
         .video-wrapper {
-            position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000;
+            position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; overflow: hidden;
         }
         
-        /* Сам Iframe (робимо його неактивним для кліків, щоб керувати своїми кнопками) */
+        /* Iframe з відео */
         .video-wrapper iframe {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
-            pointer-events: none; /* ВАЖЛИВО: Вимикає стандартні кліки по відео */
+            pointer-events: none; /* Блокуємо кліки по самому ютубу */
         }
 
-        /* --- 2. НАШІ КАСТОМНІ КНОПКИ --- */
+        /* --- НОВЕ: ТІНЬОВА МАСКА (Vignette) --- */
+        /* Це приховує логотип та заголовки YouTube при паузі */
+        .shadow-mask {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Пропускає кліки крізь себе */
+            /* Градієнт: Темний зверху і знизу, прозорий посередині */
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(0,0,0,0.9) 100%);
+            z-index: 10; /* Лежить над відео, але під кнопками */
+        }
+
+        /* --- КАСТОМНІ КНОПКИ --- */
         .custom-controls {
             padding: 10px 15px;
             background: #1e1e1e;
             display: flex; flex-direction: column; gap: 10px;
+            position: relative; z-index: 20; /* Кнопки найвище */
         }
 
-        /* Смужка прогресу */
         .progress-bar {
             width: 100%; height: 4px; background: #444; border-radius: 2px;
-            position: relative; cursor: pointer;
-            padding: 5px 0; /* Збільшуємо зону кліку */
+            position: relative; cursor: pointer; padding: 10px 0; /* Збільшена зона кліку */
         }
         .progress-fill {
             height: 4px; background: #ff0000; width: 0%; border-radius: 2px;
-            position: absolute; top: 5px; left: 0;
+            position: absolute; top: 10px; left: 0;
             transition: width 0.1s linear;
         }
 
-        /* Рядок кнопок */
         .controls-row {
             display: flex; justify-content: space-between; align-items: center;
         }
@@ -53,11 +60,12 @@
         .left-controls { display: flex; align-items: center; gap: 15px; }
 
         .btn-play {
-            width: 36px; height: 36px; border-radius: 50%; border: none;
-            background: #fff; color: #000; font-size: 16px; 
+            width: 40px; height: 40px; border-radius: 50%; border: none;
+            background: #fff; color: #000; font-size: 18px; 
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
+            cursor: pointer; transition: transform 0.1s;
         }
+        .btn-play:active { transform: scale(0.95); }
         
         .time-text { font-size: 12px; color: #aaa; font-variant-numeric: tabular-nums; }
 
@@ -66,7 +74,7 @@
             padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;
         }
 
-        /* --- 3. ШАПКА ТА СПИСОК --- */
+        /* --- СПИСОК --- */
         .header { 
             padding: 15px; background: #0f0f0f; border-bottom: 1px solid #2a2a2a; 
             display: flex; align-items: center; justify-content: space-between;
@@ -76,13 +84,10 @@
         .region { font-size: 12px; background: #333; padding: 4px 8px; border-radius: 4px; color: #aaa; }
 
         .list { padding: 0; display: flex; flex-direction: column; }
-        
         .card { margin-bottom: 15px; cursor: pointer; background: #0f0f0f; }
         .card:active { background: #1f1f1f; }
-        
         .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #222; }
         .thumb { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        
         .info { padding: 12px 12px 5px 12px; display: flex; gap: 12px; }
         .details { flex-grow: 1; }
         .title { font-size: 15px; font-weight: 500; margin-bottom: 6px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;}
@@ -96,6 +101,8 @@
     <div id="player-area">
         <div class="video-wrapper">
             <div id="yt-placeholder"></div>
+            
+            <div class="shadow-mask"></div>
         </div>
         
         <div class="custom-controls">
@@ -125,11 +132,11 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.enableClosingConfirmation(); // Запитувати підтвердження перед закриттям вікна
 
         // ВАШ КЛЮЧ
         const API_KEY = 'AIzaSyDRPOH3nk1h-pEdGaPmWG9r0hwgzKcgt7A';
 
-        // Змінні
         const listEl = document.getElementById('list');
         const playerArea = document.getElementById('player-area');
         const btnPlay = document.getElementById('btn-play');
@@ -137,31 +144,28 @@
         const progressFill = document.getElementById('progress-fill');
         const timeText = document.getElementById('time-text');
 
-        let player; // Об'єкт плеєра
-        let updateInterval; // Таймер для смужки
+        let player;
+        let updateInterval;
 
-        // 1. ПІДКЛЮЧАЄМО YOUTUBE API
+        // 1. YouTube API
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         function onYouTubeIframeAPIReady() {
-            console.log("YouTube API Ready");
+            console.log("API Ready");
         }
 
-        // 2. ОТРИМАННЯ ТРЕНДІВ
+        // 2. Отримання відео
         async function init() {
             try {
                 const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=UA&maxResults=20&key=${API_KEY}`;
                 const res = await fetch(url);
                 const data = await res.json();
-
                 if (data.error) throw new Error(data.error.message);
                 renderList(data.items);
-
             } catch (e) {
-                console.error(e);
                 listEl.innerHTML = `<div class="error-box">Помилка: ${e.message}</div>`;
             }
         }
@@ -191,7 +195,7 @@
             });
         }
 
-        // 3. ЛОГІКА ПЛЕЄРА
+        // 3. Логіка плеєра
         function loadVideo(id) {
             playerArea.style.display = 'block';
             window.scrollTo(0,0);
@@ -205,12 +209,12 @@
                     videoId: id,
                     playerVars: {
                         'playsinline': 1,
-                        'controls': 0,        // ВИМИКАЄМО РІДНІ КНОПКИ
-                        'disablekb': 1,       // Вимикаємо клавіатуру
-                        'fs': 0,              // Без кнопки фулскріну
-                        'rel': 0,             // Без рекомендацій в кінці
-                        'modestbranding': 1,  // Мінімальний логотип
-                        'iv_load_policy': 3   // Без анотацій
+                        'controls': 0, 
+                        'disablekb': 1, 
+                        'fs': 0, 
+                        'rel': 0, 
+                        'modestbranding': 1,
+                        'iv_load_policy': 3
                     },
                     events: {
                         'onReady': onPlayerReady,
@@ -226,84 +230,64 @@
         }
 
         function onPlayerStateChange(event) {
-            // 1 = Playing, 2 = Paused
             if (event.data == YT.PlayerState.PLAYING) {
-                btnPlay.innerText = "⏸"; // Пауза
+                btnPlay.innerText = "⏸";
                 startTimer();
             } else {
-                btnPlay.innerText = "▶"; // Плей
+                btnPlay.innerText = "▶";
                 stopTimer();
             }
         }
 
-        // Клік по кнопці Play/Pause
         btnPlay.onclick = () => {
             if (!player) return;
             const state = player.getPlayerState();
-            if (state === 1) { // Грає
-                player.pauseVideo();
-            } else {
-                player.playVideo();
-            }
+            if (state === 1) player.pauseVideo();
+            else player.playVideo();
         };
 
-        // Клік по смужці (перемотка)
         progressBar.onclick = (e) => {
             if (!player) return;
             const rect = progressBar.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const width = rect.width;
-            const percent = clickX / width;
-            
-            const duration = player.getDuration();
-            player.seekTo(duration * percent, true);
+            const percent = (e.clientX - rect.left) / rect.width;
+            player.seekTo(player.getDuration() * percent, true);
         };
 
-        // Оновлення таймера
         function startTimer() {
             stopTimer();
             updateInterval = setInterval(() => {
                 if (!player || !player.getCurrentTime) return;
                 const current = player.getCurrentTime();
                 const total = player.getDuration();
-                
                 if (total > 0) {
-                    const percent = (current / total) * 100;
-                    progressFill.style.width = percent + '%';
+                    progressFill.style.width = (current / total * 100) + '%';
                     timeText.innerText = formatTime(current) + " / " + formatTime(total);
                 }
             }, 500);
         }
 
-        function stopTimer() {
-            clearInterval(updateInterval);
-        }
+        function stopTimer() { clearInterval(updateInterval); }
 
         function closePlayer() {
-            if (player) {
-                player.stopVideo();
-            }
+            if (player) player.stopVideo();
             playerArea.style.display = 'none';
             stopTimer();
         }
 
-        // Допоміжні функції
-        function formatViews(num) {
-            if (!num) return "0";
-            if (num > 1000000) return (num / 1000000).toFixed(1) + 'M';
-            if (num > 1000) return (num / 1000).toFixed(0) + 'K';
-            return num;
+        function formatViews(n) {
+            if (!n) return "0";
+            if (n > 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n > 1000) return (n / 1000).toFixed(0) + 'K';
+            return n;
         }
 
         function formatTime(s) {
-            const min = Math.floor(s / 60);
+            const m = Math.floor(s / 60);
             const sec = Math.floor(s % 60);
-            return min + ":" + (sec < 10 ? '0' : '') + sec;
+            return m + ":" + (sec < 10 ? '0' : '') + sec;
         }
 
-        // Старт
         init();
-
     </script>
 </body>
 </html>

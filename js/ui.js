@@ -4,6 +4,8 @@ import { fetchMovieDetails, fetchSimilar } from './api.js';
 import { PLAYER_BASE_URL, BOT_USERNAME } from './config.js';
 import { t } from './i18n.js';
 import { playSound } from './sounds.js';
+// 🔥 ДОДАВ ІМПОРТ ФУНКЦІЇ ДЛЯ ТАЙМЕРА
+import { processWatchHeartbeat } from './firebase-logic.js'; 
 
 let playerIdleTimer = null;
 
@@ -161,12 +163,26 @@ export function openPremiumPlayer(tmdbId, btn) {
     if (window.Telegram?.WebApp?.requestFullscreen) window.Telegram.WebApp.requestFullscreen();
     if (window.Telegram?.WebApp?.expand) window.Telegram.WebApp.expand();
     f.src = url; p.style.display = 'flex';
+    
+    // 🔥 СТАРТУЄМО ТАЙМЕР СЕРЦЕБИТТЯ (РАЗ НА 60 СЕКУНД)
+    if (state.playerHeartbeatTimer) clearInterval(state.playerHeartbeatTimer);
+    state.playerHeartbeatTimer = setInterval(() => {
+        processWatchHeartbeat(1); // Додаємо 1 хвилину
+    }, 60000); 
+
     if (closeBtn) { closeBtn.classList.remove('faded'); if (playerIdleTimer) clearTimeout(playerIdleTimer); playerIdleTimer = setTimeout(() => { closeBtn.classList.add('faded'); }, 3500); }
 }
 
 export function closePlayer() {
     const p = document.getElementById('player_modal'), f = document.getElementById('video_frame'), closeBtn = document.querySelector('.close-player-btn');
     p.style.display = 'none'; f.src = ''; 
+    
+    // 🔥 ЗУПИНЯЄМО ТАЙМЕР
+    if (state.playerHeartbeatTimer) {
+        clearInterval(state.playerHeartbeatTimer);
+        state.playerHeartbeatTimer = null;
+    }
+
     if (playerIdleTimer) clearTimeout(playerIdleTimer); if (closeBtn) closeBtn.classList.remove('faded');
     if (window.Telegram?.WebApp?.requestFullscreen) window.Telegram.WebApp.requestFullscreen();
     if (window.Telegram?.WebApp?.expand) window.Telegram.WebApp.expand();

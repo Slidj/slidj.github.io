@@ -15,6 +15,15 @@
     transition: opacity 0.8s ease-out, visibility 0.8s;
 }
 
+/* Обгортка, щоб вирівняти лого і лінію вертикально */
+.intro-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
 .netflix-title-splash {
     margin: 0;
     padding: 0;
@@ -27,13 +36,63 @@
     line-height: 1.2;
     max-width: 90%;
     text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
-    animation: gentlePulse 2.5s ease-in-out infinite;
+    
+    /* 🔥 СТАТИЧНИЙ ЛОГОТИП (Анімацію прибрано) */
     transform: scale(1);
-    opacity: 0.95;
+    opacity: 1;
 }
 
-@keyframes gentlePulse {
-    0% { transform: scale(1); opacity: 0.95; text-shadow: 2px 2px 15px rgba(0,0,0,0.8); }
-    50% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 25px rgba(229, 9, 20, 0.4); }
-    100% { transform: scale(1); opacity: 0.95; text-shadow: 2px 2px 15px rgba(0,0,0,0.8); }
+/* 🔥 ТРЕК ДЛЯ СКАНЕРА */
+.cylon-track {
+    width: 50%; /* Ширина лінії відносно екрану */
+    max-width: 250px;
+    height: 2px;
+    background: rgba(229, 9, 20, 0.2); /* Тьмяний червоний слід */
+    margin-top: 20px; /* Відступ від логотипу */
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* 🔥 САМЕ ОКО (Бігаюча лінія) */
+.cylon-eye {
+    width: 30%; /* Довжина "ока" */
+    height: 100%;
+    
+    /* Градієнт: прозорий -> яскраво червоний -> прозорий */
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(229, 9, 20, 0.5) 20%, 
+        #ff4d4d 50%, 
+        rgba(229, 9, 20, 0.5) 80%, 
+        transparent 100%
+    );
+    
+    position: absolute;
+    top: 0;
+    left: 0;
+    
+    /* Світіння */
+    filter: drop-shadow(0 0 4px #E50914);
+    
+    /* Анімація руху */
+    animation: cylonMove 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes cylonMove {
+    0% {
+        left: -30%; /* Ховаємо за лівим краєм */
+        opacity: 0.5;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        left: 100%; /* Ховаємо за правим краєм */
+        opacity: 0.5;
+    }
 }

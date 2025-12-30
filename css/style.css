@@ -168,3 +168,92 @@ body.search-mode .netflix-header {
         gap: 12px !important;
     }
 }
+
+/* 🔥 СВЯТКОВИЙ ШАР (OVERLAY) */
+#holiday_decor_layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Пропускає кліки крізь себе */
+    z-index: 99; /* Поверх контенту, але під модалками */
+    overflow: hidden;
+    display: none; /* За замовчуванням вимкнено */
+}
+
+/* ❄️ РЕЖИМ: ЗИМОВА ГІРЛЯНДА */
+.garland-rope {
+    width: 100%;
+    height: 60px; /* Висота звисання */
+    display: flex;
+    justify-content: space-around;
+    padding-top: 0px;
+    background: transparent;
+    position: absolute;
+    top: -5px;
+}
+
+.garland-bulb {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ccc;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+    animation: flash 2s infinite alternate;
+}
+
+.garland-bulb::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: 4px;
+    width: 6px;
+    height: 10px;
+    background: #222;
+    border-radius: 2px;
+}
+
+/* Кольори лампочок */
+.garland-bulb:nth-child(4n+1) { background: #ff3b30; animation-duration: 1.5s; box-shadow: 0 5px 20px rgba(255, 59, 48, 1); } /* Червоний */
+.garland-bulb:nth-child(4n+2) { background: #ffcc00; animation-duration: 2.2s; animation-delay: 0.5s; box-shadow: 0 5px 20px rgba(255, 204, 0, 1); } /* Золотий */
+.garland-bulb:nth-child(4n+3) { background: #4cd964; animation-duration: 1.8s; animation-delay: 1.2s; box-shadow: 0 5px 20px rgba(76, 217, 100, 1); } /* Зелений */
+.garland-bulb:nth-child(4n+4) { background: #007aff; animation-duration: 2.5s; animation-delay: 0.2s; box-shadow: 0 5px 20px rgba(0, 122, 255, 1); } /* Синій */
+
+@keyframes flash {
+    0%, 100% { opacity: 1; transform: scale(1); filter: brightness(1.5); }
+    50% { opacity: 0.4; transform: scale(0.9); filter: brightness(0.8); }
+}
+
+/* 🎉 РЕЖИМ: УНІВЕРСАЛЬНИЙ (ЗОЛОТІ ІСКРИ) */
+.universal-decor {
+    width: 100%;
+    height: 100%;
+    /* Градієнтна рамка по краях */
+    background: radial-gradient(circle, transparent 60%, rgba(255, 215, 0, 0.15) 100%);
+    position: relative;
+}
+/* Можна додати частинки */
+.universal-decor::after {
+    content: "✨";
+    position: absolute;
+    top: 20px; right: 20px;
+    font-size: 24px;
+    opacity: 0.5;
+    animation: floatSparkle 3s infinite ease-in-out;
+}
+.universal-decor::before {
+    content: "✨";
+    position: absolute;
+    top: 20px; left: 20px;
+    font-size: 24px;
+    opacity: 0.5;
+    animation: floatSparkle 4s infinite ease-in-out reverse;
+}
+
+@keyframes floatSparkle {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+    50% { transform: translateY(-10px) rotate(20deg); opacity: 0.8; }
+    100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+}

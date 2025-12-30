@@ -8,7 +8,7 @@
     <style>
         body { margin: 0; background-color: #121212; color: #fff; font-family: -apple-system, sans-serif; }
         
-        /* ПЛЕЄР (IFRAME) */
+        /* ПЛЕЄР */
         #player-area { 
             display: none; 
             position: sticky; 
@@ -16,14 +16,13 @@
             background: #000; 
             z-index: 100; 
             width: 100%;
-            padding-bottom: 5px;
             border-bottom: 2px solid #333;
         }
         
         .iframe-container {
             position: relative;
             width: 100%;
-            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            padding-bottom: 56.25%; /* 16:9 */
             height: 0;
         }
         
@@ -36,15 +35,14 @@
             border: 0;
         }
 
-        .control-bar { padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; background: #1f1f1f; }
+        .control-bar { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: #1f1f1f; }
         .btn-close { 
             background: #d32f2f; color: white; border: none; 
-            padding: 6px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;
+            padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;
         }
 
         /* СПИСОК */
-        .header { padding: 15px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #333; display: flex; justify-content: space-between;}
-        .status-dot { width: 10px; height: 10px; background: #4caf50; border-radius: 50%; display: inline-block; }
+        .header { padding: 15px; font-size: 20px; font-weight: bold; border-bottom: 1px solid #333; background: #121212;}
         
         .list { padding: 10px; display: flex; flex-direction: column; gap: 15px; }
         
@@ -53,14 +51,20 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer;
             transition: transform 0.1s;
         }
-        .card:active { transform: scale(0.98); }
+        .card:active { transform: scale(0.98); background: #333; }
         
-        .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #333; }
+        .thumb-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; }
         .thumb { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .duration { 
+            position: absolute; bottom: 8px; right: 8px; 
+            background: rgba(0,0,0,0.8); color: white; 
+            padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold;
+        }
         
         .info { padding: 12px; }
-        .title { font-size: 15px; font-weight: 600; margin-bottom: 5px; line-height: 1.3; }
-        .sub { color: #aaa; font-size: 13px; }
+        .title { font-size: 16px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+        .sub { color: #aaa; font-size: 13px; display: flex; align-items: center; gap: 5px;}
+        .avatar { width: 20px; height: 20px; border-radius: 50%; background: #555; }
     </style>
 </head>
 <body>
@@ -70,101 +74,105 @@
             <div id="player-placeholder"></div>
         </div>
         <div class="control-bar">
-            <span>YouTube Player</span>
-            <button class="btn-close" onclick="closePlayer()">ЗАКРИТИ</button>
+            <span>Відтворення...</span>
+            <button class="btn-close" onclick="closePlayer()">Закрити</button>
         </div>
     </div>
 
-    <div class="header">
-        Media Hub <span class="status-dot"></span>
-    </div>
+    <div class="header">Media Hub</div>
 
-    <div id="list" class="list">
-        <div style="padding:20px; text-align:center; color:#666;">Завантаження списку...</div>
-    </div>
+    <div id="list" class="list"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Використовуємо стабільний Invidious API для списку (через проксі)
-        const PROXY = 'https://api.allorigins.win/raw?url=';
-        // Цей сервер зазвичай віддає списки без проблем
-        const API_URL = 'https://inv.bp.projectsegfau.lt/api/v1/trending?region=UA';
+        // --- ВАШІ ВІДЕО (Можна додавати свої сюди) ---
+        const VIDEOS = [
+            {
+                id: "LXb3EKWsInQ",
+                title: "COSTA RICA IN 4K 60fps HDR (ULTRA HD)",
+                author: "Jacob + Katie Schwarz",
+                time: "5:14",
+                img: "https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg"
+            },
+            {
+                id: "jfKfPfyJRdk",
+                title: "lofi hip hop radio - beats to relax/study to",
+                author: "Lofi Girl",
+                time: "LIVE",
+                img: "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg"
+            },
+            {
+                id: "P1k500i7m40", 
+                title: "Cyberpunk 2077 Music - V",
+                author: "Music Lab",
+                time: "3:40",
+                img: "https://i.ytimg.com/vi/P1k500i7m40/hqdefault.jpg"
+            },
+            {
+                id: "9Auq9mYxFEE",
+                title: "Skyrim - The Dragonborn Comes",
+                author: "Malukah",
+                time: "4:24",
+                img: "https://i.ytimg.com/vi/4z9TdDCWN7g/hqdefault.jpg"
+            },
+            {
+                id: "G1IbRujko-A", 
+                title: "Gundam Build Metaverse - Episode 1",
+                author: "GundamInfo",
+                time: "12:00",
+                img: "https://i.ytimg.com/vi/G1IbRujko-A/hqdefault.jpg"
+            }
+        ];
 
         const listEl = document.getElementById('list');
         const playerArea = document.getElementById('player-area');
         const placeholder = document.getElementById('player-placeholder');
 
-        async function init() {
-            try {
-                // Запитуємо список
-                const res = await fetch(PROXY + encodeURIComponent(API_URL));
-                const data = await res.json();
-                
-                renderList(data);
-            } catch (e) {
-                console.error(e);
-                listEl.innerHTML = `<div style="padding:20px; text-align:center; color:orange;">
-                    Не вдалося отримати тренди.<br>
-                    <button onclick="location.reload()" style="margin-top:10px; padding:10px; background:#333; color:white; border:none; border-radius:5px;">Спробувати ще раз</button>
-                </div>`;
-            }
-        }
-
-        function renderList(videos) {
+        // Малюємо список
+        function init() {
             listEl.innerHTML = '';
-            videos.forEach(v => {
+            VIDEOS.forEach(v => {
                 const el = document.createElement('div');
                 el.className = 'card';
-                
-                // Invidious віддає videoId
-                let id = v.videoId;
-                // Картинка (беремо середню якість для швидкості)
-                let thumb = v.videoThumbnails ? v.videoThumbnails[0].url : `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-
                 el.innerHTML = `
                     <div class="thumb-wrapper">
-                        <img class="thumb" src="${thumb}" loading="lazy">
+                        <img class="thumb" src="${v.img}">
+                        <div class="duration">${v.time}</div>
                     </div>
                     <div class="info">
                         <div class="title">${v.title}</div>
-                        <div class="sub">${v.author} • ${formatTime(v.lengthSeconds)}</div>
+                        <div class="sub">
+                            <div class="avatar"></div> ${v.author}
+                        </div>
                     </div>
                 `;
-                
-                el.onclick = () => playVideo(id);
+                // При кліку запускаємо плеєр
+                el.onclick = () => playVideo(v.id);
                 listEl.appendChild(el);
             });
         }
 
+        // Запуск відео (Official YouTube Embed)
         function playVideo(id) {
             playerArea.style.display = 'block';
             window.scrollTo(0,0);
             
-            // Вставляємо офіційний Iframe
-            // autoplay=1 запускає відео
-            // modestbranding=1 прибирає частину логотипів
+            // Використовуємо офіційний плеєр - це найнадійніше
             placeholder.innerHTML = `
                 <iframe 
-                    src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&modestbranding=1&rel=0" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1" 
+                    title="YouTube video player" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                     allowfullscreen>
                 </iframe>
             `;
         }
 
         function closePlayer() {
-            placeholder.innerHTML = ''; // Видаляємо iframe, щоб зупинити звук
+            placeholder.innerHTML = ''; 
             playerArea.style.display = 'none';
-        }
-
-        function formatTime(seconds) {
-            if(!seconds) return "";
-            const m = Math.floor(seconds / 60);
-            const s = seconds % 60;
-            return `${m}:${s < 10 ? '0' : ''}${s}`;
         }
 
         init();

@@ -15,8 +15,11 @@ export const state = {
     savedItems: [],
     historyItems: [],
 
-    // 🔥 НОВЕ: Для пошуку та пагінації результатів
-    searchResults: [], // Тут лежить повний список знайденого (наприклад 100 фільмів)
-    searchPage: 0,     // Яку "сторінку" (порцію) ми зараз показуємо
-    searchTimeout: null
+    // Для пошуку
+    searchResults: [], 
+    searchPage: 0,     
+    searchTimeout: null,
+
+    // 🔥 НОВЕ: Таймер для нарахування хвилин перегляду
+    playerHeartbeatTimer: null
 };

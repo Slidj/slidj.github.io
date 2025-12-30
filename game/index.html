@@ -2,111 +2,198 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v40: Modular</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Telegram Tube</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    
-    <link rel="stylesheet" href="css/style.css?v=115">
+    <style>
+        /* --- 1. СТИЛІ (ДИЗАЙН) --- */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1c1c1e; /* Темний фон як у ТГ */
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Плеєр (спочатку прихований) */
+        #player-container {
+            display: none; /* Ховаємо, поки немає відео */
+            position: sticky;
+            top: 0;
+            background: #000;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            max-height: 40vh; /* Щоб не займало весь екран */
+            display: block;
+        }
+
+        .close-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        /* Список відео */
+        .video-list {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .video-card {
+            background-color: #2c2c2e;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .video-card:active {
+            transform: scale(0.98); /* Ефект натискання */
+        }
+
+        .thumb {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .info {
+            padding: 12px;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+
+        .author {
+            font-size: 13px;
+            color: #aaaaaa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+    </style>
 </head>
 <body>
 
-    <div class="scene-container" id="room-scene">
-        <div id="scene-overlay">
-            <div class="overlay-emoji" id="overlay-icon">⏳</div>
-            <div id="overlay-text">ДІЯ...</div>
-        </div>
-        <div id="visual-hero">🧍</div>
-        <button class="admin-toggle" onclick="toggleAdmin()" style="display:none;">⚙️</button>
+    <div id="player-container">
+        <video id="main-player" controls playsinline autoplay></video>
+        <button class="close-btn" onclick="closePlayer()">Закрити відео</button>
     </div>
 
-    <div class="ui">
-        <div class="widget-header">
-            <div>
-                <div class="money"><span id="money">0</span> $</div>
-                <div class="subtitle">Гаманець</div>
-            </div>
-            <div class="energy">⚡ <span id="energy">100</span>%</div>
-        </div>
-
-        <div id="tab-home" class="tab active">
-            <div class="section-title">МОЯ КІМНАТА</div>
-            <div id="home-grid" class="app-grid"></div>
-            <div id="empty-home-msg" class="empty-msg">Завантаження...</div>
-        </div>
-
-        <div id="tab-map" class="tab">
-            <div class="map-wrapper"></div>
-            <div style="text-align:center; color:#666; font-size:12px; margin-top:10px;">Тисни на будівлі</div>
-        </div>
-
-        <div id="tab-inv" class="tab">
-            <div class="section-title">РЮКЗАК</div>
-            <div id="inventory-grid" class="app-grid"></div>
-        </div>
-
-        <div id="tab-shop" class="tab">
-            <div style="display:flex; align-items:center; margin-bottom:15px;">
-                <button class="back-btn" onclick="switchTab('map', document.getElementById('nav-map'))">⬅ На мапу</button>
-                <div class="section-title" style="margin:0 0 0 15px;">СУПЕРМАРКЕТ</div>
-            </div>
-            <div id="shop-container" class="shop-list"></div>
-        </div>
+    <h2 style="padding-left: 10px;">Тренди (UA)</h2>
+    <div id="video-list" class="video-list">
+        <div class="loading">Завантаження відео...</div>
     </div>
 
-    <div class="nav">
-        <button class="nav-btn active" onclick="switchTab('home', this)">🏠</button>
-        <button class="nav-btn" id="nav-map" onclick="switchTab('map', this)">🗺️</button>
-        <button class="nav-btn" onclick="switchTab('inv', this)">🎒</button>
-    </div>
+    <script>
+        // Ініціалізація Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Розгортаємо на весь екран
+        
+        // API сервер (публічний Piped)
+        const API_BASE = 'https://pipedapi.kavin.rocks';
 
-    <div id="admin-panel" class="admin-panel">
-        <div class="admin-header">
-            <h3>Адмін Панель</h3>
-            <button onclick="toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;padding:10px;">✕</button>
-        </div>
-        <div class="admin-content">
-            <div id="admin-item-list" class="admin-list"></div>
-            <div id="admin-controls" style="margin-top:20px;">
-                <button class="admin-btn new" onclick="createNewItem()">➕ Створити Новий</button>
-            </div>
-            <div id="admin-editor" style="display:none; margin-top:20px;">
-                <h4 style="margin-bottom:15px; color:var(--accent)">Редагування</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div><label>ID:</label><input type="text" id="inp-id" class="admin-inp" disabled style="opacity:0.5"></div>
-                    <div><label>Тип:</label><select id="inp-type" class="admin-inp"><option value="device">Меблі</option><option value="food">Їжа</option></select></div>
-                </div>
-                <label>Назва:</label><input type="text" id="inp-name" class="admin-inp">
-                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
-                    <div><label>Іконка:</label><input type="text" id="inp-icon" class="admin-inp"></div>
-                    <div><label>Ціна ($):</label><input type="number" id="inp-price" class="admin-inp"></div>
-                </div>
-                <label>Опис:</label><input type="text" id="inp-desc" class="admin-inp">
-                <hr style="border: 1px solid #333; margin: 20px 0;">
-                <div style="font-size:14px; font-weight:bold; color:#fff; margin-bottom:15px;">Ефекти</div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div><label>⚡ Енергія:</label><input type="number" id="inp-energy" class="admin-inp"></div>
-                    <div><label>💰 Гроші:</label><input type="number" id="inp-money" class="admin-inp"></div>
-                    <div><label>💔 Знос:</label><input type="number" id="inp-hp" class="admin-inp"></div>
-                    <div><label>⏳ Час (с):</label><input type="number" id="inp-time" class="admin-inp"></div>
-                </div>
-                <div style="display:flex; gap:10px; margin-top:30px;">
-                    <button class="admin-btn save" onclick="saveAdminItem()">💾 Зберегти</button>
-                    <button class="admin-btn cancel" onclick="cancelEdit()">Відміна</button>
-                </div>
-                <button class="admin-btn reset" onclick="deleteItem()" style="margin-top:20px;">🗑 Видалити</button>
-            </div>
-        </div>
-    </div>
+        const videoListEl = document.getElementById('video-list');
+        const playerContainer = document.getElementById('player-container');
+        const player = document.getElementById('main-player');
 
-    <div id="action-sheet"><div id="sheet-content"></div></div>
+        // 1. Функція запуску (стартує при відкритті)
+        async function init() {
+            try {
+                // Отримуємо тренди України
+                const response = await fetch(`${API_BASE}/trending?region=UA`);
+                const videos = await response.json();
+                
+                renderVideos(videos);
+            } catch (error) {
+                videoListEl.innerHTML = `<div class="loading" style="color:red">Помилка: ${error.message}<br>Спробуйте оновити.</div>`;
+            }
+        }
 
-    <script src="js/core.js?v=45"></script>
-    <script src="js/view.js?v=65"></script>
-    <script src="js/logic.js?v=65"></script>
+        // 2. Функція малювання карток
+        function renderVideos(videos) {
+            videoListEl.innerHTML = ''; // Очистити "Завантаження..."
+
+            videos.forEach(video => {
+                // Створюємо HTML для однієї картки
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                // video.url виглядає як "/watch?v=ID" -> беремо тільки ID
+                const videoId = video.url.split('v=')[1];
+
+                card.innerHTML = `
+                    <img class="thumb" src="${video.thumbnail}" alt="${video.title}">
+                    <div class="info">
+                        <div class="title">${video.title}</div>
+                        <div class="author">${video.uploaderName}</div>
+                    </div>
+                `;
+
+                // При кліку - запускаємо відео
+                card.onclick = () => loadAndPlay(videoId);
+                videoListEl.appendChild(card);
+            });
+        }
+
+        // 3. Функція отримання прямого посилання (mp4) і старту
+        async function loadAndPlay(videoId) {
+            // Показуємо плеєр, але поки чорний екран
+            playerContainer.style.display = 'block';
+            window.scrollTo(0, 0); // Прокрутка вгору
+            
+            try {
+                // Запит деталей відео
+                const response = await fetch(`${API_BASE}/streams/${videoId}`);
+                const data = await response.json();
+
+                // Шукаємо потік mp4 (відео + звук)
+                const stream = data.videoStreams.find(s => s.format === 'MPEG-4' && s.videoOnly === false);
+
+                if (stream) {
+                    player.src = stream.url;
+                    player.play();
+                } else {
+                    alert("На жаль, прямий потік для цього відео не знайдено.");
+                    closePlayer();
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Не вдалося завантажити відео.");
+                closePlayer();
+            }
+        }
+
+        // 4. Закрити плеєр
+        function closePlayer() {
+            player.pause();
+            player.src = "";
+            playerContainer.style.display = 'none';
+        }
+
+        // Запускаємо все
+        init();
+
+    </script>
 </body>
 </html>

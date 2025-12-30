@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Hub</title>
+    <title>Media Hub (No Ads)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { margin: 0; background-color: #121212; color: #fff; font-family: -apple-system, sans-serif; }
@@ -24,6 +24,7 @@
             width: 100%;
             padding-bottom: 56.25%; /* 16:9 */
             height: 0;
+            background: #000;
         }
         
         .iframe-container iframe {
@@ -42,8 +43,9 @@
         }
 
         /* СПИСОК */
-        .header { padding: 15px; font-size: 20px; font-weight: bold; border-bottom: 1px solid #333; background: #121212;}
-        
+        .header { padding: 15px; font-size: 20px; font-weight: bold; border-bottom: 1px solid #333; background: #121212; display: flex; align-items: center; justify-content: space-between;}
+        .badge { background: #4caf50; color: black; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+
         .list { padding: 10px; display: flex; flex-direction: column; gap: 15px; }
         
         .card { 
@@ -74,12 +76,14 @@
             <div id="player-placeholder"></div>
         </div>
         <div class="control-bar">
-            <span>Відтворення...</span>
+            <span>Відтворення (Без реклами)</span>
             <button class="btn-close" onclick="closePlayer()">Закрити</button>
         </div>
     </div>
 
-    <div class="header">Media Hub</div>
+    <div class="header">
+        Media Hub <span class="badge">NO ADS</span>
+    </div>
 
     <div id="list" class="list"></div>
 
@@ -87,11 +91,12 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- ВАШІ ВІДЕО (Можна додавати свої сюди) ---
+        // --- СПИСОК ВІДЕО ---
+        // (Зараз список статичний, щоб точно працювало, пізніше підключимо API)
         const VIDEOS = [
             {
                 id: "LXb3EKWsInQ",
-                title: "COSTA RICA IN 4K 60fps HDR (ULTRA HD)",
+                title: "COSTA RICA IN 4K 60fps HDR",
                 author: "Jacob + Katie Schwarz",
                 time: "5:14",
                 img: "https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg"
@@ -111,18 +116,11 @@
                 img: "https://i.ytimg.com/vi/P1k500i7m40/hqdefault.jpg"
             },
             {
-                id: "9Auq9mYxFEE",
-                title: "Skyrim - The Dragonborn Comes",
-                author: "Malukah",
-                time: "4:24",
-                img: "https://i.ytimg.com/vi/4z9TdDCWN7g/hqdefault.jpg"
-            },
-            {
-                id: "G1IbRujko-A", 
-                title: "Gundam Build Metaverse - Episode 1",
-                author: "GundamInfo",
-                time: "12:00",
-                img: "https://i.ytimg.com/vi/G1IbRujko-A/hqdefault.jpg"
+                id: "aqz-KE-bpKQ",
+                title: "Big Buck Bunny",
+                author: "Blender",
+                time: "10:34",
+                img: "https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg"
             }
         ];
 
@@ -154,16 +152,16 @@
             });
         }
 
-        // Запуск відео (Official YouTube Embed)
+        // Запуск відео через Piped (Без реклами)
         function playVideo(id) {
             playerArea.style.display = 'block';
             window.scrollTo(0,0);
             
-            // Використовуємо офіційний плеєр - це найнадійніше
+            // Використовуємо Piped Iframe замість YouTube
+            // Це завантажить їхній плеєр без реклами
             placeholder.innerHTML = `
                 <iframe 
-                    src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1" 
-                    title="YouTube video player" 
+                    src="https://piped.video/embed/${id}?autoplay=1" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                     allowfullscreen>
                 </iframe>

@@ -3,110 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS v40: Modular</title>
-    
+    <title>Trading Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    
-    <link rel="stylesheet" href="css/style.css?v=115">
+    <style>
+        body {
+            background-color: #131722;
+            color: #d1d4dc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Щоб не скролилось */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Верхня панель: Баланс і Актив */
+        .header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e222d;
+            border-bottom: 1px solid #2a2e39;
+        }
+        .asset-info { font-weight: bold; font-size: 18px; color: #fff; }
+        .balance { font-size: 14px; color: #4caf50; }
+        .price-display { font-size: 20px; font-weight: bold; }
+        .price-up { color: #089981; }
+        .price-down { color: #f23645; }
+
+        /* Контейнер графіка */
+        #chart-container {
+            flex-grow: 1;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Нижня панель кнопок */
+        .controls {
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            background: #1e222d;
+            padding-bottom: 40px; /* Відступ для iPhone */
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            text-transform: uppercase;
+        }
+        .btn:active { opacity: 0.7; transform: scale(0.98); }
+        .btn-up { background-color: #089981; box-shadow: 0 4px 15px rgba(8, 153, 129, 0.4); }
+        .btn-down { background-color: #f23645; box-shadow: 0 4px 15px rgba(242, 54, 69, 0.4); }
+
+        /* Спливаюче повідомлення */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 50%; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 50%; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    </style>
 </head>
 <body>
 
-    <div class="scene-container" id="room-scene">
-        <div id="scene-overlay">
-            <div class="overlay-emoji" id="overlay-icon">⏳</div>
-            <div id="overlay-text">ДІЯ...</div>
+    <div class="header">
+        <div>
+            <div class="asset-info">BTC/USDT</div>
+            <div class="balance">Demo: $10,000</div>
         </div>
-        <div id="visual-hero">🧍</div>
-        <button class="admin-toggle" onclick="toggleAdmin()" style="display:none;">⚙️</button>
+        <div id="current-price" class="price-display">Connecting...</div>
     </div>
 
-    <div class="ui">
-        <div class="widget-header">
-            <div>
-                <div class="money"><span id="money">0</span> $</div>
-                <div class="subtitle">Гаманець</div>
-            </div>
-            <div class="energy">⚡ <span id="energy">100</span>%</div>
-        </div>
+    <div id="chart-container"></div>
 
-        <div id="tab-home" class="tab active">
-            <div class="section-title">МОЯ КІМНАТА</div>
-            <div id="home-grid" class="app-grid"></div>
-            <div id="empty-home-msg" class="empty-msg">Завантаження...</div>
-        </div>
-
-        <div id="tab-map" class="tab">
-            <div class="map-wrapper"></div>
-            <div style="text-align:center; color:#666; font-size:12px; margin-top:10px;">Тисни на будівлі</div>
-        </div>
-
-        <div id="tab-inv" class="tab">
-            <div class="section-title">РЮКЗАК</div>
-            <div id="inventory-grid" class="app-grid"></div>
-        </div>
-
-        <div id="tab-shop" class="tab">
-            <div style="display:flex; align-items:center; margin-bottom:15px;">
-                <button class="back-btn" onclick="switchTab('map', document.getElementById('nav-map'))">⬅ На мапу</button>
-                <div class="section-title" style="margin:0 0 0 15px;">СУПЕРМАРКЕТ</div>
-            </div>
-            <div id="shop-container" class="shop-list"></div>
-        </div>
+    <div class="controls">
+        <button class="btn btn-up" onclick="placeBet('UP')">UP 🟢</button>
+        <button class="btn btn-down" onclick="placeBet('DOWN')">DOWN 🔴</button>
     </div>
 
-    <div class="nav">
-        <button class="nav-btn active" onclick="switchTab('home', this)">🏠</button>
-        <button class="nav-btn" id="nav-map" onclick="switchTab('map', this)">🗺️</button>
-        <button class="nav-btn" onclick="switchTab('inv', this)">🎒</button>
-    </div>
+    <div id="toast">Bet Placed!</div>
 
-    <div id="admin-panel" class="admin-panel">
-        <div class="admin-header">
-            <h3>Адмін Панель</h3>
-            <button onclick="toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;padding:10px;">✕</button>
-        </div>
-        <div class="admin-content">
-            <div id="admin-item-list" class="admin-list"></div>
-            <div id="admin-controls" style="margin-top:20px;">
-                <button class="admin-btn new" onclick="createNewItem()">➕ Створити Новий</button>
-            </div>
-            <div id="admin-editor" style="display:none; margin-top:20px;">
-                <h4 style="margin-bottom:15px; color:var(--accent)">Редагування</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div><label>ID:</label><input type="text" id="inp-id" class="admin-inp" disabled style="opacity:0.5"></div>
-                    <div><label>Тип:</label><select id="inp-type" class="admin-inp"><option value="device">Меблі</option><option value="food">Їжа</option></select></div>
-                </div>
-                <label>Назва:</label><input type="text" id="inp-name" class="admin-inp">
-                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
-                    <div><label>Іконка:</label><input type="text" id="inp-icon" class="admin-inp"></div>
-                    <div><label>Ціна ($):</label><input type="number" id="inp-price" class="admin-inp"></div>
-                </div>
-                <label>Опис:</label><input type="text" id="inp-desc" class="admin-inp">
-                <hr style="border: 1px solid #333; margin: 20px 0;">
-                <div style="font-size:14px; font-weight:bold; color:#fff; margin-bottom:15px;">Ефекти</div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div><label>⚡ Енергія:</label><input type="number" id="inp-energy" class="admin-inp"></div>
-                    <div><label>💰 Гроші:</label><input type="number" id="inp-money" class="admin-inp"></div>
-                    <div><label>💔 Знос:</label><input type="number" id="inp-hp" class="admin-inp"></div>
-                    <div><label>⏳ Час (с):</label><input type="number" id="inp-time" class="admin-inp"></div>
-                </div>
-                <div style="display:flex; gap:10px; margin-top:30px;">
-                    <button class="admin-btn save" onclick="saveAdminItem()">💾 Зберегти</button>
-                    <button class="admin-btn cancel" onclick="cancelEdit()">Відміна</button>
-                </div>
-                <button class="admin-btn reset" onclick="deleteItem()" style="margin-top:20px;">🗑 Видалити</button>
-            </div>
-        </div>
-    </div>
+    <script>
+        // 1. Ініціалізація Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Розгорнути на весь екран
+        tg.MainButton.hide();
 
-    <div id="action-sheet"><div id="sheet-content"></div></div>
+        // 2. Налаштування графіка (Lightweight Charts)
+        const chartContainer = document.getElementById('chart-container');
+        const chart = LightweightCharts.createChart(chartContainer, {
+            layout: {
+                background: { type: 'solid', color: '#131722' },
+                textColor: '#d1d4dc',
+            },
+            grid: {
+                vertLines: { color: '#2a2e39' },
+                horzLines: { color: '#2a2e39' },
+            },
+            rightPriceScale: {
+                borderVisible: false,
+            },
+            timeScale: {
+                borderVisible: false,
+                timeVisible: true,
+                secondsVisible: true,
+            },
+            crosshair: {
+                vertLine: { labelVisible: false }, 
+            }
+        });
 
-    <script src="js/core.js?v=45"></script>
-    <script src="js/view.js?v=65"></script>
-    <script src="js/logic.js?v=65"></script>
+        // Створюємо Area Series (лінійний графік з заливкою, як в додатках)
+        const areaSeries = chart.addAreaSeries({
+            topColor: 'rgba(33, 150, 243, 0.56)',
+            bottomColor: 'rgba(33, 150, 243, 0.04)',
+            lineColor: 'rgba(33, 150, 243, 1)',
+            lineWidth: 2,
+        });
+
+        // Адаптивність розміру
+        window.addEventListener('resize', () => {
+            chart.resize(chartContainer.clientWidth, chartContainer.clientHeight);
+        });
+
+        // 3. Підключення до Binance WebSocket (API)
+        const binanceSocket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
+        const priceElement = document.getElementById('current-price');
+        let currentPrice = 0;
+
+        binanceSocket.onmessage = function(event) {
+            const message = JSON.parse(event.data);
+            const price = parseFloat(message.p); // p = price
+            const time = message.T / 1000; // T = timestamp ms
+
+            // Оновлюємо колір ціни (зелений/червоний)
+            if (price > currentPrice) {
+                priceElement.className = 'price-display price-up';
+            } else if (price < currentPrice) {
+                priceElement.className = 'price-display price-down';
+            }
+            currentPrice = price;
+            priceElement.innerText = price.toFixed(2);
+
+            // Оновлюємо графік
+            areaSeries.update({
+                time: time,
+                value: price
+            });
+        };
+
+        // 4. Логіка ставок (Імітація)
+        function placeBet(direction) {
+            // Вібрація (працює в Telegram App)
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+            const entryPrice = currentPrice;
+            showToast(`Ставка ${direction} прийнята по ${entryPrice}`);
+
+            // Тут пізніше буде відправка на сервер
+            // Поки що просто імітуємо результат через 3 секунди
+            setTimeout(() => {
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                alert(`Результат угоди: ${direction}\nЦіна входу: ${entryPrice}\nПоточна: ${currentPrice}`);
+            }, 3000);
+        }
+
+        function showToast(message) {
+            const x = document.getElementById("toast");
+            x.innerText = message;
+            x.className = "show";
+            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+        }
+    </script>
 </body>
 </html>

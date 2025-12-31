@@ -9,19 +9,22 @@
 
     <style>
         :root {
-            /* Глибока палітра */
-            --bg-gradient: radial-gradient(circle at center, #1b202e 0%, #0d0e12 100%);
-            --glass-bg: rgba(30, 34, 45, 0.7);
+            /* Градієнтний фон "Deep Space" */
+            --bg-gradient: radial-gradient(circle at 50% 10%, #1f2636 0%, #0d0e12 100%);
+            --glass-bg: rgba(20, 22, 28, 0.6);
             --glass-border: rgba(255, 255, 255, 0.08);
             --text-primary: #ffffff;
             --text-secondary: #8d95a8;
-            --accent-green: #0ecb81;
-            --accent-red: #f6465d;
-            --btn-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            
+            /* Яскраві кольори свічок */
+            --candle-up: #00f2a9;    /* Neon Green */
+            --candle-down: #ff3b30;  /* Neon Red */
+            
+            --btn-radius: 16px;
         }
 
         body {
-            background: var(--bg-gradient); /* Градієнт замість суцільного кольору */
+            background: var(--bg-gradient);
             color: var(--text-primary);
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, sans-serif;
             margin: 0;
@@ -33,140 +36,119 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* HEADER - Ефект Скла */
+        /* --- HEADER (ВИПРАВЛЕНО ВІДСТУП) --- */
         .header {
-            position: absolute; /* Хедер тепер накладається на графік */
+            position: absolute; 
             top: 0; left: 0; right: 0;
             padding: 0 16px;
-            padding-top: calc(10px + env(safe-area-inset-top)); /* Безпечна зона */
-            height: 70px; /* Трохи вище для зручності */
             
-            /* Glassmorphism */
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--glass-border);
+            /* РАДИКАЛЬНИЙ ВІДСТУП: 60px бази + системний відступ */
+            padding-top: calc(60px + env(safe-area-inset-top)); 
+            height: 80px; /* Висота самого хедера */
             
+            background: linear-gradient(to bottom, rgba(13,14,18,0.9) 0%, rgba(13,14,18,0) 100%);
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start; /* Притиснути елементи до верху контентної зони */
             z-index: 20;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            pointer-events: none; /* Щоб кліки проходили крізь прозорі зони */
         }
 
-        /* Профіль */
+        /* Блоки всередині хедера робимо активними для кліків */
+        .user-profile, .market-controls { pointer-events: auto; }
+
         .user-profile { display: flex; align-items: center; gap: 12px; }
         .user-avatar {
-            width: 40px; height: 40px; border-radius: 12px;
-            background: rgba(255,255,255,0.1); object-fit: cover;
+            width: 44px; height: 44px; border-radius: 12px;
+            background: rgba(255,255,255,0.05); object-fit: cover;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-        .user-info { display: flex; flex-direction: column; justify-content: center; }
-        .user-name { font-weight: 700; font-size: 15px; letter-spacing: 0.3px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-        .balance { font-size: 13px; color: #fab005; font-weight: 600; margin-top: 2px; }
+        .user-info { display: flex; flex-direction: column; }
+        .user-name { font-weight: 700; font-size: 16px; letter-spacing: 0.3px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .balance { font-size: 13px; color: #ffce00; font-weight: 600; margin-top: 2px; }
 
-        /* Правий блок */
         .market-controls { display: flex; flex-direction: column; align-items: flex-end; }
         
         .asset-wrapper {
             display: flex; align-items: center; gap: 8px;
-            background: rgba(255,255,255,0.08); /* Напівпрозора підкладка */
-            padding: 6px 12px; border-radius: 12px;
+            background: rgba(30,34,45, 0.8);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 8px 14px; border-radius: 14px;
             border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         #asset-select {
             background: transparent; color: white; border: none;
-            font-weight: 700; font-size: 14px; outline: none; appearance: none;
+            font-weight: 700; font-size: 15px; outline: none; appearance: none;
         }
-        .settings-icon { width: 18px; height: 18px; fill: var(--text-secondary); opacity: 0.8; }
+        .settings-icon { width: 20px; height: 20px; fill: var(--text-secondary); }
 
-        /* Ціна з пульсацією */
-        .price-container { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
-        .price { font-size: 17px; font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        .price-container { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .price { font-size: 19px; font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); }
         
-        /* Індикатор пульсації ("Жива" ціна) */
         .pulse-dot {
             width: 8px; height: 8px; border-radius: 50%;
-            background-color: var(--accent-green);
-            box-shadow: 0 0 0 rgba(14, 203, 129, 0.4);
+            background-color: var(--candle-up);
+            box-shadow: 0 0 0 rgba(0, 242, 169, 0.4);
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(14, 203, 129, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(14, 203, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(14, 203, 129, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(0, 242, 169, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(0, 242, 169, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 242, 169, 0); }
         }
 
         /* CHART */
         #chart-container { 
             flex-grow: 1; width: 100%; position: relative; 
-            /* Відступ зверху, щоб графік не ховався під скляним хедером */
-            margin-top: 80px; 
-            margin-bottom: 90px; /* Місце під кнопки */
+            margin-top: 0; /* Графік на весь екран */
         }
 
-        /* CONTROLS - Floating Glass Panel */
+        /* CONTROLS */
         .controls-wrapper {
             position: absolute; bottom: 0; left: 0; right: 0;
             padding: 20px 16px 40px 16px;
-            
-            /* Градієнтний перехід знизу */
-            background: linear-gradient(to top, #0d0e12 80%, transparent 100%);
+            background: linear-gradient(to top, #0d0e12 85%, transparent 100%);
             display: flex; gap: 16px;
             z-index: 20;
         }
 
         .btn {
-            flex: 1; height: 60px; border: none; border-radius: 16px;
-            font-size: 18px; font-weight: 800; color: white; cursor: pointer;
+            flex: 1; height: 64px; border: none; border-radius: 20px;
+            font-size: 20px; font-weight: 800; color: white; cursor: pointer;
             position: relative; overflow: hidden;
             display: flex; align-items: center; justify-content: center; gap: 10px;
             transition: all 0.1s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            
-            /* Ефект 3D кнопки */
-            box-shadow: 0 6px 0 rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3); 
-            border-top: 1px solid rgba(255,255,255,0.2); /* Блік зверху */
+            text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2);
         }
-        .btn:active { 
-            transform: translateY(4px); 
-            box-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 4px 10px rgba(0,0,0,0.3);
-        }
+        .btn:active { transform: scale(0.96); opacity: 0.9; }
         
-        .btn-up { 
-            background: linear-gradient(180deg, #0ecb81 0%, #0a8f5a 100%); 
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-        .btn-down { 
-            background: linear-gradient(180deg, #f6465d 0%, #b22c3e 100%);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
+        .btn-up { background: linear-gradient(145deg, #00f2a9 0%, #00b37d 100%); color: #003322; }
+        .btn-down { background: linear-gradient(145deg, #ff3b30 0%, #b8221a 100%); color: #3d0805; }
 
         /* MODALS */
         .modal {
             position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
-            background: rgba(30, 34, 45, 0.95);
-            backdrop-filter: blur(10px);
+            transform: translate(-50%, -50%) scale(0.9);
+            background: #1c1e26;
             padding: 24px; border-radius: 24px;
             width: 280px; text-align: center; opacity: 0; pointer-events: none;
-            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-            z-index: 100; border: 1px solid var(--glass-border);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
         }
         .modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
         
-        /* SLIDERS */
         .settings-row { margin-bottom: 24px; text-align: left; }
         .settings-label { color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; display: block; font-weight: 700; text-transform: uppercase; }
         
         input[type=range] { width: 100%; -webkit-appearance: none; background: transparent; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #2a2e39; border-radius: 3px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; background: #2a2e39; border-radius: 4px; }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
-            background: #fff; margin-top: -9px; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            background: #fff; margin-top: -8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
 
         .loader { border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid #fff; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
@@ -215,7 +197,7 @@
         </div>
         <div class="settings-row">
             <label class="settings-label">Масштаб (Zoom)</label>
-            <input type="range" id="zoom-slider" min="5" max="25" value="12" step="1">
+            <input type="range" id="zoom-slider" min="5" max="25" value="10" step="1">
         </div>
         <div class="settings-row">
             <label class="settings-label">Розмір шрифту</label>
@@ -235,42 +217,52 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.setHeaderColor('#1b202e'); // Колір під градієнт
+        // Встановлюємо чорний колір хедера Telegram, щоб зливався з фоном
+        tg.setHeaderColor('#0d0e12'); 
 
         // --- 1. CONFIG ---
         const CONFIG = {
-            up: '#0ecb81',
-            down: '#f6465d',
+            up: '#00f2a9',
+            down: '#ff3b30',
         };
 
         // --- 2. CHART SETUP ---
         const container = document.getElementById('chart-container');
         const chart = LightweightCharts.createChart(container, {
             layout: { 
-                background: { type: 'solid', color: 'transparent' }, // Прозорий фон графіка, щоб видно було градієнт body
+                background: { type: 'solid', color: 'transparent' }, 
                 textColor: '#8d95a8', 
                 fontSize: 13, 
                 fontFamily: "-apple-system, BlinkMacSystemFont, Roboto, sans-serif"
             },
             grid: { 
-                vertLines: { color: 'rgba(255,255,255,0.03)' }, 
-                horzLines: { color: 'rgba(255,255,255,0.03)' } 
+                vertLines: { visible: false }, 
+                horzLines: { color: 'rgba(255,255,255,0.04)', style: 1 } 
             },
-            rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.2 } }, // margins щоб свічки не прилипали до країв
-            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: false, barSpacing: 12 },
+            rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.35, bottom: 0.2 } },
+            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: false, barSpacing: 10 },
             crosshair: {
-                mode: 0, // Normal mode (дозволяє бачити лінію завжди)
+                mode: 1,
                 vertLine: { style: 2, color: 'rgba(255,255,255,0.2)', labelBackgroundColor: '#505668' },
                 horzLine: { style: 2, color: 'rgba(255,255,255,0.2)', labelBackgroundColor: '#505668' }
             }
         });
 
+        // --- 3D-VOLUME CANDLES CONFIGURATION ---
         let series = chart.addCandlestickSeries({
-            upColor: CONFIG.up, borderUpColor: CONFIG.up, wickUpColor: CONFIG.up,
-            downColor: CONFIG.down, borderDownColor: CONFIG.down, wickDownColor: CONFIG.down,
-            priceLineVisible: true, // ВАЖЛИВО: Лінія поточної ціни
+            // UP CANDLES (Зелені)
+            upColor: CONFIG.up,           // Тіло
+            borderUpColor: CONFIG.up,     // Рамка (така ж або темніша)
+            wickUpColor: '#ffffff',       // БІЛИЙ ХВІСТ (для видимості)
+            
+            // DOWN CANDLES (Червоні)
+            downColor: CONFIG.down,       // Тіло
+            borderDownColor: CONFIG.down, // Рамка
+            wickDownColor: '#ffb3b3',     // Світло-червоний хвіст
+            
+            priceLineVisible: true,
             priceLineWidth: 1,
-            priceLineStyle: 2, // Dotted
+            priceLineStyle: 2,
         });
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
@@ -314,7 +306,7 @@
                 
                 const color = !window.lastPrice || currentPrice >= window.lastPrice ? CONFIG.up : CONFIG.down;
                 priceLabel.style.color = color;
-                pulseDot.style.backgroundColor = color; // Колір крапки
+                pulseDot.style.backgroundColor = color;
                 
                 window.lastPrice = currentPrice;
                 const digits = currentPrice < 1 ? 5 : 2;
@@ -350,7 +342,7 @@
             const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;
 
             betLine = series.createPriceLine({
-                price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 0, // Solid line for bet
+                price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 0,
                 title: direction.toUpperCase(), axisLabelVisible: true
             });
 

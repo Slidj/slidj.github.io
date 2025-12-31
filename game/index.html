@@ -3,368 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex Ultimate Fixed</title>
+    <title>Life OS v40: Modular</title>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-
-    <style>
-        :root {
-            --bg-color: #0e0f14;
-            --text-primary: #ffffff;
-            --text-secondary: #858d9d;
-            --candle-up: #00ffbb;
-            --candle-down: #ff2d55;
-            --bet-gold: #ffcf00;
-            --glass-panel: rgba(20, 22, 30, 0.8);
-            --border-glass: rgba(255, 255, 255, 0.1);
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, sans-serif;
-            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-            user-select: none; -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* ГРАФІК НА ВЕСЬ ЕКРАН */
-        #chart-container { 
-            position: absolute; 
-            top: 0; left: 0; right: 0; bottom: 0; 
-            z-index: 1; 
-        }
-
-        /* HEADER - ВИПРАВЛЕНО ВІДСТУП (90px) */
-        .header {
-            position: absolute; top: 0; left: 0; right: 0;
-            padding: 0 16px; 
-            /* Повернули великий відступ, щоб не лізти під кнопки */
-            padding-top: calc(90px + env(safe-area-inset-top)); 
-            
-            /* Висота блоку контенту */
-            height: 60px; 
-            
-            /* Градієнт зверху, щоб читалось на фоні графіка */
-            background: linear-gradient(180deg, rgba(14,15,20,0.95) 0%, rgba(14,15,20,0.8) 60%, rgba(14,15,20,0) 100%);
-            
-            display: flex; justify-content: space-between; align-items: flex-start; /* flex-start щоб притиснути до верху відступу */
-            z-index: 20; pointer-events: none;
-        }
-        
-        .header > * { pointer-events: auto; }
-
-        /* USER PROFILE */
-        .user-profile { 
-            display: flex; align-items: center; gap: 10px; 
-            background: var(--glass-panel); padding: 4px 10px 4px 4px; 
-            border-radius: 30px; border: 1px solid var(--border-glass); 
-            backdrop-filter: blur(10px);
-            margin-top: 5px; /* Мікро-корекція */
-        }
-        .user-avatar {
-            width: 34px; height: 34px; border-radius: 50%;
-            background: #333; object-fit: cover;
-        }
-        .user-info { display: flex; flex-direction: column; margin-right: 4px; }
-        .user-name { font-weight: 700; font-size: 13px; line-height: 1.2; }
-        .balance { font-size: 11px; color: var(--bet-gold); font-weight: 600; }
-
-        /* RIGHT CONTROLS */
-        .market-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-        
-        /* Timeframe Selector */
-        .tf-selector {
-            display: flex; gap: 4px; background: var(--glass-panel); 
-            padding: 3px; border-radius: 8px; border: 1px solid var(--border-glass);
-            backdrop-filter: blur(10px);
-        }
-        .tf-btn {
-            font-size: 11px; font-weight: 700; color: var(--text-secondary);
-            padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;
-        }
-        .tf-btn.active { background: rgba(255,255,255,0.15); color: white; }
-
-        .asset-wrapper {
-            display: flex; align-items: center; gap: 6px;
-            background: var(--glass-panel); padding: 6px 12px; border-radius: 10px;
-            border: 1px solid var(--border-glass); backdrop-filter: blur(10px);
-        }
-        #asset-select {
-            background: transparent; color: white; border: none; font-weight: 700; font-size: 14px; outline: none;
-        }
-        
-        /* PRICE */
-        .price-container { display: flex; align-items: center; gap: 6px; margin-top: 4px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-        .price { font-size: 26px; font-weight: 800; font-family: 'SF Mono', monospace; letter-spacing: -0.5px; }
-        
-        /* ZOOM BUTTON */
-        #reset-zoom-btn {
-            position: absolute; bottom: 120px; right: 16px;
-            width: 40px; height: 40px; border-radius: 50%;
-            background: var(--glass-panel); color: white; 
-            border: 1px solid var(--border-glass); backdrop-filter: blur(5px);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; z-index: 30; cursor: pointer;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-        #reset-zoom-btn.show { opacity: 1; pointer-events: auto; }
-
-        /* FOOTER CONTROLS */
-        .controls-wrapper {
-            position: absolute; bottom: 0; left: 0; right: 0; 
-            padding: 0 16px 30px 16px; 
-            background: linear-gradient(0deg, rgba(14,15,20,1) 0%, rgba(14,15,20,0) 100%);
-            display: flex; gap: 12px; align-items: center; z-index: 20;
-        }
-        .btn {
-            flex: 1; height: 60px; border: none; border-radius: 16px;
-            font-size: 18px; font-weight: 800; color: white; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            transition: transform 0.1s; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        .btn:active { transform: scale(0.96); }
-        .btn-up { background: var(--candle-up); color: #003828; }
-        .btn-down { background: var(--candle-down); color: #4a0502; }
-
-        /* MODAL */
-        .modal {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-            background: #1e222d; padding: 24px; border-radius: 20px; width: 260px; text-align: center;
-            opacity: 0; pointer-events: none; transition: all 0.2s; z-index: 100;
-            border: 1px solid var(--border-glass); box-shadow: 0 40px 80px rgba(0,0,0,0.8);
-        }
-        .modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css?v=115">
 </head>
 <body>
 
-    <div class="header">
-        <div class="user-profile">
-            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23555'%3E%3Crect width='24' height='24' fill='%23333'/%3E%3C/svg%3E" class="user-avatar">
-            <div class="user-info">
-                <div id="user-name" class="user-name">Trader</div>
-                <div class="balance" id="balance">$1,000</div>
+    <div class="scene-container" id="room-scene">
+        <div id="scene-overlay">
+            <div class="overlay-emoji" id="overlay-icon">⏳</div>
+            <div id="overlay-text">ДІЯ...</div>
+        </div>
+        <div id="visual-hero">🧍</div>
+        <button class="admin-toggle" onclick="toggleAdmin()" style="display:none;">⚙️</button>
+    </div>
+
+    <div class="ui">
+        <div class="widget-header">
+            <div>
+                <div class="money"><span id="money">0</span> $</div>
+                <div class="subtitle">Гаманець</div>
+            </div>
+            <div class="energy">⚡ <span id="energy">100</span>%</div>
+        </div>
+
+        <div id="tab-home" class="tab active">
+            <div class="section-title">МОЯ КІМНАТА</div>
+            <div id="home-grid" class="app-grid"></div>
+            <div id="empty-home-msg" class="empty-msg">Завантаження...</div>
+        </div>
+
+        <div id="tab-map" class="tab">
+            <div class="map-wrapper"></div>
+            <div style="text-align:center; color:#666; font-size:12px; margin-top:10px;">Тисни на будівлі</div>
+        </div>
+
+        <div id="tab-inv" class="tab">
+            <div class="section-title">РЮКЗАК</div>
+            <div id="inventory-grid" class="app-grid"></div>
+        </div>
+
+        <div id="tab-shop" class="tab">
+            <div style="display:flex; align-items:center; margin-bottom:15px;">
+                <button class="back-btn" onclick="switchTab('map', document.getElementById('nav-map'))">⬅ На мапу</button>
+                <div class="section-title" style="margin:0 0 0 15px;">СУПЕРМАРКЕТ</div>
+            </div>
+            <div id="shop-container" class="shop-list"></div>
+        </div>
+    </div>
+
+    <div class="nav">
+        <button class="nav-btn active" onclick="switchTab('home', this)">🏠</button>
+        <button class="nav-btn" id="nav-map" onclick="switchTab('map', this)">🗺️</button>
+        <button class="nav-btn" onclick="switchTab('inv', this)">🎒</button>
+    </div>
+
+    <div id="admin-panel" class="admin-panel">
+        <div class="admin-header">
+            <h3>Адмін Панель</h3>
+            <button onclick="toggleAdmin()" style="background:none;border:none;color:white;font-size:24px;padding:10px;">✕</button>
+        </div>
+        <div class="admin-content">
+            <div id="admin-item-list" class="admin-list"></div>
+            <div id="admin-controls" style="margin-top:20px;">
+                <button class="admin-btn new" onclick="createNewItem()">➕ Створити Новий</button>
+            </div>
+            <div id="admin-editor" style="display:none; margin-top:20px;">
+                <h4 style="margin-bottom:15px; color:var(--accent)">Редагування</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div><label>ID:</label><input type="text" id="inp-id" class="admin-inp" disabled style="opacity:0.5"></div>
+                    <div><label>Тип:</label><select id="inp-type" class="admin-inp"><option value="device">Меблі</option><option value="food">Їжа</option></select></div>
+                </div>
+                <label>Назва:</label><input type="text" id="inp-name" class="admin-inp">
+                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px;">
+                    <div><label>Іконка:</label><input type="text" id="inp-icon" class="admin-inp"></div>
+                    <div><label>Ціна ($):</label><input type="number" id="inp-price" class="admin-inp"></div>
+                </div>
+                <label>Опис:</label><input type="text" id="inp-desc" class="admin-inp">
+                <hr style="border: 1px solid #333; margin: 20px 0;">
+                <div style="font-size:14px; font-weight:bold; color:#fff; margin-bottom:15px;">Ефекти</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div><label>⚡ Енергія:</label><input type="number" id="inp-energy" class="admin-inp"></div>
+                    <div><label>💰 Гроші:</label><input type="number" id="inp-money" class="admin-inp"></div>
+                    <div><label>💔 Знос:</label><input type="number" id="inp-hp" class="admin-inp"></div>
+                    <div><label>⏳ Час (с):</label><input type="number" id="inp-time" class="admin-inp"></div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:30px;">
+                    <button class="admin-btn save" onclick="saveAdminItem()">💾 Зберегти</button>
+                    <button class="admin-btn cancel" onclick="cancelEdit()">Відміна</button>
+                </div>
+                <button class="admin-btn reset" onclick="deleteItem()" style="margin-top:20px;">🗑 Видалити</button>
             </div>
         </div>
-        
-        <div class="market-controls">
-            <div class="tf-selector">
-                <div class="tf-btn active" onclick="setTF(1)">1S</div>
-                <div class="tf-btn" onclick="setTF(30)">30S</div>
-                <div class="tf-btn" onclick="setTF(60)">1M</div>
-            </div>
-
-            <div class="asset-wrapper">
-                <select id="asset-select">
-                    <option value="btcusdt">BTC/USDT</option>
-                    <option value="ethusdt">ETH/USDT</option>
-                    <option value="solusdt">SOL/USDT</option>
-                </select>
-            </div>
-            
-            <div class="price-container">
-                <div class="price" id="price">...</div>
-            </div>
-        </div>
     </div>
 
-    <div id="chart-container"></div>
-    <div id="reset-zoom-btn" onclick="resetZoom()">⟲</div>
+    <div id="action-sheet"><div id="sheet-content"></div></div>
 
-    <div id="result-popup" class="modal">
-        <div id="result-title" style="font-weight: 800; font-size: 22px; margin-bottom: 5px;">RESULT</div>
-        <div id="result-amount" style="font-size: 32px; font-weight: 900; color: white;">$0</div>
-    </div>
-
-    <div class="controls-wrapper">
-        <button class="btn btn-up" onclick="startTrade('UP')"><span>↑</span> CALL</button>
-        <button class="btn btn-down" onclick="startTrade('DOWN')"><span>↓</span> PUT</button>
-    </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.setHeaderColor('#0e0f14');
-
-        const CONFIG = { up: '#00ffbb', down: '#ff2d55', bet: '#ffcf00' };
-        
-        // --- 1. USER DATA RESTORED ---
-        const user = tg.initDataUnsafe.user;
-        if (user) {
-            document.getElementById('user-name').innerText = user.first_name || 'Apex Trader';
-            if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
-        }
-
-        // --- 2. CHART SETUP ---
-        const container = document.getElementById('chart-container');
-        const chart = LightweightCharts.createChart(container, {
-            layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#858d9d', fontSize: 12, fontFamily: "system-ui" },
-            grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.04)', style: 1 } },
-            priceScale: { autoScale: true, scaleMargins: { top: 0.15, bottom: 0.15 } }, 
-            rightPriceScale: { borderColor: 'transparent' },
-            timeScale: { 
-                borderColor: 'transparent', timeVisible: true, secondsVisible: true, 
-                barSpacing: 16, minBarSpacing: 5 
-            },
-            crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.1)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.1)' } }
-        });
-
-        let series = chart.addCandlestickSeries({
-            upColor: CONFIG.up, borderVisible: false, wickUpColor: CONFIG.up,
-            downColor: CONFIG.down, borderVisible: false, wickDownColor: CONFIG.down,
-            priceLineVisible: true, priceLineWidth: 1, priceLineStyle: 2,
-            priceFormat: { minMove: 0.01, precision: 2 }
-        });
-
-        window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
-
-        chart.timeScale().subscribeVisibleTimeRangeChange(() => { document.getElementById('reset-zoom-btn').classList.add('show'); });
-        function resetZoom() {
-            chart.timeScale().scrollToRealTime(); 
-            chart.priceScale('right').applyOptions({ autoScale: true });
-            document.getElementById('reset-zoom-btn').classList.remove('show'); 
-        }
-
-        // --- 3. TIMEFRAME LOGIC ---
-        let currentTF = 1; 
-        
-        function setTF(seconds) {
-            currentTF = seconds;
-            series.setData([]);
-            realHA = null; displayHA = null; lastRawHA = null; rawCandle = null;
-            
-            document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            if(tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-        }
-
-        // --- 4. ENGINE ---
-        let ws = null;
-        let realHA = null, displayHA = null, lastRawHA = null;
-        let rawCandle = null;
-        let lastPrice = 0;
-
-        const priceElement = document.getElementById('price');
-        const assetSelect = document.getElementById('asset-select');
-
-        function animate() {
-            if (realHA && displayHA) {
-                if (realHA.time > displayHA.time) {
-                    displayHA = { ...realHA };
-                } else {
-                    const diff = realHA.close - displayHA.close;
-                    if (Math.abs(diff) > 0.0001) {
-                        displayHA.close += diff * 0.2;
-                        displayHA.high = Math.max(displayHA.open, displayHA.close, realHA.high);
-                        displayHA.low = Math.min(displayHA.open, displayHA.close, realHA.low);
-                    }
-                }
-                series.update(displayHA);
-            }
-            requestAnimationFrame(animate);
-        }
-        requestAnimationFrame(animate);
-
-        function calculateHeikinAshi(time, open, high, low, close) {
-            const haClose = (open + high + low + close) / 4;
-            let haOpen = open;
-            if (lastRawHA) {
-                haOpen = (lastRawHA.open + lastRawHA.close) / 2;
-            }
-            const haHigh = Math.max(high, haOpen, haClose);
-            const haLow = Math.min(low, haOpen, haClose);
-            return { time, open: haOpen, high: haHigh, low: haLow, close: haClose };
-        }
-
-        function connectWebSocket(symbol) {
-            if (ws) ws.close();
-            series.setData([]);
-            priceElement.innerText = '...';
-            realHA = null; displayHA = null; lastRawHA = null; rawCandle = null;
-
-            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@aggTrade`);
-            
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const price = parseFloat(data.p);
-                const eventTime = data.T;
-                
-                const time = Math.floor(eventTime / (currentTF * 1000)) * currentTF;
-
-                if (!rawCandle || time > rawCandle.time) {
-                    if (realHA) lastRawHA = { ...realHA };
-                    rawCandle = { time: time, open: rawCandle ? rawCandle.close : price, high: price, low: price, close: price };
-                } else {
-                    rawCandle.high = Math.max(rawCandle.high, price);
-                    rawCandle.low = Math.min(rawCandle.low, price);
-                    rawCandle.close = price;
-                }
-
-                realHA = calculateHeikinAshi(rawCandle.time, rawCandle.open, rawCandle.high, rawCandle.low, rawCandle.close);
-                
-                if (!displayHA) displayHA = { ...realHA };
-
-                const digits = price < 1 ? 5 : 2; 
-                series.applyOptions({ priceFormat: { precision: digits, minMove: 1/Math.pow(10, digits) } });
-
-                priceElement.innerText = price.toFixed(digits);
-                const color = !lastPrice || price >= lastPrice ? CONFIG.up : CONFIG.down;
-                priceElement.style.color = color;
-                lastPrice = price;
-            };
-        }
-
-        assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
-        connectWebSocket('btcusdt');
-
-        // --- 5. TRADING LOGIC ---
-        let balance = 1000;
-        let isTrading = false;
-        let betLine = null;
-
-        function startTrade(direction) {
-            if (isTrading) return;
-            isTrading = true;
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
-            
-            const entryPrice = displayHA ? displayHA.close : lastPrice;
-            const betAmount = 50;
-            const lineColor = CONFIG.bet;
-
-            betLine = series.createPriceLine({
-                price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 0, 
-                title: 'BET', axisLabelVisible: true, axisLabelColor: lineColor, axisLabelTextColor: '#000000'
-            });
-
-            setTimeout(() => { finishTrade(direction, entryPrice, betAmount); }, 3000);
-        }
-
-        function finishTrade(direction, entryPrice, betAmount) {
-            let win = false;
-            const finalPrice = displayHA ? displayHA.close : lastPrice;
-            
-            if (direction === 'UP' && finalPrice > entryPrice) win = true;
-            else if (direction === 'DOWN' && finalPrice < entryPrice) win = true;
-
-            if (win) balance += betAmount * 0.8; else balance -= betAmount;
-            document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;
-            
-            if (betLine) { series.removePriceLine(betLine); betLine = null; }
-
-            const popup = document.getElementById('result-popup');
-            const title = document.getElementById('result-title');
-            const amount = document.getElementById('result-amount');
-            title.innerText = win ? 'PROFIT' : 'LOSS';
-            title.style.color = win ? CONFIG.up : CONFIG.down;
-            amount.innerText = win ? `+$${(betAmount * 0.8).toFixed(0)}` : `-$${betAmount}`;
-            popup.style.borderColor = win ? CONFIG.up : CONFIG.down;
-            popup.classList.add('show');
-            
-            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(win ? 'success' : 'error');
-            setTimeout(() => { popup.classList.remove('show'); isTrading = false; }, 2000);
-        }
-    </script>
+    <script src="js/core.js?v=45"></script>
+    <script src="js/view.js?v=65"></script>
+    <script src="js/logic.js?v=65"></script>
 </body>
 </html>

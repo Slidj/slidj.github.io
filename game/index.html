@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex Trade Visual Fixed</title>
+    <title>Apex Visual Fix</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
         :root {
-            /* Apex Premium Theme */
+            /* Apex Theme */
             --bg-gradient: radial-gradient(circle at 50% 0%, #1c2030 0%, #0b0c10 100%);
             --text-primary: #ffffff;
             --text-secondary: #8d95a8;
             --candle-up: #26a69a;
             --candle-down: #ef5350;
-            --bet-color: #ff9f0a; /* Золотий колір для "Замороженого" бігунка */
+            --bet-gold: #ff9f0a; /* Золотий колір ставки */
             --glass-bg: rgba(30,34,45, 0.85);
             --border-color: rgba(255,255,255,0.08);
         }
@@ -183,7 +183,7 @@
             layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
             // Logarithmic + Compact
-            priceScale: { mode: 1, autoScale: true, scaleMargins: { top: 0.35, bottom: 0.35 } }, 
+            priceScale: { mode: 1, autoScale: true, scaleMargins: { top: 0.3, bottom: 0.3 } }, 
             rightPriceScale: { borderColor: 'transparent' },
             timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
             crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.2)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.2)' } }
@@ -231,12 +231,10 @@
                         displayHA.close += diff * 0.15;
                         const bodyTop = Math.max(displayHA.open, displayHA.close);
                         const bodyBottom = Math.min(displayHA.open, displayHA.close);
-                        
                         const targetHigh = realHA.high;
                         const targetLow = realHA.low;
                         const visualHigh = bodyTop + (targetHigh - bodyTop) * 0.3; 
                         const visualLow = bodyBottom - (bodyBottom - targetLow) * 0.3;
-                        
                         displayHA.high = Math.max(bodyTop, visualHigh);
                         displayHA.low = Math.min(bodyBottom, visualLow);
                     }
@@ -308,7 +306,7 @@
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- TRADING LOGIC WITH FROZEN RUNNER ---
+        // --- TRADING LOGIC WITH VISUAL FIX ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name; 
@@ -324,20 +322,22 @@
             isTrading = true;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
             
-            const entryPrice = lastPrice; 
+            // 🔥 КЛЮЧОВИЙ МОМЕНТ: БЕРЕМО ВІЗУАЛЬНУ ЦІНУ (displayHA.close), А НЕ REAL LAST PRICE
+            // Це гарантує, що лінія з'явиться там, де око бачить свічку.
+            // Якщо displayHA ще не ініціалізовано, беремо lastPrice.
+            const entryPrice = displayHA ? displayHA.close : lastPrice;
+            
             const betAmount = 50;
-            // Колір ставки: використовуємо помаранчевий для чіткості або колір напрямку
-            const lineColor = '#ff9f0a'; // Помаранчевий (Gold) для замороженого бігунка
+            const lineColor = '#ff9f0a'; // Gold color
 
-            // 🔥 СТВОРЕННЯ "ЗАМОРОЖЕНОГО БІГУНКА"
-            // axisLabelVisible: true - це і є та сама "плашка" збоку
+            // Створюємо Золотий Бігунок (Price Line)
             betLine = series.createPriceLine({
                 price: entryPrice, 
                 color: lineColor, 
                 lineWidth: 2, 
-                lineStyle: 2, // Пунктир
-                title: 'ENTRY', 
-                axisLabelVisible: true, // ВАЖЛИВО! Показує мітку на осі
+                lineStyle: 2, // Dashed
+                title: '', // Без тексту, тільки ціна
+                axisLabelVisible: true, // Плашка збоку
                 axisLabelColor: lineColor,
                 axisLabelTextColor: '#000000'
             });
@@ -347,8 +347,12 @@
 
         function finishTrade(direction, entryPrice, betAmount) {
             let win = false;
-            if (direction === 'UP' && lastPrice > entryPrice) win = true;
-            else if (direction === 'DOWN' && lastPrice < entryPrice) win = true;
+            // Для розрахунку виграшу беремо теж візуальну ціну (або реальну, тут вже як хочеш)
+            // Щоб було чесно по графіку - беремо displayHA.close
+            const finalPrice = displayHA ? displayHA.close : lastPrice;
+            
+            if (direction === 'UP' && finalPrice > entryPrice) win = true;
+            else if (direction === 'DOWN' && finalPrice < entryPrice) win = true;
 
             if (win) balance += betAmount * 0.8; else balance -= betAmount;
             document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;

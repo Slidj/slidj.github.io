@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trading Logarithmic</title>
+    <title>Trading Heikin Ashi</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
@@ -178,14 +178,8 @@
         const chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
-            
-            // 🔥 ГОЛОВНА ЗМІНА: ЛОГАРИФМІЧНА ШКАЛА + КОМПАКТНІСТЬ
-            priceScale: { 
-                mode: 1, // 0 = Normal, 1 = Logarithmic (Стискає великі зміни, показує малі)
-                autoScale: true,
-                scaleMargins: { top: 0.15, bottom: 0.15 } // Даємо свічкам 70% екрану, а не 20%, щоб було видно деталі
-            }, 
-            
+            // ВИРІШЕННЯ "ГІГАНТІВ": Логарифмічна шкала + м'які відступи
+            priceScale: { mode: 1, autoScale: true, scaleMargins: { top: 0.35, bottom: 0.35 } }, 
             rightPriceScale: { borderColor: 'transparent' },
             timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
             crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.2)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.2)' } }
@@ -195,12 +189,7 @@
             upColor: CONFIG.up, borderUpColor: CONFIG.up, wickUpColor: CONFIG.up,
             downColor: CONFIG.down, borderDownColor: CONFIG.down, wickDownColor: CONFIG.down,
             priceLineVisible: true, priceLineWidth: 1, priceLineStyle: 2,
-            
-            // 🔥 ВАЖЛИВО: Налаштування точності
-            priceFormat: {
-                minMove: 0.000001, // Дозволяє малювати навіть мікроскопічні зміни
-                precision: 6,      // Кількість знаків після коми
-            }
+            priceFormat: { minMove: 0.000001, precision: 6 }
         });
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
@@ -216,66 +205,73 @@
         document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
         document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
 
-        // --- SMOOTH ANIMATION ---
+        // --- HEIKIN ASHI ENGINE ---
         let ws = null;
-        let realCandle = null;
-        let drawCandle = null;
+        let lastHA = null; // Попередня Heikin Ashi свічка
+        let currentHA = null; // Поточна Heikin Ashi свічка
         let lastPrice = 0;
         const priceElement = document.getElementById('price');
         const pulseDot = document.getElementById('pulse-dot');
         const assetSelect = document.getElementById('asset-select');
 
-        function animate() {
-            if (realCandle && drawCandle) {
-                if (realCandle.time > drawCandle.time) {
-                    drawCandle = { ...realCandle };
-                } else {
-                    const diff = realCandle.close - drawCandle.close;
-                    if (Math.abs(diff) > 0.000001) {
-                        drawCandle.close += diff * 0.15;
-                        drawCandle.high = Math.max(drawCandle.high, drawCandle.close);
-                        drawCandle.low = Math.min(drawCandle.low, drawCandle.close);
-                        drawCandle.high = Math.max(drawCandle.high, realCandle.high);
-                        drawCandle.low = Math.min(drawCandle.low, realCandle.low);
-                    } else {
-                        drawCandle.close = realCandle.close;
-                    }
-                }
-                series.update(drawCandle);
+        // Математика Heikin Ashi
+        function calculateHeikinAshi(time, open, high, low, close) {
+            // HA Close = Average of current bar
+            let haClose = (open + high + low + close) / 4;
+            
+            let haOpen;
+            if (lastHA) {
+                // HA Open = Average of previous HA bar
+                haOpen = (lastHA.open + lastHA.close) / 2;
+            } else {
+                // Перша свічка: просто Open
+                haOpen = open;
             }
-            requestAnimationFrame(animate);
+
+            let haHigh = Math.max(high, haOpen, haClose);
+            let haLow = Math.min(low, haOpen, haClose);
+
+            return { time: time, open: haOpen, high: haHigh, low: haLow, close: haClose };
         }
-        requestAnimationFrame(animate);
 
         function connectWebSocket(symbol) {
             if (ws) ws.close();
             series.setData([]);
             priceElement.innerText = 'Loading...';
-            realCandle = null; drawCandle = null;
+            lastHA = null; currentHA = null;
 
             ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@aggTrade`);
             
+            // Буфер для сирої свічки (звичайної)
+            let rawCandle = null;
+
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 const price = parseFloat(data.p);
                 const time = Math.floor(data.T / 1000);
 
-                if (!realCandle || time > realCandle.time) {
-                    realCandle = { time: time, open: realCandle ? realCandle.close : price, high: price, low: price, close: price };
-                    if (!drawCandle) drawCandle = { ...realCandle };
+                // 1. Формуємо звичайну свічку (Raw Candle)
+                if (!rawCandle || time > rawCandle.time) {
+                    // Якщо почалась нова секунда - зберігаємо попередню HA як "історичну"
+                    if (currentHA) lastHA = { ...currentHA };
+                    
+                    rawCandle = { time: time, open: rawCandle ? rawCandle.close : price, high: price, low: price, close: price };
                 } else {
-                    realCandle.high = Math.max(realCandle.high, price);
-                    realCandle.low = Math.min(realCandle.low, price);
-                    realCandle.close = price;
+                    rawCandle.high = Math.max(rawCandle.high, price);
+                    rawCandle.low = Math.min(rawCandle.low, price);
+                    rawCandle.close = price;
                 }
 
-                // Динамічна точність для різних монет
-                const digits = price < 1 ? 6 : 2; 
-                series.applyOptions({ 
-                    priceFormat: { minMove: 1 / Math.pow(10, digits), precision: digits } 
-                });
+                // 2. Конвертуємо в Heikin Ashi (згладжуємо)
+                currentHA = calculateHeikinAshi(rawCandle.time, rawCandle.open, rawCandle.high, rawCandle.low, rawCandle.close);
 
+                // 3. Малюємо HA свічку
+                series.update(currentHA);
+
+                // UI цифри (показуємо РЕАЛЬНУ ціну, а не HA)
+                const digits = price < 1 ? 6 : 2; 
                 priceElement.innerText = price.toFixed(digits);
+                
                 const color = !lastPrice || price >= lastPrice ? CONFIG.up : CONFIG.down;
                 priceElement.style.color = color;
                 pulseDot.style.backgroundColor = color;
@@ -302,7 +298,8 @@
             isTrading = true;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
             
-            const entryPrice = realCandle ? realCandle.close : lastPrice;
+            // Ставка приймається по РЕАЛЬНІЙ ціні
+            const entryPrice = lastPrice;
             const betAmount = 50;
             const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;
 
@@ -313,9 +310,9 @@
 
         function finishTrade(direction, entryPrice, betAmount) {
             let win = false;
-            const finalPrice = realCandle ? realCandle.close : lastPrice;
-            if (direction === 'UP' && finalPrice > entryPrice) win = true;
-            else if (direction === 'DOWN' && finalPrice < entryPrice) win = true;
+            // Результат по РЕАЛЬНІЙ ціні
+            if (direction === 'UP' && lastPrice > entryPrice) win = true;
+            else if (direction === 'DOWN' && lastPrice < entryPrice) win = true;
 
             if (win) balance += betAmount * 0.8; else balance -= betAmount;
             document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;

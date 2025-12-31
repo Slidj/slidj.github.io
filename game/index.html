@@ -134,4 +134,240 @@
                     <option value="solusdt">SOL/USDT</option>
                     <option value="dogeusdt">DOGE/USDT</option>
                 </select>
-                <svg class="settings-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.
+                <svg class="settings-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </div>
+            <div class="price-container">
+                <div class="pulse-dot" id="pulse-dot"></div>
+                <div class="price" id="price">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chart-container"></div>
+    <div id="reset-zoom-btn" onclick="resetZoom()">🎯</div>
+
+    <div id="result-popup" class="modal">
+        <div id="result-title" style="font-weight: 800; font-size: 22px; margin-bottom: 5px;">RESULT</div>
+        <div id="result-amount" style="font-size: 32px; font-weight: 900; color: white;">$0</div>
+    </div>
+
+    <div id="settings-popup" class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="margin:0; color:white;">Налаштування</h3>
+            <span onclick="toggleSettings()" style="font-size:24px; cursor:pointer; color: #fff;">&times;</span>
+        </div>
+        <div class="settings-row">
+            <label class="settings-label">Масштаб (Zoom)</label>
+            <input type="range" id="zoom-slider" min="5" max="30" value="12" step="1">
+        </div>
+        <div class="settings-row">
+            <label class="settings-label">Розмір шрифту</label>
+            <input type="range" id="font-slider" min="10" max="16" value="13" step="1">
+        </div>
+    </div>
+
+    <div class="controls-wrapper">
+        <button class="btn btn-up" onclick="startTrade('UP')"><span>↑</span> CALL</button>
+        <button class="btn btn-down" onclick="startTrade('DOWN')"><span>↓</span> PUT</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.setHeaderColor('#0b0c10'); 
+
+        const CONFIG = { up: '#26a69a', down: '#ef5350' };
+
+        // --- CHART INIT ---
+        const container = document.getElementById('chart-container');
+        const chart = LightweightCharts.createChart(container, {
+            layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
+            grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
+            // APEX MODE: Logarithmic Scale + Compact Margins
+            priceScale: { mode: 1, autoScale: true, scaleMargins: { top: 0.35, bottom: 0.35 } }, 
+            rightPriceScale: { borderColor: 'transparent' },
+            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
+            crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.2)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.2)' } }
+        });
+
+        let series = chart.addCandlestickSeries({
+            upColor: CONFIG.up, borderUpColor: CONFIG.up, wickUpColor: CONFIG.up,
+            downColor: CONFIG.down, borderDownColor: CONFIG.down, wickDownColor: CONFIG.down,
+            priceLineVisible: true, priceLineWidth: 1, priceLineStyle: 2,
+            priceFormat: { minMove: 0.000001, precision: 6 }
+        });
+
+        window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
+
+        chart.timeScale().subscribeVisibleTimeRangeChange(() => { document.getElementById('reset-zoom-btn').classList.add('show'); });
+        function resetZoom() {
+            chart.timeScale().scrollToRealTime(); 
+            chart.priceScale('right').applyOptions({ autoScale: true });
+            document.getElementById('reset-zoom-btn').classList.remove('show'); 
+        }
+
+        function toggleSettings() { document.getElementById('settings-popup').classList.toggle('show'); }
+        document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
+        document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
+
+        // --- APEX ENGINE: HEIKIN ASHI + SMOOTH ANIMATION + WICK SHORTENER ---
+        let ws = null;
+        let realHA = null;      
+        let displayHA = null;   
+        let lastPrice = 0;
+        let lastRawHA = null;   
+
+        const priceElement = document.getElementById('price');
+        const pulseDot = document.getElementById('pulse-dot');
+        const assetSelect = document.getElementById('asset-select');
+
+        // Animation Loop
+        function animate() {
+            if (realHA && displayHA) {
+                if (realHA.time > displayHA.time) {
+                    displayHA = { ...realHA };
+                    applyWickShortener(displayHA); 
+                } else {
+                    const diff = realHA.close - displayHA.close;
+                    // Interpolation for smoothness
+                    if (Math.abs(diff) > 0.000001) {
+                        displayHA.close += diff * 0.15;
+                        const bodyTop = Math.max(displayHA.open, displayHA.close);
+                        const bodyBottom = Math.min(displayHA.open, displayHA.close);
+                        
+                        // Wick Shortener Logic for visual aesthetics
+                        const targetHigh = realHA.high;
+                        const targetLow = realHA.low;
+                        const visualHigh = bodyTop + (targetHigh - bodyTop) * 0.3; // 30% length
+                        const visualLow = bodyBottom - (bodyBottom - targetLow) * 0.3;
+                        
+                        displayHA.high = Math.max(bodyTop, visualHigh);
+                        displayHA.low = Math.min(bodyBottom, visualLow);
+                    }
+                }
+                series.update(displayHA);
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        function applyWickShortener(candle) {
+            const bodyTop = Math.max(candle.open, candle.close);
+            const bodyBottom = Math.min(candle.open, candle.close);
+            candle.high = bodyTop + (candle.high - bodyTop) * 0.3;
+            candle.low = bodyBottom - (bodyBottom - candle.low) * 0.3;
+        }
+
+        requestAnimationFrame(animate);
+
+        // Heikin Ashi Calculation
+        function calculateHeikinAshi(time, open, high, low, close) {
+            const haClose = (open + high + low + close) / 4;
+            let haOpen = open;
+            if (lastRawHA) {
+                haOpen = (lastRawHA.open + lastRawHA.close) / 2;
+            }
+            const haHigh = Math.max(high, haOpen, haClose);
+            const haLow = Math.min(low, haOpen, haClose);
+            return { time, open: haOpen, high: haHigh, low: haLow, close: haClose };
+        }
+
+        function connectWebSocket(symbol) {
+            if (ws) ws.close();
+            series.setData([]);
+            priceElement.innerText = 'Loading...';
+            realHA = null; displayHA = null; lastRawHA = null;
+            let rawCandle = null;
+
+            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@aggTrade`);
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const price = parseFloat(data.p);
+                const time = Math.floor(data.T / 1000);
+
+                if (!rawCandle || time > rawCandle.time) {
+                    if (realHA) lastRawHA = { ...realHA };
+                    rawCandle = { time: time, open: rawCandle ? rawCandle.close : price, high: price, low: price, close: price };
+                } else {
+                    rawCandle.high = Math.max(rawCandle.high, price);
+                    rawCandle.low = Math.min(rawCandle.low, price);
+                    rawCandle.close = price;
+                }
+
+                realHA = calculateHeikinAshi(rawCandle.time, rawCandle.open, rawCandle.high, rawCandle.low, rawCandle.close);
+                
+                if (!displayHA) {
+                    displayHA = { ...realHA };
+                    applyWickShortener(displayHA);
+                }
+
+                const digits = price < 1 ? 6 : 2; 
+                priceElement.innerText = price.toFixed(digits);
+                const color = !lastPrice || price >= lastPrice ? CONFIG.up : CONFIG.down;
+                priceElement.style.color = color;
+                pulseDot.style.backgroundColor = color;
+                lastPrice = price;
+            };
+        }
+
+        assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
+        connectWebSocket('btcusdt');
+
+        // --- TRADING LOGIC ---
+        const user = tg.initDataUnsafe.user;
+        if (user) {
+            document.getElementById('user-name').innerText = user.first_name; // Або 'Apex Trader'
+            if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
+        }
+
+        let balance = 1000;
+        let isTrading = false;
+        let betLine = null;
+
+        function startTrade(direction) {
+            if (isTrading) return;
+            isTrading = true;
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+            
+            const entryPrice = lastPrice; // Fix bet on REAL price
+            const betAmount = 50;
+            const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;
+
+            // Створення лінії (FIXED to Price)
+            betLine = series.createPriceLine({
+                price: entryPrice, 
+                color: lineColor, 
+                lineWidth: 2, 
+                lineStyle: 0, 
+                title: direction.toUpperCase() + ' @ ' + entryPrice, 
+                axisLabelVisible: true
+            });
+
+            setTimeout(() => { finishTrade(direction, entryPrice, betAmount); }, 3000);
+        }
+
+        function finishTrade(direction, entryPrice, betAmount) {
+            let win = false;
+            if (direction === 'UP' && lastPrice > entryPrice) win = true;
+            else if (direction === 'DOWN' && lastPrice < entryPrice) win = true;
+
+            if (win) balance += betAmount * 0.8; else balance -= betAmount;
+            document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;
+            
+            if (betLine) { series.removePriceLine(betLine); betLine = null; }
+
+            const popup = document.getElementById('result-popup');
+            const title = document.getElementById('result-title');
+            const amount = document.getElementById('result-amount');
+            title.innerText = win ? 'PROFIT' : 'LOSS';
+            title.style.color = win ? CONFIG.up : CONFIG.down;
+            amount.innerText = win ? `+$${(betAmount * 0.8).toFixed(0)}` : `-$${betAmount}`;
+            popup.style.borderColor = win ? CONFIG.up : CONFIG.down;
+            popup.classList.add('show');
+            
+            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(win ? 'success' : 'error');
+            setTimeout(() => { popup.classList.remove('show'); isTrading = false; }, 2000);
+        }
+    </script>
+</body>
+</html>

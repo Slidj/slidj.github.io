@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trading Compact</title>
+    <title>Trading Ultra Smooth</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
@@ -24,7 +24,7 @@
             user-select: none; -webkit-tap-highlight-color: transparent;
         }
         
-        /* HEADER */
+        /* HEADER (90px padding) */
         .header {
             position: absolute; top: 0; left: 0; right: 0;
             padding: 0 16px; padding-top: calc(90px + env(safe-area-inset-top)); 
@@ -55,14 +55,14 @@
         .settings-icon { width: 20px; height: 20px; fill: var(--text-secondary); }
 
         .price-container { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .price { font-size: 20px; font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); transition: color 0.1s; }
+        .price { font-size: 20px; font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); transition: color 0.2s; }
         
         .pulse-dot {
             width: 8px; height: 8px; border-radius: 50%; background-color: var(--candle-up);
-            box-shadow: 0 0 0 rgba(0, 242, 169, 0.4); transition: background-color 0.1s;
+            box-shadow: 0 0 0 rgba(0, 242, 169, 0.4); transition: background-color 0.2s;
         }
 
-        /* CHART CONTAINER - Графік на весь екран, але за кнопками */
+        /* CHART CONTAINER */
         #chart-container { position: absolute; top: 0; left: 0; right: 0; bottom: 110px; z-index: 1; }
 
         /* RESET ZOOM BUTTON */
@@ -179,16 +179,10 @@
         const chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
-            priceScale: { 
-                autoScale: true,
-                // --- ВИРІШЕННЯ "ГІГАНТСЬКИХ СВІЧОК" ---
-                // Ми залишаємо 40% порожнього місця зверху і 40% знизу.
-                // Свічки будуть малюватися лише в центральних 20% екрану.
-                // Це робить їх візуально компактними і згладжує ривки.
-                scaleMargins: { top: 0.4, bottom: 0.4 } 
-            }, 
+            // КОМПАКТНІСТЬ: Затискаємо графік в центр (45% відступу зверху і знизу)
+            priceScale: { autoScale: true, scaleMargins: { top: 0.45, bottom: 0.45 } }, 
             rightPriceScale: { borderColor: 'transparent' },
-            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, barSpacing: 12 },
+            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
             crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.2)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.2)' } }
         });
 
@@ -203,6 +197,7 @@
         chart.timeScale().subscribeVisibleTimeRangeChange(() => { document.getElementById('reset-zoom-btn').classList.add('show'); });
         function resetZoom() {
             chart.timeScale().scrollToRealTime(); 
+            chart.priceScale('right').applyOptions({ autoScale: true });
             document.getElementById('reset-zoom-btn').classList.remove('show'); 
         }
 
@@ -210,29 +205,52 @@
         document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
         document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
 
-        // --- OPTIMIZED UPDATE ENGINE (Throttling) ---
+        // --- BUTTER SMOOTH ENGINE (INTERPOLATION) ---
         let ws = null;
-        let realCandle = null;
+        let realCandle = null;     // Останні точні дані з біржі
+        let drawCandle = null;     // Те, що ми малюємо (анімоване)
         let lastPrice = 0;
         const priceElement = document.getElementById('price');
         const pulseDot = document.getElementById('pulse-dot');
         const assetSelect = document.getElementById('asset-select');
-        
-        // Змінна для збереження запиту на оновлення
-        let animationFrameId = null;
 
-        // Функція оновлення, яка викликається не частіше ніж може екран (60 FPS)
-        function renderChart() {
-            if (realCandle) {
-                series.update(realCandle);
+        // Головний цикл анімації (Game Loop)
+        function animate() {
+            if (realCandle && drawCandle) {
+                // Якщо прийшла нова свічка (змінився час), малюємо її одразу
+                if (realCandle.time > drawCandle.time) {
+                    drawCandle = { ...realCandle };
+                } else {
+                    // Якщо свічка та сама, але ціна змінилась - плавно рухаємо Close
+                    const diff = realCandle.close - drawCandle.close;
+                    
+                    // Рухаємось на 15% до цілі кожного кадру (ефект магніту)
+                    if (Math.abs(diff) > 0.00001) {
+                        drawCandle.close += diff * 0.15;
+                        
+                        // Оновлюємо High/Low, щоб тінь свічки росла правильно
+                        drawCandle.high = Math.max(drawCandle.high, drawCandle.close);
+                        drawCandle.low = Math.min(drawCandle.low, drawCandle.close);
+                        
+                        // Примусово синхронізуємо H/L з реальністю, якщо анімація відстала
+                        drawCandle.high = Math.max(drawCandle.high, realCandle.high);
+                        drawCandle.low = Math.min(drawCandle.low, realCandle.low);
+                    } else {
+                         // Якщо різниця мізерна - просто ставимо реальну ціну
+                        drawCandle.close = realCandle.close;
+                    }
+                }
+                series.update(drawCandle);
             }
+            requestAnimationFrame(animate);
         }
+        requestAnimationFrame(animate);
 
         function connectWebSocket(symbol) {
             if (ws) ws.close();
             series.setData([]);
             priceElement.innerText = 'Loading...';
-            realCandle = null;
+            realCandle = null; drawCandle = null;
 
             ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@aggTrade`);
             
@@ -241,37 +259,30 @@
                 const price = parseFloat(data.p);
                 const time = Math.floor(data.T / 1000);
 
-                // Оновлюємо модель даних (без малювання)
                 if (!realCandle || time > realCandle.time) {
+                    // Нова свічка
                     realCandle = { time: time, open: realCandle ? realCandle.close : price, high: price, low: price, close: price };
+                    if (!drawCandle) drawCandle = { ...realCandle }; // Ініціалізація
                 } else {
+                    // Оновлення поточної
                     realCandle.high = Math.max(realCandle.high, price);
                     realCandle.low = Math.min(realCandle.low, price);
                     realCandle.close = price;
                 }
 
-                // Оновлюємо UI цифри (це можна робити миттєво)
+                // UI оновлюємо миттєво (цифри не повинні лагати)
                 priceElement.innerText = price.toFixed(2);
                 const color = !lastPrice || price >= lastPrice ? CONFIG.up : CONFIG.down;
                 priceElement.style.color = color;
                 pulseDot.style.backgroundColor = color;
                 lastPrice = price;
-
-                // Запланувати перемальовку графіка, якщо вона ще не запланована
-                // Це і є "Throttling" - ми не блокуємо потік
-                if (!animationFrameId) {
-                    animationFrameId = requestAnimationFrame(() => {
-                        renderChart();
-                        animationFrameId = null;
-                    });
-                }
             };
         }
 
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- TRADING ---
+        // --- TRADING LOGIC ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name;
@@ -287,6 +298,7 @@
             isTrading = true;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
             
+            // Ставка приймається по РЕАЛЬНІЙ ціні, а не анімованій
             const entryPrice = realCandle ? realCandle.close : lastPrice;
             const betAmount = 50;
             const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;

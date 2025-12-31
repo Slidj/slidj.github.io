@@ -36,25 +36,24 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* --- HEADER (ВИПРАВЛЕНО ВІДСТУП) --- */
+        /* --- HEADER (НОВИЙ ВІДСТУП 75px) --- */
         .header {
             position: absolute; 
             top: 0; left: 0; right: 0;
             padding: 0 16px;
             
-            /* РАДИКАЛЬНИЙ ВІДСТУП: 60px бази + системний відступ */
-            padding-top: calc(60px + env(safe-area-inset-top)); 
-            height: 80px; /* Висота самого хедера */
+            /* Відступ 75px + безпечна зона */
+            padding-top: calc(75px + env(safe-area-inset-top)); 
+            height: 80px; 
             
             background: linear-gradient(to bottom, rgba(13,14,18,0.9) 0%, rgba(13,14,18,0) 100%);
             display: flex;
             justify-content: space-between;
-            align-items: flex-start; /* Притиснути елементи до верху контентної зони */
+            align-items: flex-start; 
             z-index: 20;
-            pointer-events: none; /* Щоб кліки проходили крізь прозорі зони */
+            pointer-events: none;
         }
 
-        /* Блоки всередині хедера робимо активними для кліків */
         .user-profile, .market-controls { pointer-events: auto; }
 
         .user-profile { display: flex; align-items: center; gap: 12px; }
@@ -102,7 +101,7 @@
         /* CHART */
         #chart-container { 
             flex-grow: 1; width: 100%; position: relative; 
-            margin-top: 0; /* Графік на весь екран */
+            margin-top: 0;
         }
 
         /* CONTROLS */
@@ -217,7 +216,6 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        // Встановлюємо чорний колір хедера Telegram, щоб зливався з фоном
         tg.setHeaderColor('#0d0e12'); 
 
         // --- 1. CONFIG ---
@@ -226,7 +224,7 @@
             down: '#ff3b30',
         };
 
-        // --- 2. CHART SETUP ---
+        // --- 2. CHART SETUP (SMART SCALING) ---
         const container = document.getElementById('chart-container');
         const chart = LightweightCharts.createChart(container, {
             layout: { 
@@ -239,8 +237,21 @@
                 vertLines: { visible: false }, 
                 horzLines: { color: 'rgba(255,255,255,0.04)', style: 1 } 
             },
-            rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.35, bottom: 0.2 } },
-            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: false, barSpacing: 10 },
+            // --- ОСНОВНА ЗМІНА ДЛЯ ЗРУЧНОСТІ ---
+            priceScale: {
+                autoScale: true, // Дозволяє графіку розтягуватися самому
+            },
+            rightPriceScale: { 
+                borderColor: 'transparent', 
+                scaleMargins: { top: 0.25, bottom: 0.25 } // Відступи, щоб графік не прилипав до країв
+            },
+            timeScale: { 
+                borderColor: 'transparent', 
+                timeVisible: true, 
+                secondsVisible: false, 
+                barSpacing: 12, // Трохи ширші свічки за замовчуванням
+                minBarSpacing: 5 // Не дає стиснути занадто сильно
+            },
             crosshair: {
                 mode: 1,
                 vertLine: { style: 2, color: 'rgba(255,255,255,0.2)', labelBackgroundColor: '#505668' },
@@ -251,14 +262,14 @@
         // --- 3D-VOLUME CANDLES CONFIGURATION ---
         let series = chart.addCandlestickSeries({
             // UP CANDLES (Зелені)
-            upColor: CONFIG.up,           // Тіло
-            borderUpColor: CONFIG.up,     // Рамка (така ж або темніша)
-            wickUpColor: '#ffffff',       // БІЛИЙ ХВІСТ (для видимості)
+            upColor: CONFIG.up,           
+            borderUpColor: CONFIG.up,     
+            wickUpColor: CONFIG.up, // Хвіст колір свічки (так краще для сприйняття форми)
             
             // DOWN CANDLES (Червоні)
-            downColor: CONFIG.down,       // Тіло
-            borderDownColor: CONFIG.down, // Рамка
-            wickDownColor: '#ffb3b3',     // Світло-червоний хвіст
+            downColor: CONFIG.down,       
+            borderDownColor: CONFIG.down, 
+            wickDownColor: CONFIG.down, 
             
             priceLineVisible: true,
             priceLineWidth: 1,

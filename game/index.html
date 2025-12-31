@@ -8,31 +8,30 @@
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
-        /* --- ЗАГАЛЬНИЙ СТИЛЬ СТОРІНКИ --- */
+        /* --- ЗАГАЛЬНИЙ СТИЛЬ --- */
         body {
-            background-color: #0e0e0f; /* Дуже темний фон (Deep Dark) */
+            background-color: #0e0e0f;
             color: #d1d4dc;
-            font-family: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
         /* HEADER */
         .header {
             padding: 12px 16px;
-            /* Відступ зверху для безпечної зони iPhone */
             padding-top: 80px; 
             padding-top: calc(80px + env(safe-area-inset-top));
-            
-            background: #0e0e0f; /* Зливається з фоном */
+            background: #0e0e0f;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            min-height: 60px; 
+            min-height: 50px; 
             z-index: 20;
         }
 
@@ -40,66 +39,82 @@
         .user-profile { display: flex; align-items: center; gap: 10px; }
         .user-avatar {
             width: 40px; height: 40px; border-radius: 50%;
-            background: #1f1f21; object-fit: cover; border: 2px solid #1f1f21;
+            background: #1f1f21; object-fit: cover; border: 2px solid #2a2e39;
         }
         .user-info { display: flex; flex-direction: column; }
         .user-name { font-weight: 700; font-size: 15px; color: #fff; line-height: 1.2; }
-        .balance { font-size: 13px; color: #7d8597; font-weight: 600; } /* Сірий колір для балансу */
+        .balance { font-size: 13px; color: #7d8597; font-weight: 600; }
 
-        /* Селектор валют */
-        .market-info { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+        /* Правий блок (Валюта + Налаштування) */
+        .right-controls { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+        
+        .top-row { display: flex; gap: 8px; align-items: center; }
+        
+        /* Кнопка налаштувань */
+        .settings-btn {
+            background: #1f1f21; border: none; width: 36px; height: 36px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;
+        }
+        .settings-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
         #asset-select {
-            background: #1f1f21;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 14px;
-            outline: none;
-            margin-bottom: 4px;
-            cursor: pointer;
+            background: #1f1f21; color: white; border: none; padding: 0 12px; height: 36px;
+            border-radius: 8px; font-weight: 700; font-size: 14px; outline: none; cursor: pointer;
             appearance: none; -webkit-appearance: none; text-align: center;
         }
-        .price { font-size: 18px; font-weight: bold; font-family: monospace; margin-top: 2px; color: #fff; }
+        .price { font-size: 18px; font-weight: bold; font-family: monospace; color: #fff; margin-top: 2px; }
 
         /* CHART CONTAINER */
         #chart-container { flex-grow: 1; width: 100%; position: relative; }
 
-        /* POPUP RESULT */
-        #result-popup {
+        /* MODALS (Popup & Settings) */
+        .modal {
             position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            background: #1f1f21; /* Світліший фон для попапу */
-            padding: 24px 40px;
-            border-radius: 20px;
-            text-align: center;
-            opacity: 0; pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 100;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: #1f1f21; padding: 24px; border-radius: 20px;
+            text-align: center; opacity: 0; pointer-events: none;
+            transition: all 0.2s ease-out; z-index: 100;
             box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            width: 280px; border: 1px solid #2a2e39;
         }
+        .modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+        
+        /* Стилі результату */
         #result-popup.win { border: 2px solid #0ecb81; }
         #result-popup.loss { border: 2px solid #f6465d; }
-        #result-popup.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         .result-amount { font-size: 28px; font-weight: 800; margin-top: 8px; color: #fff; }
+
+        /* Стилі налаштувань */
+        .settings-row { margin-bottom: 20px; text-align: left; }
+        .settings-label { color: #7d8597; font-size: 14px; margin-bottom: 8px; display: block; font-weight: 600; }
+        
+        /* Слайдер */
+        input[type=range] {
+            width: 100%; -webkit-appearance: none; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #fff; margin-top: -8px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #2a2e39; border-radius: 2px;
+        }
+
+        .close-btn {
+            width: 100%; padding: 12px; border-radius: 12px; border: none;
+            background: #2a2e39; color: white; font-weight: bold; margin-top: 10px; cursor: pointer;
+        }
 
         /* CONTROLS */
         .controls {
-            padding: 16px;
-            background: #0e0e0f;
-            display: flex;
-            gap: 16px;
-            padding-bottom: 50px; 
+            padding: 16px; background: #0e0e0f; display: flex; gap: 16px; padding-bottom: 50px; 
         }
         .btn {
             flex: 1; height: 56px; border: none; border-radius: 16px;
-            font-size: 18px; font-weight: 700; color: white; cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
-            text-transform: uppercase; letter-spacing: 1px;
+            font-size: 18px; font-weight: 800; color: white; cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s; text-transform: uppercase;
         }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
-        /* Яскраві неонові кнопки */
         .btn-up { background-color: #0ecb81; box-shadow: 0 0 20px rgba(14, 203, 129, 0.2); }
         .btn-down { background-color: #f6465d; box-shadow: 0 0 20px rgba(246, 70, 93, 0.2); }
 
@@ -117,22 +132,44 @@
                 <div class="balance" id="balance">$1,000</div>
             </div>
         </div>
-        <div class="market-info">
-            <select id="asset-select">
-                <option value="btcusdt">BTC / USDT</option>
-                <option value="ethusdt">ETH / USDT</option>
-                <option value="solusdt">SOL / USDT</option>
-                <option value="dogeusdt">DOGE / USDT</option>
-            </select>
+        
+        <div class="right-controls">
+            <div class="top-row">
+                <button class="settings-btn" onclick="toggleSettings()">
+                    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                </button>
+                <select id="asset-select">
+                    <option value="btcusdt">BTC</option>
+                    <option value="ethusdt">ETH</option>
+                    <option value="solusdt">SOL</option>
+                    <option value="dogeusdt">DOGE</option>
+                </select>
+            </div>
             <div class="price" id="price">Loading...</div>
         </div>
     </div>
 
     <div id="chart-container"></div>
 
-    <div id="result-popup">
-        <div id="result-title">RESULT</div>
+    <div id="result-popup" class="modal">
+        <div id="result-title" style="font-weight: 900; font-size: 20px;">RESULT</div>
         <div id="result-amount" class="result-amount">$0</div>
+    </div>
+
+    <div id="settings-popup" class="modal">
+        <h3 style="margin-top: 0; color: white;">Налаштування</h3>
+        
+        <div class="settings-row">
+            <label class="settings-label">Масштаб (Жирність свічок)</label>
+            <input type="range" id="zoom-slider" min="3" max="20" value="8" step="1">
+        </div>
+
+        <div class="settings-row">
+            <label class="settings-label">Розмір тексту</label>
+            <input type="range" id="font-slider" min="10" max="18" value="12" step="1">
+        </div>
+
+        <button class="close-btn" onclick="toggleSettings()">Закрити</button>
     </div>
 
     <div class="controls">
@@ -143,76 +180,55 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.setHeaderColor('#0e0e0f'); // Колір "шапки" Телеграму під фон
+        tg.setHeaderColor('#0e0e0f');
 
-        // ============================================
-        // 🎨 DESIGN CONFIG (НАЛАШТУВАННЯ ДИЗАЙНУ ГРАФІКА)
-        // ============================================
+        // --- 1. КОНФІГУРАЦІЯ ---
         const THEME = {
-            backgroundColor: '#0e0e0f', // Колір фону графіка (Deep Dark)
-            gridColor: '#1f1f21',       // Колір сітки (майже невидима)
-            textColor: '#7d8597',       // Колір цифр на шкалі
-            
-            // Свічки UP (Зелені)
-            upColor: '#0ecb81',         
-            upWickColor: '#0ecb81',
-            
-            // Свічки DOWN (Червоні)
-            downColor: '#f6465d',
-            downWickColor: '#f6465d',
-            
-            // Лінія перехрестя (коли водиш пальцем)
-            crosshairColor: '#484d59',
+            bg: '#0e0e0f',
+            grid: '#1f1f21',
+            text: '#7d8597',
+            up: '#0ecb81',
+            down: '#f6465d',
         };
-        // ============================================
 
-
-        // --- 1. ЮЗЕР ---
-        const user = tg.initDataUnsafe.user;
-        if (user) {
-            document.getElementById('user-name').innerText = user.first_name;
-            if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
-        }
-
-        // --- 2. СТВОРЕННЯ ГРАФІКА ---
+        // --- 2. ГРАФІК ---
         const container = document.getElementById('chart-container');
         const chart = LightweightCharts.createChart(container, {
-            layout: {
-                background: { type: 'solid', color: THEME.backgroundColor },
-                textColor: THEME.textColor,
-            },
-            grid: {
-                vertLines: { color: THEME.gridColor },
-                horzLines: { color: THEME.gridColor },
-            },
-            timeScale: {
-                timeVisible: true,
-                secondsVisible: true,
-                borderColor: THEME.gridColor,
-            },
-            rightPriceScale: {
-                borderColor: THEME.gridColor,
-            },
-            crosshair: {
-                vertLine: { color: THEME.crosshairColor, labelBackgroundColor: THEME.crosshairColor },
-                horzLine: { color: THEME.crosshairColor, labelBackgroundColor: THEME.crosshairColor },
-            }
+            layout: { background: { type: 'solid', color: THEME.bg }, textColor: THEME.text, fontSize: 12 },
+            grid: { vertLines: { color: THEME.grid }, horzLines: { color: THEME.grid } },
+            timeScale: { timeVisible: true, secondsVisible: true, borderColor: THEME.grid, barSpacing: 8 }, // Стандартний розмір = 8
+            rightPriceScale: { borderColor: THEME.grid },
+            crosshair: { mode: 1, vertLine: { color: '#484d59' }, horzLine: { color: '#484d59' } }
         });
 
-        // Створюємо серію свічок з твоїми кольорами
         let series = chart.addCandlestickSeries({
-            upColor: THEME.upColor,
-            borderUpColor: THEME.upColor,
-            wickUpColor: THEME.upWickColor,
-            
-            downColor: THEME.downColor,
-            borderDownColor: THEME.downColor,
-            wickDownColor: THEME.downWickColor,
+            upColor: THEME.up, borderUpColor: THEME.up, wickUpColor: THEME.up,
+            downColor: THEME.down, borderDownColor: THEME.down, wickDownColor: THEME.down,
         });
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
 
-        // --- 3. ДАНІ ---
+        // --- 3. НАЛАШТУВАННЯ (LOGIC) ---
+        function toggleSettings() {
+            const el = document.getElementById('settings-popup');
+            el.classList.toggle('show');
+        }
+
+        // Зміна масштабу (ширини свічок)
+        document.getElementById('zoom-slider').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            chart.timeScale().applyOptions({ barSpacing: val });
+        });
+
+        // Зміна розміру тексту
+        document.getElementById('font-slider').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            chart.applyOptions({
+                layout: { fontSize: val }
+            });
+        });
+
+        // --- 4. ДАНІ BINANCE ---
         let ws = null;
         let currentPrice = 0;
         const priceLabel = document.getElementById('price');
@@ -236,7 +252,7 @@
                     close: parseFloat(k.c),
                 };
                 currentPrice = candle.close;
-                priceLabel.style.color = !window.lastPrice || currentPrice >= window.lastPrice ? THEME.upColor : THEME.downColor;
+                priceLabel.style.color = !window.lastPrice || currentPrice >= window.lastPrice ? THEME.up : THEME.down;
                 window.lastPrice = currentPrice;
                 priceLabel.innerText = currentPrice.toFixed(currentPrice < 1 ? 5 : 2);
                 series.update(candle);
@@ -246,7 +262,14 @@
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- 4. СТАВКИ ---
+        // --- 5. ЮЗЕР ---
+        const user = tg.initDataUnsafe.user;
+        if (user) {
+            document.getElementById('user-name').innerText = user.first_name;
+            if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
+        }
+
+        // --- 6. ТРЕЙДИНГ ---
         let balance = 1000;
         let isTrading = false;
         let betLine = null;
@@ -258,7 +281,7 @@
 
             const entryPrice = currentPrice;
             const betAmount = 50;
-            const lineColor = direction === 'UP' ? THEME.upColor : THEME.downColor;
+            const lineColor = direction === 'UP' ? THEME.up : THEME.down;
 
             betLine = series.createPriceLine({
                 price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 2, title: direction.toUpperCase(),
@@ -276,16 +299,15 @@
             else balance -= betAmount;
 
             document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;
-            
             if (betLine) { series.removePriceLine(betLine); betLine = null; }
 
             const popup = document.getElementById('result-popup');
             const title = document.getElementById('result-title');
             const amount = document.getElementById('result-amount');
 
-            popup.className = win ? 'win show' : 'loss show';
+            popup.className = win ? 'win modal show' : 'loss modal show';
             title.innerText = win ? 'YOU WON!' : 'YOU LOST';
-            title.style.color = win ? THEME.upColor : THEME.downColor;
+            title.style.color = win ? THEME.up : THEME.down;
             amount.innerText = win ? `+$${(betAmount * 0.8).toFixed(0)}` : `-$${betAmount}`;
             
             if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(win ? 'success' : 'error');

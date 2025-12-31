@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trading Smooth</title>
+    <title>Trading Ultra Smooth</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
@@ -20,22 +20,15 @@
             background: var(--bg-gradient);
             color: var(--text-primary);
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            user-select: none; -webkit-tap-highlight-color: transparent;
         }
         
         /* HEADER (90px padding) */
         .header {
             position: absolute; top: 0; left: 0; right: 0;
-            padding: 0 16px;
-            padding-top: calc(90px + env(safe-area-inset-top)); 
-            height: 60px; 
-            display: flex; justify-content: space-between; align-items: flex-start; 
+            padding: 0 16px; padding-top: calc(90px + env(safe-area-inset-top)); 
+            height: 60px; display: flex; justify-content: space-between; align-items: flex-start; 
             z-index: 20; pointer-events: none;
         }
         .user-profile, .market-controls { pointer-events: auto; }
@@ -53,14 +46,11 @@
         .market-controls { display: flex; flex-direction: column; align-items: flex-end; }
         .asset-wrapper {
             display: flex; align-items: center; gap: 8px;
-            background: rgba(30,34,45, 0.8);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            padding: 8px 14px; border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(30,34,45, 0.8); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 8px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
         }
         #asset-select {
-            background: transparent; color: white; border: none;
-            font-weight: 700; font-size: 15px; outline: none; appearance: none;
+            background: transparent; color: white; border: none; font-weight: 700; font-size: 15px; outline: none; appearance: none;
         }
         .settings-icon { width: 20px; height: 20px; fill: var(--text-secondary); }
 
@@ -68,16 +58,24 @@
         .price { font-size: 20px; font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); transition: color 0.3s ease; }
         
         .pulse-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background-color: var(--candle-up);
-            box-shadow: 0 0 0 rgba(0, 242, 169, 0.4);
-            transition: background-color 0.3s ease;
+            width: 8px; height: 8px; border-radius: 50%; background-color: var(--candle-up);
+            box-shadow: 0 0 0 rgba(0, 242, 169, 0.4); transition: background-color 0.3s ease;
         }
 
         /* CHART CONTAINER */
-        #chart-container { 
-            position: absolute; top: 0; left: 0; right: 0; bottom: 110px; z-index: 1;
+        #chart-container { position: absolute; top: 0; left: 0; right: 0; bottom: 110px; z-index: 1; }
+
+        /* RESET ZOOM BUTTON (НОВЕ) */
+        #reset-zoom-btn {
+            position: absolute; bottom: 130px; right: 16px;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(30,34,45, 0.9); border: 1px solid rgba(255,255,255,0.1);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; z-index: 30; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
+        #reset-zoom-btn.show { opacity: 1; pointer-events: auto; }
 
         /* CONTROLS */
         .controls-wrapper {
@@ -99,12 +97,10 @@
 
         /* MODALS */
         .modal {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
-            background: #1c1e26; padding: 24px; border-radius: 24px;
-            width: 280px; text-align: center; opacity: 0; pointer-events: none;
-            transition: all 0.2s; z-index: 100; border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            background: #1c1e26; padding: 24px; border-radius: 24px; width: 280px; text-align: center;
+            opacity: 0; pointer-events: none; transition: all 0.2s; z-index: 100;
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 30px 60px rgba(0,0,0,0.8);
         }
         .modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
         
@@ -147,6 +143,8 @@
     </div>
 
     <div id="chart-container"></div>
+    
+    <div id="reset-zoom-btn" onclick="resetZoom()">🎯</div>
 
     <div id="result-popup" class="modal">
         <div id="result-title" style="font-weight: 800; font-size: 22px; margin-bottom: 5px;">RESULT</div>
@@ -169,12 +167,8 @@
     </div>
 
     <div class="controls-wrapper">
-        <button class="btn btn-up" onclick="startTrade('UP')">
-            <span>↑</span> CALL
-        </button>
-        <button class="btn btn-down" onclick="startTrade('DOWN')">
-            <span>↓</span> PUT
-        </button>
+        <button class="btn btn-up" onclick="startTrade('UP')"><span>↑</span> CALL</button>
+        <button class="btn btn-down" onclick="startTrade('DOWN')"><span>↓</span> PUT</button>
     </div>
 
     <script>
@@ -189,9 +183,9 @@
         const chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
-            priceScale: { autoScale: true },
+            priceScale: { autoScale: true }, // За замовчуванням автоскейл включений
             rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.3, bottom: 0.2 } },
-            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
+            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, barSpacing: 12 },
             crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.2)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.2)' } }
         });
 
@@ -203,54 +197,63 @@
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
 
+        // --- RESET ZOOM LOGIC ---
+        // Якщо юзер торкається графіка - показуємо кнопку "Центрувати"
+        chart.timeScale().subscribeVisibleTimeRangeChange(() => {
+            document.getElementById('reset-zoom-btn').classList.add('show');
+        });
+
+        function resetZoom() {
+            chart.timeScale().scrollToRealTime(); // Повертаємо до реального часу
+            chart.priceScale('right').applyOptions({ autoScale: true }); // Вмикаємо автоскейл назад
+            document.getElementById('reset-zoom-btn').classList.remove('show'); // Ховаємо кнопку
+        }
+
         // --- SETTINGS LOGIC ---
         function toggleSettings() { document.getElementById('settings-popup').classList.toggle('show'); }
         document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
         document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
 
-        // --- SMOOTH ANIMATION LOGIC (LERP) ---
+        // --- OPTIMIZED SMOOTH ENGINE (Physics based) ---
         let ws = null;
-        let realCandle = null; // Реальні дані з біржі
-        let displayCandle = null; // Те, що ми малюємо
+        let realCandle = null;
+        let displayCandle = null;
         let lastPrice = 0;
         const priceElement = document.getElementById('price');
         const pulseDot = document.getElementById('pulse-dot');
         const assetSelect = document.getElementById('asset-select');
 
-        // Ігровий цикл для плавності (60 FPS)
         function animateTick() {
             if (realCandle && displayCandle) {
-                // Якщо час змінився (нова свічка), одразу перемикаємось
+                // Якщо прийшла нова свічка (змінився час), переходимо миттєво
                 if (realCandle.time > displayCandle.time) {
-                    displayCandle = { ...realCandle };
+                    displayCandle = { ...realCandle }; 
                 } else {
-                    // Плавна інтерполяція ціни (Smoothing)
-                    // Ми рухаємо Close ціну на 15% до реальної ціни за кожен кадр
+                    // Фізика руху ціни (Lerp з меншим коефіцієнтом для плавності)
                     const diff = realCandle.close - displayCandle.close;
                     
+                    // Рухаємося тільки якщо є помітна різниця
                     if (Math.abs(diff) > 0.00001) {
-                         // Швидкість згладжування (0.15 = швидко, 0.05 = дуже повільно)
-                        displayCandle.close += diff * 0.15; 
+                        displayCandle.close += diff * 0.1; // 0.1 = М'який рух (10% дистанції за кадр)
                         
-                        // Також коригуємо High/Low, якщо плавна ціна вийшла за межі
+                        // Підтягуємо High/Low
                         displayCandle.high = Math.max(displayCandle.high, displayCandle.close);
                         displayCandle.low = Math.min(displayCandle.low, displayCandle.close);
                         
+                        // Оновлюємо графік
                         series.update(displayCandle);
                     }
                 }
             }
             requestAnimationFrame(animateTick);
         }
-        // Запускаємо анімацію
         requestAnimationFrame(animateTick);
 
         function connectWebSocket(symbol) {
             if (ws) ws.close();
             series.setData([]);
             priceElement.innerText = 'Loading...';
-            realCandle = null;
-            displayCandle = null;
+            realCandle = null; displayCandle = null;
 
             ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@aggTrade`);
             
@@ -260,19 +263,15 @@
                 const time = Math.floor(data.T / 1000);
 
                 if (!realCandle || time > realCandle.time) {
-                    // Нова свічка
                     realCandle = { time: time, open: realCandle ? realCandle.close : price, high: price, low: price, close: price };
-                    
-                    // Якщо це перша свічка взагалі, ініціалізуємо displayCandle
                     if (!displayCandle) displayCandle = { ...realCandle };
                 } else {
-                    // Оновлення поточної свічки
                     realCandle.high = Math.max(realCandle.high, price);
                     realCandle.low = Math.min(realCandle.low, price);
                     realCandle.close = price;
                 }
 
-                // Оновлюємо UI (Цифри)
+                // Оновлення цифр (UI) не залежить від анімації графіка
                 priceElement.innerText = price.toFixed(2);
                 const color = !lastPrice || price >= lastPrice ? CONFIG.up : CONFIG.down;
                 priceElement.style.color = color;
@@ -300,7 +299,6 @@
             isTrading = true;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
             
-            // Ставка фіксується по реальній ціні, а не по анімованій
             const entryPrice = realCandle ? realCandle.close : lastPrice;
             const betAmount = 50;
             const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;
@@ -313,7 +311,6 @@
         function finishTrade(direction, entryPrice, betAmount) {
             let win = false;
             const finalPrice = realCandle ? realCandle.close : lastPrice;
-            
             if (direction === 'UP' && finalPrice > entryPrice) win = true;
             else if (direction === 'DOWN' && finalPrice < entryPrice) win = true;
 

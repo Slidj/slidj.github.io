@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trading Ultra Smooth</title>
+    <title>Trading Compact</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
         :root {
-            --bg-gradient: radial-gradient(circle at 50% 0%, #1f2636 0%, #0b0c10 100%);
+            --bg-gradient: radial-gradient(circle at 50% 0%, #1a1d26 0%, #0d0e12 100%);
             --text-primary: #ffffff;
             --text-secondary: #8d95a8;
             --candle-up: #00f2a9;
@@ -24,7 +24,7 @@
             user-select: none; -webkit-tap-highlight-color: transparent;
         }
         
-        /* HEADER (90px padding) */
+        /* HEADER */
         .header {
             position: absolute; top: 0; left: 0; right: 0;
             padding: 0 16px; padding-top: calc(90px + env(safe-area-inset-top)); 
@@ -55,17 +55,17 @@
         .settings-icon { width: 20px; height: 20px; fill: var(--text-secondary); }
 
         .price-container { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .price { font-size: 20px; font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); transition: color 0.3s ease; }
+        .price { font-size: 20px; font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); transition: color 0.1s; }
         
         .pulse-dot {
             width: 8px; height: 8px; border-radius: 50%; background-color: var(--candle-up);
-            box-shadow: 0 0 0 rgba(0, 242, 169, 0.4); transition: background-color 0.3s ease;
+            box-shadow: 0 0 0 rgba(0, 242, 169, 0.4); transition: background-color 0.1s;
         }
 
-        /* CHART CONTAINER */
+        /* CHART CONTAINER - Графік на весь екран, але за кнопками */
         #chart-container { position: absolute; top: 0; left: 0; right: 0; bottom: 110px; z-index: 1; }
 
-        /* RESET ZOOM BUTTON (НОВЕ) */
+        /* RESET ZOOM BUTTON */
         #reset-zoom-btn {
             position: absolute; bottom: 130px; right: 16px;
             width: 40px; height: 40px; border-radius: 50%;
@@ -81,7 +81,7 @@
         .controls-wrapper {
             position: absolute; bottom: 0; left: 0; right: 0; height: 110px;
             padding: 0 16px 20px 16px;
-            background: linear-gradient(to top, #0b0c10 90%, transparent 100%);
+            background: linear-gradient(to top, #0b0c10 95%, transparent 100%);
             display: flex; gap: 16px; align-items: center; z-index: 20;
         }
         .btn {
@@ -109,9 +109,6 @@
         input[type=range] { width: 100%; -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; background: #2a2e39; border-radius: 4px; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #fff; margin-top: -8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-
-        .loader { border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid #fff; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -143,7 +140,6 @@
     </div>
 
     <div id="chart-container"></div>
-    
     <div id="reset-zoom-btn" onclick="resetZoom()">🎯</div>
 
     <div id="result-popup" class="modal">
@@ -183,8 +179,15 @@
         const chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
-            priceScale: { autoScale: true }, // За замовчуванням автоскейл включений
-            rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.3, bottom: 0.2 } },
+            priceScale: { 
+                autoScale: true,
+                // --- ВИРІШЕННЯ "ГІГАНТСЬКИХ СВІЧОК" ---
+                // Ми залишаємо 40% порожнього місця зверху і 40% знизу.
+                // Свічки будуть малюватися лише в центральних 20% екрану.
+                // Це робить їх візуально компактними і згладжує ривки.
+                scaleMargins: { top: 0.4, bottom: 0.4 } 
+            }, 
+            rightPriceScale: { borderColor: 'transparent' },
             timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, barSpacing: 12 },
             crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.2)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.2)' } }
         });
@@ -197,63 +200,39 @@
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
 
-        // --- RESET ZOOM LOGIC ---
-        // Якщо юзер торкається графіка - показуємо кнопку "Центрувати"
-        chart.timeScale().subscribeVisibleTimeRangeChange(() => {
-            document.getElementById('reset-zoom-btn').classList.add('show');
-        });
-
+        chart.timeScale().subscribeVisibleTimeRangeChange(() => { document.getElementById('reset-zoom-btn').classList.add('show'); });
         function resetZoom() {
-            chart.timeScale().scrollToRealTime(); // Повертаємо до реального часу
-            chart.priceScale('right').applyOptions({ autoScale: true }); // Вмикаємо автоскейл назад
-            document.getElementById('reset-zoom-btn').classList.remove('show'); // Ховаємо кнопку
+            chart.timeScale().scrollToRealTime(); 
+            document.getElementById('reset-zoom-btn').classList.remove('show'); 
         }
 
-        // --- SETTINGS LOGIC ---
         function toggleSettings() { document.getElementById('settings-popup').classList.toggle('show'); }
         document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
         document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
 
-        // --- OPTIMIZED SMOOTH ENGINE (Physics based) ---
+        // --- OPTIMIZED UPDATE ENGINE (Throttling) ---
         let ws = null;
         let realCandle = null;
-        let displayCandle = null;
         let lastPrice = 0;
         const priceElement = document.getElementById('price');
         const pulseDot = document.getElementById('pulse-dot');
         const assetSelect = document.getElementById('asset-select');
+        
+        // Змінна для збереження запиту на оновлення
+        let animationFrameId = null;
 
-        function animateTick() {
-            if (realCandle && displayCandle) {
-                // Якщо прийшла нова свічка (змінився час), переходимо миттєво
-                if (realCandle.time > displayCandle.time) {
-                    displayCandle = { ...realCandle }; 
-                } else {
-                    // Фізика руху ціни (Lerp з меншим коефіцієнтом для плавності)
-                    const diff = realCandle.close - displayCandle.close;
-                    
-                    // Рухаємося тільки якщо є помітна різниця
-                    if (Math.abs(diff) > 0.00001) {
-                        displayCandle.close += diff * 0.1; // 0.1 = М'який рух (10% дистанції за кадр)
-                        
-                        // Підтягуємо High/Low
-                        displayCandle.high = Math.max(displayCandle.high, displayCandle.close);
-                        displayCandle.low = Math.min(displayCandle.low, displayCandle.close);
-                        
-                        // Оновлюємо графік
-                        series.update(displayCandle);
-                    }
-                }
+        // Функція оновлення, яка викликається не частіше ніж може екран (60 FPS)
+        function renderChart() {
+            if (realCandle) {
+                series.update(realCandle);
             }
-            requestAnimationFrame(animateTick);
         }
-        requestAnimationFrame(animateTick);
 
         function connectWebSocket(symbol) {
             if (ws) ws.close();
             series.setData([]);
             priceElement.innerText = 'Loading...';
-            realCandle = null; displayCandle = null;
+            realCandle = null;
 
             ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@aggTrade`);
             
@@ -262,28 +241,37 @@
                 const price = parseFloat(data.p);
                 const time = Math.floor(data.T / 1000);
 
+                // Оновлюємо модель даних (без малювання)
                 if (!realCandle || time > realCandle.time) {
                     realCandle = { time: time, open: realCandle ? realCandle.close : price, high: price, low: price, close: price };
-                    if (!displayCandle) displayCandle = { ...realCandle };
                 } else {
                     realCandle.high = Math.max(realCandle.high, price);
                     realCandle.low = Math.min(realCandle.low, price);
                     realCandle.close = price;
                 }
 
-                // Оновлення цифр (UI) не залежить від анімації графіка
+                // Оновлюємо UI цифри (це можна робити миттєво)
                 priceElement.innerText = price.toFixed(2);
                 const color = !lastPrice || price >= lastPrice ? CONFIG.up : CONFIG.down;
                 priceElement.style.color = color;
                 pulseDot.style.backgroundColor = color;
                 lastPrice = price;
+
+                // Запланувати перемальовку графіка, якщо вона ще не запланована
+                // Це і є "Throttling" - ми не блокуємо потік
+                if (!animationFrameId) {
+                    animationFrameId = requestAnimationFrame(() => {
+                        renderChart();
+                        animationFrameId = null;
+                    });
+                }
             };
         }
 
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- USER & TRADING ---
+        // --- TRADING ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name;

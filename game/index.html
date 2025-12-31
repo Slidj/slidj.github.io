@@ -8,8 +8,9 @@
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
+        /* --- ЗАГАЛЬНИЙ СТИЛЬ СТОРІНКИ --- */
         body {
-            background-color: #131722;
+            background-color: #0e0e0f; /* Дуже темний фон (Deep Dark) */
             color: #d1d4dc;
             font-family: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
             margin: 0;
@@ -23,52 +24,34 @@
         /* HEADER */
         .header {
             padding: 12px 16px;
-            
-            /* --- РАДИКАЛЬНЕ ЗБІЛЬШЕННЯ ВІДСТУПУ --- */
+            /* Відступ зверху для безпечної зони iPhone */
             padding-top: 80px; 
             padding-top: calc(80px + env(safe-area-inset-top));
             
-            background: #1e222d;
+            background: #0e0e0f; /* Зливається з фоном */
             display: flex;
             justify-content: space-between;
-            align-items: flex-end; /* Вирівнювання по низу хедера */
-            border-bottom: 1px solid #2a2e39;
+            align-items: flex-end;
             min-height: 60px; 
             z-index: 20;
         }
 
-        /* Профіль користувача */
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        /* Профіль */
+        .user-profile { display: flex; align-items: center; gap: 10px; }
         .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #2a2e39;
-            object-fit: cover;
-            border: 2px solid #2a2e39;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #1f1f21; object-fit: cover; border: 2px solid #1f1f21;
         }
-        .user-info {
-            display: flex;
-            flex-direction: column;
-        }
+        .user-info { display: flex; flex-direction: column; }
         .user-name { font-weight: 700; font-size: 15px; color: #fff; line-height: 1.2; }
-        .balance { font-size: 13px; color: #ff9800; font-weight: 600; }
+        .balance { font-size: 13px; color: #7d8597; font-weight: 600; } /* Сірий колір для балансу */
 
-        /* Селектор валют та ціна */
-        .market-info {
-            text-align: right;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
+        /* Селектор валют */
+        .market-info { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
         #asset-select {
-            background: #2a2e39;
+            background: #1f1f21;
             color: white;
-            border: 1px solid #363a45;
+            border: none;
             padding: 8px 12px;
             border-radius: 8px;
             font-weight: 700;
@@ -76,64 +59,51 @@
             outline: none;
             margin-bottom: 4px;
             cursor: pointer;
-            appearance: none; /* Прибирає стандартну стрілку браузера */
-            -webkit-appearance: none;
-            text-align: center;
+            appearance: none; -webkit-appearance: none; text-align: center;
         }
-        .price { font-size: 16px; font-weight: bold; font-family: monospace; margin-top: 2px;}
+        .price { font-size: 18px; font-weight: bold; font-family: monospace; margin-top: 2px; color: #fff; }
 
-        /* CHART */
-        #chart-container {
-            flex-grow: 1;
-            width: 100%;
-            position: relative;
-        }
+        /* CHART CONTAINER */
+        #chart-container { flex-grow: 1; width: 100%; position: relative; }
 
         /* POPUP RESULT */
         #result-popup {
-            position: absolute;
-            top: 50%; left: 50%;
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0.8);
-            background: #2a2e39;
-            padding: 20px 40px;
-            border-radius: 16px;
+            background: #1f1f21; /* Світліший фон для попапу */
+            padding: 24px 40px;
+            border-radius: 20px;
             text-align: center;
-            opacity: 0;
-            pointer-events: none;
+            opacity: 0; pointer-events: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 100;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
         }
-        #result-popup.win { border: 2px solid #089981; }
-        #result-popup.loss { border: 2px solid #f23645; }
+        #result-popup.win { border: 2px solid #0ecb81; }
+        #result-popup.loss { border: 2px solid #f6465d; }
         #result-popup.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        .result-amount { font-size: 28px; font-weight: 800; margin-top: 5px; }
+        .result-amount { font-size: 28px; font-weight: 800; margin-top: 8px; color: #fff; }
 
         /* CONTROLS */
         .controls {
             padding: 16px;
-            background: #1e222d;
+            background: #0e0e0f;
             display: flex;
-            gap: 12px;
-            padding-bottom: 50px; /* Також збільшив відступ знизу */
+            gap: 16px;
+            padding-bottom: 50px; 
         }
         .btn {
-            flex: 1;
-            height: 56px;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 800;
-            color: white;
-            cursor: pointer;
-            transition: transform 0.1s;
-            text-transform: uppercase;
+            flex: 1; height: 56px; border: none; border-radius: 16px;
+            font-size: 18px; font-weight: 700; color: white; cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            text-transform: uppercase; letter-spacing: 1px;
         }
-        .btn:active { transform: scale(0.96); }
-        .btn-up { background-color: #089981; box-shadow: 0 4px 15px rgba(8, 153, 129, 0.3); }
-        .btn-down { background-color: #f23645; box-shadow: 0 4px 15px rgba(242, 54, 69, 0.3); }
+        .btn:active { transform: scale(0.96); opacity: 0.9; }
+        /* Яскраві неонові кнопки */
+        .btn-up { background-color: #0ecb81; box-shadow: 0 0 20px rgba(14, 203, 129, 0.2); }
+        .btn-down { background-color: #f6465d; box-shadow: 0 0 20px rgba(246, 70, 93, 0.2); }
 
-        .loader { border: 2px solid #2a2e39; border-top: 2px solid #ff9800; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
+        .loader { border: 2px solid #2a2e39; border-top: 2px solid #fff; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -141,13 +111,12 @@
 
     <div class="header">
         <div class="user-profile">
-            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" class="user-avatar">
+            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23555'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" class="user-avatar">
             <div class="user-info">
                 <div id="user-name" class="user-name">Trader</div>
                 <div class="balance" id="balance">$1,000</div>
             </div>
         </div>
-        
         <div class="market-info">
             <select id="asset-select">
                 <option value="btcusdt">BTC / USDT</option>
@@ -167,41 +136,83 @@
     </div>
 
     <div class="controls">
-        <button class="btn btn-up" onclick="startTrade('UP')">Up 🟢</button>
-        <button class="btn btn-down" onclick="startTrade('DOWN')">Down 🔴</button>
+        <button class="btn btn-up" onclick="startTrade('UP')">Call</button>
+        <button class="btn btn-down" onclick="startTrade('DOWN')">Put</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.setHeaderColor('#1e222d'); 
+        tg.setHeaderColor('#0e0e0f'); // Колір "шапки" Телеграму під фон
 
-        // --- 1. ІНІЦІАЛІЗАЦІЯ ЮЗЕРА ---
+        // ============================================
+        // 🎨 DESIGN CONFIG (НАЛАШТУВАННЯ ДИЗАЙНУ ГРАФІКА)
+        // ============================================
+        const THEME = {
+            backgroundColor: '#0e0e0f', // Колір фону графіка (Deep Dark)
+            gridColor: '#1f1f21',       // Колір сітки (майже невидима)
+            textColor: '#7d8597',       // Колір цифр на шкалі
+            
+            // Свічки UP (Зелені)
+            upColor: '#0ecb81',         
+            upWickColor: '#0ecb81',
+            
+            // Свічки DOWN (Червоні)
+            downColor: '#f6465d',
+            downWickColor: '#f6465d',
+            
+            // Лінія перехрестя (коли водиш пальцем)
+            crosshairColor: '#484d59',
+        };
+        // ============================================
+
+
+        // --- 1. ЮЗЕР ---
         const user = tg.initDataUnsafe.user;
         if (user) {
-            document.getElementById('user-name').innerText = user.first_name + (user.last_name ? ' ' + user.last_name : '');
-            if (user.photo_url) {
-                document.getElementById('user-avatar').src = user.photo_url;
-            }
+            document.getElementById('user-name').innerText = user.first_name;
+            if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
         }
 
-        // --- 2. ГРАФІК ---
+        // --- 2. СТВОРЕННЯ ГРАФІКА ---
         const container = document.getElementById('chart-container');
         const chart = LightweightCharts.createChart(container, {
-            layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
-            grid: { vertLines: { color: '#2a2e39' }, horzLines: { color: '#2a2e39' } },
-            timeScale: { timeVisible: true, secondsVisible: true, borderColor: '#2a2e39' },
-            rightPriceScale: { borderColor: '#2a2e39' },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            layout: {
+                background: { type: 'solid', color: THEME.backgroundColor },
+                textColor: THEME.textColor,
+            },
+            grid: {
+                vertLines: { color: THEME.gridColor },
+                horzLines: { color: THEME.gridColor },
+            },
+            timeScale: {
+                timeVisible: true,
+                secondsVisible: true,
+                borderColor: THEME.gridColor,
+            },
+            rightPriceScale: {
+                borderColor: THEME.gridColor,
+            },
+            crosshair: {
+                vertLine: { color: THEME.crosshairColor, labelBackgroundColor: THEME.crosshairColor },
+                horzLine: { color: THEME.crosshairColor, labelBackgroundColor: THEME.crosshairColor },
+            }
         });
 
+        // Створюємо серію свічок з твоїми кольорами
         let series = chart.addCandlestickSeries({
-            upColor: '#089981', downColor: '#f23645', borderVisible: false, wickUpColor: '#089981', wickDownColor: '#f23645',
+            upColor: THEME.upColor,
+            borderUpColor: THEME.upColor,
+            wickUpColor: THEME.upWickColor,
+            
+            downColor: THEME.downColor,
+            borderDownColor: THEME.downColor,
+            wickDownColor: THEME.downWickColor,
         });
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
 
-        // --- 3. BINANCE ---
+        // --- 3. ДАНІ ---
         let ws = null;
         let currentPrice = 0;
         const priceLabel = document.getElementById('price');
@@ -225,10 +236,9 @@
                     close: parseFloat(k.c),
                 };
                 currentPrice = candle.close;
-                priceLabel.style.color = !window.lastPrice || currentPrice >= window.lastPrice ? '#089981' : '#f23645';
+                priceLabel.style.color = !window.lastPrice || currentPrice >= window.lastPrice ? THEME.upColor : THEME.downColor;
                 window.lastPrice = currentPrice;
-                const digits = currentPrice < 1 ? 5 : 2;
-                priceLabel.innerText = currentPrice.toFixed(digits);
+                priceLabel.innerText = currentPrice.toFixed(currentPrice < 1 ? 5 : 2);
                 series.update(candle);
             };
         }
@@ -248,10 +258,10 @@
 
             const entryPrice = currentPrice;
             const betAmount = 50;
-            const lineColor = direction === 'UP' ? '#089981' : '#f23645';
+            const lineColor = direction === 'UP' ? THEME.upColor : THEME.downColor;
 
             betLine = series.createPriceLine({
-                price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 2, title: direction,
+                price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 2, title: direction.toUpperCase(),
             });
 
             setTimeout(() => { finishTrade(direction, entryPrice, betAmount); }, 3000);
@@ -275,7 +285,7 @@
 
             popup.className = win ? 'win show' : 'loss show';
             title.innerText = win ? 'YOU WON!' : 'YOU LOST';
-            title.style.color = win ? '#089981' : '#f23645';
+            title.style.color = win ? THEME.upColor : THEME.downColor;
             amount.innerText = win ? `+$${(betAmount * 0.8).toFixed(0)}` : `-$${betAmount}`;
             
             if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(win ? 'success' : 'error');

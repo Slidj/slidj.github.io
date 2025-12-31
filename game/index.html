@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trading Pro Smooth</title>
+    <title>Trading Pro Fixed</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
         :root {
-            /* Градієнт "Deep Ocean" */
+            /* Глибокий, дорогий фон */
             --bg-gradient: radial-gradient(circle at 50% 0%, #1c2030 0%, #0b0c10 100%);
             --text-primary: #ffffff;
             --text-secondary: #8d95a8;
-            --candle-up: #26a69a;   /* Більш спокійний зелений (як на біржах) */
-            --candle-down: #ef5350; /* Спокійний червоний */
+            --candle-up: #26a69a;
+            --candle-down: #ef5350;
         }
 
         body {
@@ -92,7 +92,6 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1);
         }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
-        /* Професійні градієнти */
         .btn-up { background: linear-gradient(135deg, #26a69a 0%, #00897b 100%); color: #e0f2f1; }
         .btn-down { background: linear-gradient(135deg, #ef5350 0%, #c62828 100%); color: #ffebee; }
 
@@ -180,7 +179,7 @@
         const chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
-            // Logarithmic + Compact Margins
+            // Logarithmic + Compact
             priceScale: { mode: 1, autoScale: true, scaleMargins: { top: 0.35, bottom: 0.35 } }, 
             rightPriceScale: { borderColor: 'transparent' },
             timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
@@ -207,51 +206,33 @@
         document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
         document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
 
-        // --- CORE ENGINE: HEIKIN ASHI + ANIMATION + WICK SHORTENER ---
+        // --- ENGINE ---
         let ws = null;
-        let realHA = null;      // Реальна математична HA свічка
-        let displayHA = null;   // Свічка, яку ми малюємо (з анімацією і короткими хвостами)
+        let realHA = null;
+        let displayHA = null;
         let lastPrice = 0;
-        let lastRawHA = null;   // Для розрахунку Open
-
+        let lastRawHA = null;
         const priceElement = document.getElementById('price');
         const pulseDot = document.getElementById('pulse-dot');
         const assetSelect = document.getElementById('asset-select');
 
-        // Анімаційний цикл
         function animate() {
             if (realHA && displayHA) {
-                // Якщо почалась нова секунда - миттєво перемикаємось
                 if (realHA.time > displayHA.time) {
-                    displayHA = { ...realHA }; // Start fresh
-                    // Застосовуємо "Wick Shortener" одразу до нової свічки
+                    displayHA = { ...realHA };
                     applyWickShortener(displayHA); 
                 } else {
-                    // --- ПЛАВНІСТЬ (INTERPOLATION) ---
-                    // Рухаємо Close до цілі
                     const diff = realHA.close - displayHA.close;
-                    
                     if (Math.abs(diff) > 0.000001) {
-                        displayHA.close += diff * 0.1; // Плавний рух (10% за кадр)
-                        
-                        // Сінхронізуємо межі тіла
+                        displayHA.close += diff * 0.1;
                         const bodyTop = Math.max(displayHA.open, displayHA.close);
                         const bodyBottom = Math.min(displayHA.open, displayHA.close);
-                        
-                        // --- WICK SHORTENER (Вкорочення хвостів) ---
-                        // Замість реального High, ми беремо точку, яка на 30% вище тіла, але не вище реального High
-                        // Це візуальний хак для краси
                         const targetHigh = realHA.high;
                         const targetLow = realHA.low;
-
-                        // Візуальний High = Тіло + 30% довжини хвоста
                         const visualHigh = bodyTop + (targetHigh - bodyTop) * 0.3; 
                         const visualLow = bodyBottom - (bodyBottom - targetLow) * 0.3;
-
-                        // Оновлюємо відображення, але не виходимо за межі тіла (щоб хвіст не зник всередині)
                         displayHA.high = Math.max(bodyTop, visualHigh);
                         displayHA.low = Math.min(bodyBottom, visualLow);
-                        
                     }
                 }
                 series.update(displayHA);
@@ -259,7 +240,6 @@
             requestAnimationFrame(animate);
         }
         
-        // Допоміжна функція для першого кадру
         function applyWickShortener(candle) {
             const bodyTop = Math.max(candle.open, candle.close);
             const bodyBottom = Math.min(candle.open, candle.close);
@@ -269,7 +249,6 @@
 
         requestAnimationFrame(animate);
 
-        // Математика Heikin Ashi
         function calculateHeikinAshi(time, open, high, low, close) {
             const haClose = (open + high + low + close) / 4;
             let haOpen = open;
@@ -295,9 +274,8 @@
                 const price = parseFloat(data.p);
                 const time = Math.floor(data.T / 1000);
 
-                // 1. RAW CANDLE
                 if (!rawCandle || time > rawCandle.time) {
-                    if (realHA) lastRawHA = { ...realHA }; // Зберігаємо минулу HA для розрахунку наступного Open
+                    if (realHA) lastRawHA = { ...realHA };
                     rawCandle = { time: time, open: rawCandle ? rawCandle.close : price, high: price, low: price, close: price };
                 } else {
                     rawCandle.high = Math.max(rawCandle.high, price);
@@ -305,16 +283,13 @@
                     rawCandle.close = price;
                 }
 
-                // 2. HEIKIN ASHI CALCULATION
                 realHA = calculateHeikinAshi(rawCandle.time, rawCandle.open, rawCandle.high, rawCandle.low, rawCandle.close);
                 
-                // Init display logic
                 if (!displayHA) {
                     displayHA = { ...realHA };
                     applyWickShortener(displayHA);
                 }
 
-                // 3. UI UPDATES
                 const digits = price < 1 ? 6 : 2; 
                 priceElement.innerText = price.toFixed(digits);
                 const color = !lastPrice || price >= lastPrice ? CONFIG.up : CONFIG.down;
@@ -327,7 +302,7 @@
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- TRADING LOGIC ---
+        // --- TRADING LOGIC FIXED ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name;
@@ -343,17 +318,28 @@
             isTrading = true;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
             
-            const entryPrice = lastPrice; // Ставка по реальній ціні
+            // 1. Беремо РЕАЛЬНУ ціну, а не анімовану, щоб бути точним
+            const entryPrice = lastPrice; 
             const betAmount = 50;
             const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;
 
-            betLine = series.createPriceLine({ price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 0, title: direction.toUpperCase(), axisLabelVisible: true });
+            // 2. Створюємо лінію ставки (Price Line)
+            // Вона автоматично з'явиться на потрібній висоті
+            betLine = series.createPriceLine({
+                price: entryPrice, 
+                color: lineColor, 
+                lineWidth: 2, 
+                lineStyle: 0, // Суцільна лінія
+                title: direction.toUpperCase() + ' @ ' + entryPrice, 
+                axisLabelVisible: true
+            });
 
             setTimeout(() => { finishTrade(direction, entryPrice, betAmount); }, 3000);
         }
 
         function finishTrade(direction, entryPrice, betAmount) {
             let win = false;
+            // Порівнюємо поточну РЕАЛЬНУ ціну з ціною входу
             if (direction === 'UP' && lastPrice > entryPrice) win = true;
             else if (direction === 'DOWN' && lastPrice < entryPrice) win = true;
 

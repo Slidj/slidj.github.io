@@ -6,10 +6,10 @@
     <title>Trading Premium</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/countup.js@2.0.7/dist/countUp.min.js"></script>
 
     <style>
         :root {
-            /* Глибокий темний фон */
             --bg-gradient: radial-gradient(circle at 50% 0%, #1f2636 0%, #0b0c10 100%);
             --text-primary: #ffffff;
             --text-secondary: #8d95a8;
@@ -30,21 +30,15 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* --- 1. HEADER: ЩЕ БІЛЬШИЙ ВІДСТУП (90px) --- */
+        /* HEADER - ВІДСТУП 90px */
         .header {
             position: absolute; 
             top: 0; left: 0; right: 0;
             padding: 0 16px;
-            
-            /* Радикальний відступ, щоб точно не налізло */
             padding-top: calc(90px + env(safe-area-inset-top)); 
             height: 60px; 
-            
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start; 
-            z-index: 20;
-            pointer-events: none; /* Пропускаємо кліки крізь пусті місця */
+            display: flex; justify-content: space-between; align-items: flex-start; 
+            z-index: 20; pointer-events: none;
         }
 
         .user-profile, .market-controls { pointer-events: auto; }
@@ -75,13 +69,14 @@
         .settings-icon { width: 20px; height: 20px; fill: var(--text-secondary); }
 
         .price-container { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .price { font-size: 19px; font-weight: 700; font-family: monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); }
+        /* Додали моноширинний шрифт для стабільності цифр при анімації */
+        .price { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); transition: color 0.2s ease; }
         
         .pulse-dot {
             width: 8px; height: 8px; border-radius: 50%;
             background-color: var(--candle-up);
             box-shadow: 0 0 0 rgba(0, 242, 169, 0.4);
-            animation: pulse 2s infinite;
+            animation: pulse 1s infinite; /* Пришвидшили пульсацію */
         }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(0, 242, 169, 0.4); }
@@ -89,25 +84,17 @@
             100% { box-shadow: 0 0 0 0 rgba(0, 242, 169, 0); }
         }
 
-        /* --- 2. CHART: ВИПРАВЛЕННЯ ВИДИМОСТІ ЧАСУ --- */
+        /* CHART */
         #chart-container { 
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            
-            /* Графік закінчується там, де починаються кнопки (110px від низу) */
-            bottom: 110px; 
-            
-            z-index: 1;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 110px; z-index: 1;
         }
 
-        /* CONTROLS (КНОПКИ) */
+        /* CONTROLS */
         .controls-wrapper {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 110px; /* Фіксуємо висоту панелі кнопок */
+            position: absolute; bottom: 0; left: 0; right: 0; height: 110px;
             padding: 0 16px 20px 16px;
             background: linear-gradient(to top, #0b0c10 90%, transparent 100%);
-            display: flex; gap: 16px; align-items: center;
-            z-index: 20;
+            display: flex; gap: 16px; align-items: center; z-index: 20;
         }
 
         .btn {
@@ -121,7 +108,7 @@
         .btn-up { background: linear-gradient(145deg, #00f2a9 0%, #00b37d 100%); color: #003322; }
         .btn-down { background: linear-gradient(145deg, #ff3b30 0%, #b8221a 100%); color: #3d0805; }
 
-        /* MODALS & SETTINGS */
+        /* MODALS */
         .modal {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0.9);
@@ -165,7 +152,7 @@
             </div>
             <div class="price-container">
                 <div class="pulse-dot" id="pulse-dot"></div>
-                <div class="price" id="price">Loading...</div>
+                <div class="price" id="price">...</div>
             </div>
         </div>
     </div>
@@ -208,31 +195,15 @@
 
         const CONFIG = { up: '#00f2a9', down: '#ff3b30' };
 
+        // --- CHART INIT ---
         const container = document.getElementById('chart-container');
         const chart = LightweightCharts.createChart(container, {
-            layout: { 
-                background: { type: 'solid', color: 'transparent' }, 
-                textColor: '#8d95a8', 
-                fontSize: 13, 
-                fontFamily: "-apple-system, BlinkMacSystemFont, Roboto, sans-serif"
-            },
+            layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
-            // Автоскейл по ЦІНІ (Вертикально)
             priceScale: { autoScale: true },
             rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.3, bottom: 0.2 } },
-            // Час (Горизонтально)
-            timeScale: { 
-                borderColor: 'transparent', 
-                timeVisible: true, 
-                secondsVisible: false, 
-                visible: true, // Примусово показуємо час
-                barSpacing: 12 
-            },
-            crosshair: {
-                mode: 1,
-                vertLine: { style: 2, color: 'rgba(255,255,255,0.2)', labelBackgroundColor: '#505668' },
-                horzLine: { style: 2, color: 'rgba(255,255,255,0.2)', labelBackgroundColor: '#505668' }
-            }
+            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
+            crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.2)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.2)' } }
         });
 
         let series = chart.addCandlestickSeries({
@@ -244,49 +215,76 @@
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
 
         function toggleSettings() { document.getElementById('settings-popup').classList.toggle('show'); }
-        document.getElementById('zoom-slider').addEventListener('input', (e) => {
-            chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) });
-        });
-        document.getElementById('font-slider').addEventListener('input', (e) => {
-            chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } });
-        });
+        document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
+        document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
 
+        // --- REAL-TIME DATA LOGIC (Smoothness) ---
         let ws = null;
-        let currentPrice = 0;
-        const priceLabel = document.getElementById('price');
+        let currentBar = null;
+        let lastPrice = 0;
+        const priceElement = document.getElementById('price');
         const pulseDot = document.getElementById('pulse-dot');
         const assetSelect = document.getElementById('asset-select');
+
+        // Функція для плавного оновлення цифр
+        function updatePriceUI(price) {
+            priceElement.innerText = price.toFixed(2);
+            // Анімація кольору
+            const color = !lastPrice || price >= lastPrice ? CONFIG.up : CONFIG.down;
+            priceElement.style.color = color;
+            pulseDot.style.backgroundColor = color;
+            lastPrice = price;
+        }
 
         function connectWebSocket(symbol) {
             if (ws) ws.close();
             series.setData([]);
-            priceLabel.innerText = 'Loading...';
-            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@kline_1s`);
+            priceElement.innerText = 'Loading...';
+            currentBar = null;
+
+            // ВИКОРИСТОВУЄМО AGGREGATED TRADES для миттєвих оновлень
+            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@aggTrade`);
+            
             ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                const k = message.k;
-                const candle = { time: k.t / 1000, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c) };
-                currentPrice = candle.close;
-                const color = !window.lastPrice || currentPrice >= window.lastPrice ? CONFIG.up : CONFIG.down;
-                priceLabel.style.color = color;
-                pulseDot.style.backgroundColor = color;
-                window.lastPrice = currentPrice;
-                const digits = currentPrice < 1 ? 5 : 2;
-                series.applyOptions({ priceFormat: { precision: digits, minMove: 1 / Math.pow(10, digits) } });
-                priceLabel.innerText = currentPrice.toFixed(digits);
-                series.update(candle);
+                const data = JSON.parse(event.data);
+                const price = parseFloat(data.p);
+                const time = Math.floor(data.T / 1000); // Округляємо до секунди
+
+                // Якщо це перший тік або нова секунда - створюємо нову свічку
+                if (!currentBar || time > currentBar.time) {
+                    currentBar = {
+                        time: time,
+                        open: currentBar ? currentBar.close : price, // Відкриття = закриття попередньої
+                        high: price,
+                        low: price,
+                        close: price
+                    };
+                } else {
+                    // Оновлюємо поточну свічку
+                    currentBar.high = Math.max(currentBar.high, price);
+                    currentBar.low = Math.min(currentBar.low, price);
+                    currentBar.close = price;
+                }
+
+                // Оновлюємо графік
+                series.update(currentBar);
+                
+                // Оновлюємо цифри (UI)
+                updatePriceUI(price);
             };
         }
 
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
-        connectWebSocket('btcusdt');
+        connectWebSocket('btcusdt'); // Start
 
+        // --- USER INFO ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name;
             if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
         }
 
+        // --- TRADING LOGIC ---
         let balance = 1000;
         let isTrading = false;
         let betLine = null;
@@ -295,20 +293,27 @@
             if (isTrading) return;
             isTrading = true;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
-            const entryPrice = currentPrice;
+            
+            const entryPrice = lastPrice;
             const betAmount = 50;
             const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;
+
             betLine = series.createPriceLine({ price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 0, title: direction.toUpperCase(), axisLabelVisible: true });
+
             setTimeout(() => { finishTrade(direction, entryPrice, betAmount); }, 3000);
         }
 
         function finishTrade(direction, entryPrice, betAmount) {
             let win = false;
-            if (direction === 'UP' && currentPrice > entryPrice) win = true;
-            else if (direction === 'DOWN' && currentPrice < entryPrice) win = true;
+            // Перевіряємо по останній ціні
+            if (direction === 'UP' && lastPrice > entryPrice) win = true;
+            else if (direction === 'DOWN' && lastPrice < entryPrice) win = true;
+
             if (win) balance += betAmount * 0.8; else balance -= betAmount;
             document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;
+            
             if (betLine) { series.removePriceLine(betLine); betLine = null; }
+
             const popup = document.getElementById('result-popup');
             const title = document.getElementById('result-title');
             const amount = document.getElementById('result-amount');
@@ -317,6 +322,7 @@
             amount.innerText = win ? `+$${(betAmount * 0.8).toFixed(0)}` : `-$${betAmount}`;
             popup.style.borderColor = win ? CONFIG.up : CONFIG.down;
             popup.classList.add('show');
+            
             if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(win ? 'success' : 'error');
             setTimeout(() => { popup.classList.remove('show'); isTrading = false; }, 2000);
         }

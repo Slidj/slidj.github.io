@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex Trade Visual</title>
+    <title>Apex Trade Visual Fixed</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
         :root {
-            --bg-gradient: radial-gradient(circle at 50% 0%, #1a1d26 0%, #0b0c10 100%);
+            /* Apex Premium Theme */
+            --bg-gradient: radial-gradient(circle at 50% 0%, #1c2030 0%, #0b0c10 100%);
             --text-primary: #ffffff;
             --text-secondary: #8d95a8;
             --candle-up: #26a69a;
             --candle-down: #ef5350;
+            --bet-color: #ff9f0a; /* Золотий колір для "Замороженого" бігунка */
             --glass-bg: rgba(30,34,45, 0.85);
             --border-color: rgba(255,255,255,0.08);
         }
@@ -29,8 +31,7 @@
         /* HEADER */
         .header {
             position: absolute; top: 0; left: 0; right: 0;
-            padding: 0 16px; 
-            padding-top: calc(90px + env(safe-area-inset-top)); 
+            padding: 0 16px; padding-top: calc(90px + env(safe-area-inset-top)); 
             height: 60px; display: flex; justify-content: space-between; align-items: flex-start; 
             z-index: 20; pointer-events: none;
         }
@@ -43,7 +44,7 @@
             border: 1px solid var(--border-color);
         }
         .user-info { display: flex; flex-direction: column; }
-        .user-name { font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .user-name { font-weight: 700; font-size: 16px; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .balance { font-size: 13px; color: #ffce00; font-weight: 600; margin-top: 2px; }
 
         .market-controls { display: flex; flex-direction: column; align-items: flex-end; }
@@ -181,7 +182,7 @@
         const chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
-            // Автоскейл + Поля щоб графік був по центру
+            // Logarithmic + Compact
             priceScale: { mode: 1, autoScale: true, scaleMargins: { top: 0.35, bottom: 0.35 } }, 
             rightPriceScale: { borderColor: 'transparent' },
             timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
@@ -208,13 +209,12 @@
         document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
         document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
 
-        // --- ENGINE ---
+        // --- ENGINE: HEIKIN ASHI + SMOOTH ---
         let ws = null;
         let realHA = null;      
         let displayHA = null;   
         let lastPrice = 0;
         let lastRawHA = null;   
-        let lastTime = 0; // Для маркера
 
         const priceElement = document.getElementById('price');
         const pulseDot = document.getElementById('pulse-dot');
@@ -234,7 +234,7 @@
                         
                         const targetHigh = realHA.high;
                         const targetLow = realHA.low;
-                        const visualHigh = bodyTop + (targetHigh - bodyTop) * 0.3;
+                        const visualHigh = bodyTop + (targetHigh - bodyTop) * 0.3; 
                         const visualLow = bodyBottom - (bodyBottom - targetLow) * 0.3;
                         
                         displayHA.high = Math.max(bodyTop, visualHigh);
@@ -279,7 +279,6 @@
                 const data = JSON.parse(event.data);
                 const price = parseFloat(data.p);
                 const time = Math.floor(data.T / 1000);
-                lastTime = time;
 
                 if (!rawCandle || time > rawCandle.time) {
                     if (realHA) lastRawHA = { ...realHA };
@@ -309,7 +308,7 @@
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- TRADING LOGIC WITH MARKERS ---
+        // --- TRADING LOGIC WITH FROZEN RUNNER ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name; 
@@ -319,7 +318,6 @@
         let balance = 1000;
         let isTrading = false;
         let betLine = null;
-        let activeMarkers = []; // Зберігаємо маркери
 
         function startTrade(direction) {
             if (isTrading) return;
@@ -328,29 +326,20 @@
             
             const entryPrice = lastPrice; 
             const betAmount = 50;
-            const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;
+            // Колір ставки: використовуємо помаранчевий для чіткості або колір напрямку
+            const lineColor = '#ff9f0a'; // Помаранчевий (Gold) для замороженого бігунка
 
-            // 1. СТВОРЮЄМО МАРКЕР (Цятку/Стрілку на свічці)
-            // Це візуально "прибиває" ставку до конкретної свічки
-            const marker = {
-                time: lastTime,
-                position: direction === 'UP' ? 'belowBar' : 'aboveBar',
-                color: lineColor,
-                shape: direction === 'UP' ? 'arrowUp' : 'arrowDown',
-                text: 'Bet',
-                size: 2 // Розмір маркера
-            };
-            activeMarkers.push(marker);
-            series.setMarkers(activeMarkers);
-
-            // 2. СТВОРЮЄМО ЛІНІЮ
+            // 🔥 СТВОРЕННЯ "ЗАМОРОЖЕНОГО БІГУНКА"
+            // axisLabelVisible: true - це і є та сама "плашка" збоку
             betLine = series.createPriceLine({
                 price: entryPrice, 
                 color: lineColor, 
                 lineWidth: 2, 
-                lineStyle: 0, 
-                title: direction.toUpperCase() + ' @ ' + entryPrice, 
-                axisLabelVisible: true
+                lineStyle: 2, // Пунктир
+                title: 'ENTRY', 
+                axisLabelVisible: true, // ВАЖЛИВО! Показує мітку на осі
+                axisLabelColor: lineColor,
+                axisLabelTextColor: '#000000'
             });
 
             setTimeout(() => { finishTrade(direction, entryPrice, betAmount); }, 3000);
@@ -365,10 +354,6 @@
             document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;
             
             if (betLine) { series.removePriceLine(betLine); betLine = null; }
-            
-            // Очищуємо маркери після завершення (або можна залишити для історії)
-            activeMarkers = [];
-            series.setMarkers(activeMarkers);
 
             const popup = document.getElementById('result-popup');
             const title = document.getElementById('result-title');

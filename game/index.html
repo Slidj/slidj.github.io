@@ -9,18 +9,12 @@
 
     <style>
         :root {
-            /* Градієнтний фон "Deep Space" */
-            --bg-gradient: radial-gradient(circle at 50% 10%, #1f2636 0%, #0d0e12 100%);
-            --glass-bg: rgba(20, 22, 28, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.08);
+            /* Глибокий темний фон */
+            --bg-gradient: radial-gradient(circle at 50% 0%, #1f2636 0%, #0b0c10 100%);
             --text-primary: #ffffff;
             --text-secondary: #8d95a8;
-            
-            /* Яскраві кольори свічок */
-            --candle-up: #00f2a9;    /* Neon Green */
-            --candle-down: #ff3b30;  /* Neon Red */
-            
-            --btn-radius: 16px;
+            --candle-up: #00f2a9;
+            --candle-down: #ff3b30;
         }
 
         body {
@@ -36,22 +30,21 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* --- HEADER (НОВИЙ ВІДСТУП 75px) --- */
+        /* --- 1. HEADER: ЩЕ БІЛЬШИЙ ВІДСТУП (90px) --- */
         .header {
             position: absolute; 
             top: 0; left: 0; right: 0;
             padding: 0 16px;
             
-            /* Відступ 75px + безпечна зона */
-            padding-top: calc(75px + env(safe-area-inset-top)); 
-            height: 80px; 
+            /* Радикальний відступ, щоб точно не налізло */
+            padding-top: calc(90px + env(safe-area-inset-top)); 
+            height: 60px; 
             
-            background: linear-gradient(to bottom, rgba(13,14,18,0.9) 0%, rgba(13,14,18,0) 100%);
             display: flex;
             justify-content: space-between;
             align-items: flex-start; 
             z-index: 20;
-            pointer-events: none;
+            pointer-events: none; /* Пропускаємо кліки крізь пусті місця */
         }
 
         .user-profile, .market-controls { pointer-events: auto; }
@@ -61,10 +54,9 @@
             width: 44px; height: 44px; border-radius: 12px;
             background: rgba(255,255,255,0.05); object-fit: cover;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .user-info { display: flex; flex-direction: column; }
-        .user-name { font-weight: 700; font-size: 16px; letter-spacing: 0.3px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .user-name { font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .balance { font-size: 13px; color: #ffce00; font-weight: 600; margin-top: 2px; }
 
         .market-controls { display: flex; flex-direction: column; align-items: flex-end; }
@@ -74,8 +66,7 @@
             background: rgba(30,34,45, 0.8);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             padding: 8px 14px; border-radius: 14px;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
         }
         #asset-select {
             background: transparent; color: white; border: none;
@@ -84,7 +75,7 @@
         .settings-icon { width: 20px; height: 20px; fill: var(--text-secondary); }
 
         .price-container { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .price { font-size: 19px; font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); }
+        .price { font-size: 19px; font-weight: 700; font-family: monospace; text-shadow: 0 0 15px rgba(255,255,255,0.15); }
         
         .pulse-dot {
             width: 8px; height: 8px; border-radius: 50%;
@@ -98,57 +89,54 @@
             100% { box-shadow: 0 0 0 0 rgba(0, 242, 169, 0); }
         }
 
-        /* CHART */
+        /* --- 2. CHART: ВИПРАВЛЕННЯ ВИДИМОСТІ ЧАСУ --- */
         #chart-container { 
-            flex-grow: 1; width: 100%; position: relative; 
-            margin-top: 0;
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            
+            /* Графік закінчується там, де починаються кнопки (110px від низу) */
+            bottom: 110px; 
+            
+            z-index: 1;
         }
 
-        /* CONTROLS */
+        /* CONTROLS (КНОПКИ) */
         .controls-wrapper {
             position: absolute; bottom: 0; left: 0; right: 0;
-            padding: 20px 16px 40px 16px;
-            background: linear-gradient(to top, #0d0e12 85%, transparent 100%);
-            display: flex; gap: 16px;
+            height: 110px; /* Фіксуємо висоту панелі кнопок */
+            padding: 0 16px 20px 16px;
+            background: linear-gradient(to top, #0b0c10 90%, transparent 100%);
+            display: flex; gap: 16px; align-items: center;
             z-index: 20;
         }
 
         .btn {
             flex: 1; height: 64px; border: none; border-radius: 20px;
             font-size: 20px; font-weight: 800; color: white; cursor: pointer;
-            position: relative; overflow: hidden;
             display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: all 0.1s;
-            text-transform: uppercase; letter-spacing: 1px;
+            transition: all 0.1s; text-transform: uppercase;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2);
         }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
-        
         .btn-up { background: linear-gradient(145deg, #00f2a9 0%, #00b37d 100%); color: #003322; }
         .btn-down { background: linear-gradient(145deg, #ff3b30 0%, #b8221a 100%); color: #3d0805; }
 
-        /* MODALS */
+        /* MODALS & SETTINGS */
         .modal {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0.9);
-            background: #1c1e26;
-            padding: 24px; border-radius: 24px;
+            background: #1c1e26; padding: 24px; border-radius: 24px;
             width: 280px; text-align: center; opacity: 0; pointer-events: none;
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 100; border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s; z-index: 100; border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 30px 60px rgba(0,0,0,0.8);
         }
         .modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
         
         .settings-row { margin-bottom: 24px; text-align: left; }
         .settings-label { color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; display: block; font-weight: 700; text-transform: uppercase; }
-        
         input[type=range] { width: 100%; -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; background: #2a2e39; border-radius: 4px; }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
-            background: #fff; margin-top: -8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #fff; margin-top: -8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
 
         .loader { border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid #fff; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -196,7 +184,7 @@
         </div>
         <div class="settings-row">
             <label class="settings-label">Масштаб (Zoom)</label>
-            <input type="range" id="zoom-slider" min="5" max="25" value="10" step="1">
+            <input type="range" id="zoom-slider" min="5" max="30" value="12" step="1">
         </div>
         <div class="settings-row">
             <label class="settings-label">Розмір шрифту</label>
@@ -216,15 +204,10 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.setHeaderColor('#0d0e12'); 
+        tg.setHeaderColor('#0b0c10'); 
 
-        // --- 1. CONFIG ---
-        const CONFIG = {
-            up: '#00f2a9',
-            down: '#ff3b30',
-        };
+        const CONFIG = { up: '#00f2a9', down: '#ff3b30' };
 
-        // --- 2. CHART SETUP (SMART SCALING) ---
         const container = document.getElementById('chart-container');
         const chart = LightweightCharts.createChart(container, {
             layout: { 
@@ -233,24 +216,17 @@
                 fontSize: 13, 
                 fontFamily: "-apple-system, BlinkMacSystemFont, Roboto, sans-serif"
             },
-            grid: { 
-                vertLines: { visible: false }, 
-                horzLines: { color: 'rgba(255,255,255,0.04)', style: 1 } 
-            },
-            // --- ОСНОВНА ЗМІНА ДЛЯ ЗРУЧНОСТІ ---
-            priceScale: {
-                autoScale: true, // Дозволяє графіку розтягуватися самому
-            },
-            rightPriceScale: { 
-                borderColor: 'transparent', 
-                scaleMargins: { top: 0.25, bottom: 0.25 } // Відступи, щоб графік не прилипав до країв
-            },
+            grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
+            // Автоскейл по ЦІНІ (Вертикально)
+            priceScale: { autoScale: true },
+            rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.3, bottom: 0.2 } },
+            // Час (Горизонтально)
             timeScale: { 
                 borderColor: 'transparent', 
                 timeVisible: true, 
                 secondsVisible: false, 
-                barSpacing: 12, // Трохи ширші свічки за замовчуванням
-                minBarSpacing: 5 // Не дає стиснути занадто сильно
+                visible: true, // Примусово показуємо час
+                barSpacing: 12 
             },
             crosshair: {
                 mode: 1,
@@ -259,29 +235,15 @@
             }
         });
 
-        // --- 3D-VOLUME CANDLES CONFIGURATION ---
         let series = chart.addCandlestickSeries({
-            // UP CANDLES (Зелені)
-            upColor: CONFIG.up,           
-            borderUpColor: CONFIG.up,     
-            wickUpColor: CONFIG.up, // Хвіст колір свічки (так краще для сприйняття форми)
-            
-            // DOWN CANDLES (Червоні)
-            downColor: CONFIG.down,       
-            borderDownColor: CONFIG.down, 
-            wickDownColor: CONFIG.down, 
-            
-            priceLineVisible: true,
-            priceLineWidth: 1,
-            priceLineStyle: 2,
+            upColor: CONFIG.up, borderUpColor: CONFIG.up, wickUpColor: CONFIG.up,
+            downColor: CONFIG.down, borderDownColor: CONFIG.down, wickDownColor: CONFIG.down,
+            priceLineVisible: true, priceLineWidth: 1, priceLineStyle: 2,
         });
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
 
-        // --- 3. LOGIC ---
-        function toggleSettings() {
-            document.getElementById('settings-popup').classList.toggle('show');
-        }
+        function toggleSettings() { document.getElementById('settings-popup').classList.toggle('show'); }
         document.getElementById('zoom-slider').addEventListener('input', (e) => {
             chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) });
         });
@@ -289,7 +251,6 @@
             chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } });
         });
 
-        // --- 4. DATA ---
         let ws = null;
         let currentPrice = 0;
         const priceLabel = document.getElementById('price');
@@ -300,29 +261,18 @@
             if (ws) ws.close();
             series.setData([]);
             priceLabel.innerText = 'Loading...';
-
             ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@kline_1s`);
-            
             ws.onmessage = (event) => {
                 const message = JSON.parse(event.data);
                 const k = message.k;
-                const candle = {
-                    time: k.t / 1000,
-                    open: parseFloat(k.o),
-                    high: parseFloat(k.h),
-                    low: parseFloat(k.l),
-                    close: parseFloat(k.c),
-                };
+                const candle = { time: k.t / 1000, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c) };
                 currentPrice = candle.close;
-                
                 const color = !window.lastPrice || currentPrice >= window.lastPrice ? CONFIG.up : CONFIG.down;
                 priceLabel.style.color = color;
                 pulseDot.style.backgroundColor = color;
-                
                 window.lastPrice = currentPrice;
                 const digits = currentPrice < 1 ? 5 : 2;
                 series.applyOptions({ priceFormat: { precision: digits, minMove: 1 / Math.pow(10, digits) } });
-                
                 priceLabel.innerText = currentPrice.toFixed(digits);
                 series.update(candle);
             };
@@ -331,14 +281,12 @@
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- 5. USER ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name;
             if (user.photo_url) document.getElementById('user-avatar').src = user.photo_url;
         }
 
-        // --- 6. TRADE ---
         let balance = 1000;
         let isTrading = false;
         let betLine = null;
@@ -347,16 +295,10 @@
             if (isTrading) return;
             isTrading = true;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
-
             const entryPrice = currentPrice;
             const betAmount = 50;
             const lineColor = direction === 'UP' ? CONFIG.up : CONFIG.down;
-
-            betLine = series.createPriceLine({
-                price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 0,
-                title: direction.toUpperCase(), axisLabelVisible: true
-            });
-
+            betLine = series.createPriceLine({ price: entryPrice, color: lineColor, lineWidth: 2, lineStyle: 0, title: direction.toUpperCase(), axisLabelVisible: true });
             setTimeout(() => { finishTrade(direction, entryPrice, betAmount); }, 3000);
         }
 
@@ -364,24 +306,18 @@
             let win = false;
             if (direction === 'UP' && currentPrice > entryPrice) win = true;
             else if (direction === 'DOWN' && currentPrice < entryPrice) win = true;
-
             if (win) balance += betAmount * 0.8; else balance -= betAmount;
-
             document.getElementById('balance').innerText = `$${balance.toFixed(0)}`;
             if (betLine) { series.removePriceLine(betLine); betLine = null; }
-
             const popup = document.getElementById('result-popup');
             const title = document.getElementById('result-title');
             const amount = document.getElementById('result-amount');
-
             title.innerText = win ? 'PROFIT' : 'LOSS';
             title.style.color = win ? CONFIG.up : CONFIG.down;
             amount.innerText = win ? `+$${(betAmount * 0.8).toFixed(0)}` : `-$${betAmount}`;
             popup.style.borderColor = win ? CONFIG.up : CONFIG.down;
-            
             popup.classList.add('show');
             if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(win ? 'success' : 'error');
-            
             setTimeout(() => { popup.classList.remove('show'); isTrading = false; }, 2000);
         }
     </script>

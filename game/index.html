@@ -3,21 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex Visual Fix</title>
+    <title>Apex Precise</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
         :root {
-            /* Apex Theme */
-            --bg-gradient: radial-gradient(circle at 50% 0%, #1c2030 0%, #0b0c10 100%);
+            --bg-gradient: radial-gradient(circle at 50% 0%, #1a1d26 0%, #0d0e12 100%);
             --text-primary: #ffffff;
             --text-secondary: #8d95a8;
             --candle-up: #26a69a;
             --candle-down: #ef5350;
-            --bet-gold: #ff9f0a; /* Золотий колір ставки */
-            --glass-bg: rgba(30,34,45, 0.85);
-            --border-color: rgba(255,255,255,0.08);
+            --bet-gold: #ffcf00; /* Яскравий жовтий для фіксації */
         }
 
         body {
@@ -41,17 +38,17 @@
         .user-avatar {
             width: 44px; height: 44px; border-radius: 12px;
             background: rgba(255,255,255,0.05); object-fit: cover;
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .user-info { display: flex; flex-direction: column; }
-        .user-name { font-weight: 700; font-size: 16px; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .user-name { font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .balance { font-size: 13px; color: #ffce00; font-weight: 600; margin-top: 2px; }
 
         .market-controls { display: flex; flex-direction: column; align-items: flex-end; }
         .asset-wrapper {
             display: flex; align-items: center; gap: 8px;
-            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            padding: 8px 14px; border-radius: 14px; border: 1px solid var(--border-color);
+            background: rgba(30,34,45, 0.8); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 8px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
         }
         #asset-select {
             background: transparent; color: white; border: none; font-weight: 700; font-size: 15px; outline: none; appearance: none;
@@ -72,7 +69,7 @@
         #reset-zoom-btn {
             position: absolute; bottom: 130px; right: 16px;
             width: 44px; height: 44px; border-radius: 50%;
-            background: #1c1e26; border: 1px solid var(--border-color);
+            background: #1c1e26; border: 1px solid rgba(255,255,255,0.1);
             color: white; display: flex; align-items: center; justify-content: center;
             font-size: 20px; z-index: 30; cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
@@ -103,7 +100,7 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
             background: #1c1e26; padding: 24px; border-radius: 24px; width: 280px; text-align: center;
             opacity: 0; pointer-events: none; transition: all 0.2s; z-index: 100;
-            border: 1px solid var(--border-color); box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 30px 60px rgba(0,0,0,0.8);
         }
         .modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
         
@@ -157,7 +154,7 @@
         </div>
         <div class="settings-row">
             <label class="settings-label">Масштаб (Zoom)</label>
-            <input type="range" id="zoom-slider" min="5" max="30" value="12" step="1">
+            <input type="range" id="zoom-slider" min="10" max="40" value="18" step="1">
         </div>
         <div class="settings-row">
             <label class="settings-label">Розмір шрифту</label>
@@ -182,10 +179,15 @@
         const chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8d95a8', fontSize: 13, fontFamily: "monospace" },
             grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)', style: 1 } },
-            // Logarithmic + Compact
-            priceScale: { mode: 1, autoScale: true, scaleMargins: { top: 0.3, bottom: 0.3 } }, 
+            
+            // --- FIX FOR AUTO SCALE ---
+            // Використовуємо режим 0 (Normal/Linear) замість Logarithmic.
+            // Це краще для короткострокових коливань і швидше "повертається" в норму.
+            priceScale: { mode: 0, autoScale: true, scaleMargins: { top: 0.35, bottom: 0.35 } }, 
+            
             rightPriceScale: { borderColor: 'transparent' },
-            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 12 },
+            // Збільшили barSpacing (18), щоб свічок було менше на екрані -> швидше зникають старі піки
+            timeScale: { borderColor: 'transparent', timeVisible: true, secondsVisible: true, visible: true, barSpacing: 18 },
             crosshair: { mode: 1, vertLine: { style: 2, color: 'rgba(255,255,255,0.2)' }, horzLine: { style: 2, color: 'rgba(255,255,255,0.2)' } }
         });
 
@@ -198,9 +200,11 @@
 
         window.onresize = () => chart.resize(container.clientWidth, container.clientHeight);
 
+        // Reset Zoom Logic
         chart.timeScale().subscribeVisibleTimeRangeChange(() => { document.getElementById('reset-zoom-btn').classList.add('show'); });
         function resetZoom() {
             chart.timeScale().scrollToRealTime(); 
+            // Примусово скидаємо масштаб
             chart.priceScale('right').applyOptions({ autoScale: true });
             document.getElementById('reset-zoom-btn').classList.remove('show'); 
         }
@@ -209,67 +213,43 @@
         document.getElementById('zoom-slider').addEventListener('input', (e) => chart.timeScale().applyOptions({ barSpacing: parseFloat(e.target.value) }));
         document.getElementById('font-slider').addEventListener('input', (e) => chart.applyOptions({ layout: { fontSize: parseInt(e.target.value) } }));
 
-        // --- ENGINE: HEIKIN ASHI + SMOOTH ---
+        // --- ENGINE: SMOOTH RAW CANDLES (PRECISE) ---
         let ws = null;
-        let realHA = null;      
-        let displayHA = null;   
+        let realCandle = null;      
+        let displayCandle = null;   
         let lastPrice = 0;
-        let lastRawHA = null;   
 
         const priceElement = document.getElementById('price');
         const pulseDot = document.getElementById('pulse-dot');
         const assetSelect = document.getElementById('asset-select');
 
         function animate() {
-            if (realHA && displayHA) {
-                if (realHA.time > displayHA.time) {
-                    displayHA = { ...realHA };
-                    applyWickShortener(displayHA); 
+            if (realCandle && displayCandle) {
+                if (realCandle.time > displayCandle.time) {
+                    displayCandle = { ...realCandle };
                 } else {
-                    const diff = realHA.close - displayHA.close;
+                    const diff = realCandle.close - displayCandle.close;
                     if (Math.abs(diff) > 0.000001) {
-                        displayHA.close += diff * 0.15;
-                        const bodyTop = Math.max(displayHA.open, displayHA.close);
-                        const bodyBottom = Math.min(displayHA.open, displayHA.close);
-                        const targetHigh = realHA.high;
-                        const targetLow = realHA.low;
-                        const visualHigh = bodyTop + (targetHigh - bodyTop) * 0.3; 
-                        const visualLow = bodyBottom - (bodyBottom - targetLow) * 0.3;
-                        displayHA.high = Math.max(bodyTop, visualHigh);
-                        displayHA.low = Math.min(bodyBottom, visualLow);
+                        displayCandle.close += diff * 0.15;
+                        displayCandle.high = Math.max(displayCandle.high, displayCandle.close);
+                        displayCandle.low = Math.min(displayCandle.low, displayCandle.close);
+                        displayCandle.high = Math.max(displayCandle.high, realCandle.high);
+                        displayCandle.low = Math.min(displayCandle.low, realCandle.low);
+                    } else {
+                        displayCandle.close = realCandle.close;
                     }
                 }
-                series.update(displayHA);
+                series.update(displayCandle);
             }
             requestAnimationFrame(animate);
         }
-        
-        function applyWickShortener(candle) {
-            const bodyTop = Math.max(candle.open, candle.close);
-            const bodyBottom = Math.min(candle.open, candle.close);
-            candle.high = bodyTop + (candle.high - bodyTop) * 0.3;
-            candle.low = bodyBottom - (bodyBottom - candle.low) * 0.3;
-        }
-
         requestAnimationFrame(animate);
-
-        function calculateHeikinAshi(time, open, high, low, close) {
-            const haClose = (open + high + low + close) / 4;
-            let haOpen = open;
-            if (lastRawHA) {
-                haOpen = (lastRawHA.open + lastRawHA.close) / 2;
-            }
-            const haHigh = Math.max(high, haOpen, haClose);
-            const haLow = Math.min(low, haOpen, haClose);
-            return { time, open: haOpen, high: haHigh, low: haLow, close: haClose };
-        }
 
         function connectWebSocket(symbol) {
             if (ws) ws.close();
             series.setData([]);
             priceElement.innerText = 'Loading...';
-            realHA = null; displayHA = null; lastRawHA = null;
-            let rawCandle = null;
+            realCandle = null; displayCandle = null;
 
             ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol}@aggTrade`);
             
@@ -278,20 +258,13 @@
                 const price = parseFloat(data.p);
                 const time = Math.floor(data.T / 1000);
 
-                if (!rawCandle || time > rawCandle.time) {
-                    if (realHA) lastRawHA = { ...realHA };
-                    rawCandle = { time: time, open: rawCandle ? rawCandle.close : price, high: price, low: price, close: price };
+                if (!realCandle || time > realCandle.time) {
+                    realCandle = { time: time, open: realCandle ? realCandle.close : price, high: price, low: price, close: price };
+                    if (!displayCandle) displayCandle = { ...realCandle };
                 } else {
-                    rawCandle.high = Math.max(rawCandle.high, price);
-                    rawCandle.low = Math.min(rawCandle.low, price);
-                    rawCandle.close = price;
-                }
-
-                realHA = calculateHeikinAshi(rawCandle.time, rawCandle.open, rawCandle.high, rawCandle.low, rawCandle.close);
-                
-                if (!displayHA) {
-                    displayHA = { ...realHA };
-                    applyWickShortener(displayHA);
+                    realCandle.high = Math.max(realCandle.high, price);
+                    realCandle.low = Math.min(realCandle.low, price);
+                    realCandle.close = price;
                 }
 
                 const digits = price < 1 ? 6 : 2; 
@@ -306,7 +279,7 @@
         assetSelect.addEventListener('change', (e) => connectWebSocket(e.target.value));
         connectWebSocket('btcusdt');
 
-        // --- TRADING LOGIC WITH VISUAL FIX ---
+        // --- TRADING LOGIC FIXED ---
         const user = tg.initDataUnsafe.user;
         if (user) {
             document.getElementById('user-name').innerText = user.first_name; 
@@ -322,22 +295,21 @@
             isTrading = true;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
             
-            // 🔥 КЛЮЧОВИЙ МОМЕНТ: БЕРЕМО ВІЗУАЛЬНУ ЦІНУ (displayHA.close), А НЕ REAL LAST PRICE
-            // Це гарантує, що лінія з'явиться там, де око бачить свічку.
-            // Якщо displayHA ще не ініціалізовано, беремо lastPrice.
-            const entryPrice = displayHA ? displayHA.close : lastPrice;
+            // 🔥 ВИПРАВЛЕННЯ ПОЗИЦІЇ:
+            // Ми беремо displayCandle.close - це саме те число, де ЗАРАЗ намальована свічка на екрані.
+            // Це гарантує, що лінія з'явиться точно на рівні очей.
+            const entryPrice = displayCandle ? displayCandle.close : lastPrice; 
             
             const betAmount = 50;
-            const lineColor = '#ff9f0a'; // Gold color
+            const lineColor = '#ffcf00'; // Gold Color
 
-            // Створюємо Золотий Бігунок (Price Line)
             betLine = series.createPriceLine({
                 price: entryPrice, 
                 color: lineColor, 
                 lineWidth: 2, 
-                lineStyle: 2, // Dashed
-                title: '', // Без тексту, тільки ціна
-                axisLabelVisible: true, // Плашка збоку
+                lineStyle: 0, 
+                title: 'ENTRY', 
+                axisLabelVisible: true, // ПОКАЗУЄМО ПРИВИДА
                 axisLabelColor: lineColor,
                 axisLabelTextColor: '#000000'
             });
@@ -347,9 +319,8 @@
 
         function finishTrade(direction, entryPrice, betAmount) {
             let win = false;
-            // Для розрахунку виграшу беремо теж візуальну ціну (або реальну, тут вже як хочеш)
-            // Щоб було чесно по графіку - беремо displayHA.close
-            const finalPrice = displayHA ? displayHA.close : lastPrice;
+            // Порівнюємо теж з відображуваною ціною, щоб було чесно візуально
+            const finalPrice = displayCandle ? displayCandle.close : lastPrice;
             
             if (direction === 'UP' && finalPrice > entryPrice) win = true;
             else if (direction === 'DOWN' && finalPrice < entryPrice) win = true;

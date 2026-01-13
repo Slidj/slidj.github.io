@@ -8,7 +8,7 @@
 @import 'components.css';
 @import 'modals.css';
 
-/* 🔥 ПРАВКА 1: Глобальний фікс, щоб padding не розширював блоки */
+/* 🔥 ПРАВКА: Глобальне правило, щоб поля не вилазили за краї */
 * {
     box-sizing: border-box;
 }
@@ -20,18 +20,15 @@
 /* 🔥 ОНОВЛЕНИЙ ПОШУК (ФІКСОВАНИЙ + 100% ФОН) */
 #search_bar_container {
     display: none; 
-    
-    /* Фіксуємо на екрані */
     position: fixed; 
     top: calc(50px + var(--safe-top)); 
     left: 0; 
     width: 100%; 
     z-index: 100;
-    
-    /* Чорний фон на всю ширину */
     background: #000;
     padding: 10px 0;
     box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+    box-sizing: border-box;
 }
 
 #search_input {
@@ -46,7 +43,9 @@
     background: #1a1a1a;
     color: white;
     font-size: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     outline: none;
+    box-sizing: border-box;
     transition: border-color 0.3s;
 }
 
@@ -54,400 +53,133 @@
     border-color: #666;
 }
 
-/* ФІЛЬТРИ (NETFLIX STYLE) */
-.netflix-filters {
-    display: flex;
-    gap: 10px;
-    padding: 10px 16px;
-    overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-}
+/* ФІЛЬТРИ */
+.netflix-filters { display: flex; gap: 10px; padding: 10px 16px; overflow-x: auto; scrollbar-width: none; }
 .netflix-filters::-webkit-scrollbar { display: none; }
+.cat-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #555; background: transparent; color: white; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all 0.2s ease; }
+.cat-btn.active { background: white !important; color: black !important; border-color: white !important; font-weight: 700; }
 
-.cat-btn {
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: 1px solid #555;
-    background: transparent;
-    color: white;
-    font-size: 13px;
-    font-weight: 500;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.cat-btn.active {
-    background: white !important;
-    color: black !important;
-    border-color: white !important;
-    font-weight: 700;
-}
-
-/* ТРЕЙЛЕРИ / PREVIEWS (NETFLIX STYLE) */
-.trailer-section {
-    margin-top: 20px;
-    padding-left: 16px;
-}
-.trailer-title {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: #fff;
-}
-.trailer-row {
-    display: flex;
-    overflow-x: auto;
-    gap: 12px;
-    padding-bottom: 10px;
-    padding-right: 16px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-}
+/* ТРЕЙЛЕРИ */
+.trailer-section { margin-top: 20px; padding-left: 16px; }
+.trailer-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #fff; }
+.trailer-row { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; padding-right: 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .trailer-row::-webkit-scrollbar { display: none; }
+.trailer-card { flex: 0 0 160px; cursor: pointer; }
+.trailer-img-box { position: relative; width: 100%; height: 90px; border-radius: 6px; overflow: hidden; background: #222; }
+.trailer-img-box img { width: 100%; height: 100%; object-fit: cover; }
+.trailer-play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 32px; height: 32px; background: rgba(0,0,0,0.7); border-radius: 50%; border: 1.5px solid white; display: flex; align-items: center; justify-content: center; color: white; }
 
-.trailer-card {
-    flex: 0 0 160px; /* Ширина превью трейлера */
-    cursor: pointer;
-}
-.trailer-img-box {
-    position: relative;
-    width: 100%;
-    height: 90px;
-    border-radius: 6px;
-    overflow: hidden;
-    background: #222;
-}
-.trailer-img-box img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.trailer-play-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 32px;
-    height: 32px;
-    background: rgba(0,0,0,0.7);
-    border-radius: 50%;
-    border: 1.5px solid white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-}
-
-/* ІСТОРІЯ ПЕРЕГЛЯДУ (Similar Style) */
-.similar-section {
-    margin-top: 25px;
-    width: 100%;
-    overflow: hidden;
-    grid-column: 1 / -1;
-}
-.similar-title {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: #fff;
-    padding-left: 10px;
-}
-.similar-row {
-    display: flex;
-    overflow-x: auto;
-    gap: 10px;
-    padding: 0 10px 15px 10px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-}
+/* ІСТОРІЯ */
+.similar-section { margin-top: 25px; width: 100%; overflow: hidden; grid-column: 1 / -1; }
+.similar-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #fff; padding-left: 10px; }
+.similar-row { display: flex; overflow-x: auto; gap: 10px; padding: 0 10px 15px 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .similar-row::-webkit-scrollbar { display: none; }
+.similar-card { flex: 0 0 110px; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; background: #222; position: relative; }
+.similar-card img { width: 100%; height: 100%; object-fit: cover; }
 
-.similar-card {
-    flex: 0 0 110px;
-    aspect-ratio: 2/3;
-    border-radius: 6px;
-    overflow: hidden;
-    background: #222;
-    position: relative;
-}
-.similar-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+/* КАРТКИ */
+.movie-poster-card { position: relative; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; background: #1f1f1f; width: 100%; }
+.movie-poster-card img { width: 100%; height: 100%; object-fit: cover; }
 
-/* КАРТКИ ФІЛЬМІВ (В ГРИДІ) */
-.movie-poster-card {
-    position: relative;
-    aspect-ratio: 2/3;
-    border-radius: 6px;
-    overflow: hidden;
-    background: #1f1f1f;
-    width: 100%;
-}
-.movie-poster-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+/* КНОПКИ У МОДАЛЦІ */
+.nf-btn-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+.nf-actions-group { display: flex; gap: 10px; width: 100%; }
+.nf-btn.nf-secondary { flex: 1; justify-content: center; }
 
-/* КНОПКИ У МОДАЛЦІ ФІЛЬМУ */
-.nf-btn-row {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-.nf-actions-group {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-}
-.nf-btn.nf-secondary {
-    flex: 1;
-    justify-content: center;
-}
+/* МЕНЮ */
+.side-menu { position: fixed; top: 0; right: -320px; width: 260px; height: 100%; background: #141414; z-index: 100000; transition: right 0.3s; padding: 20px; padding-top: calc(30px + var(--safe-top)); box-shadow: -10px 0 30px rgba(0,0,0,0.9); display: flex; flex-direction: column; }
+.side-menu.active { right: 0; }
+.menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; z-index: 99999; }
+.menu-item { color: white; padding: 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; background: #222; margin-bottom: 10px; font-size: 14px; }
+.admin-only-item { border: 1px solid #e50914; }
+.menu-stats-box { background: #1f1f1f; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; color: #aaa; }
+.user-avatar-rounded { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #333; object-fit: cover; }
 
-/* SIDE MENU */
-.side-menu {
+/* ДОНАТИ */
+.donate-item { background: linear-gradient(90deg, #f1c40f, #f39c12) !important; color: #000 !important; font-weight: 800 !important; margin-top: 15px !important; border: none !important; }
+.donate-item span { color: #000 !important; }
+.donate-modal-content { padding: 30px 20px; text-align: center; color: white; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.donate-option-card { width: 100%; background: #222; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; transition: transform 0.2s, border-color 0.2s; cursor: pointer; }
+.donate-option-card:active { transform: scale(0.98); border-color: #f1c40f; }
+.donate-info { text-align: left; }
+.donate-name { font-weight: 700; font-size: 16px; display: block; }
+.donate-stars { color: #f1c40f; font-size: 14px; font-weight: bold; }
+.donate-btn-close { margin-top: 10px; width: 100%; padding: 12px; color: white; background: #333; border: 1px solid #444; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+/* СПОВІЩЕННЯ */
+#notification_bar { position: fixed; top: -150px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #e50914; color: white; padding: 15px; border-radius: 12px; z-index: 200000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; font-size: 14px; transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s; opacity: 0; visibility: hidden; pointer-events: none; }
+#notification_bar.active { top: calc(20px + var(--safe-top)); opacity: 1; visibility: visible; pointer-events: auto; }
+.notif-close { margin-left: auto; font-size: 20px; opacity: 0.7; cursor: pointer; }
+
+/* СТАТУС */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+.status-online { background-color: #2ecc71; }
+.status-offline { background-color: #e74c3c; }
+
+@keyframes trending-pulse { 0% { box-shadow: 0 0 5px rgba(229, 9, 20, 0.4); border-color: rgba(229, 9, 20, 0.4); } 50% { box-shadow: 0 0 20px rgba(229, 9, 20, 0.9); border-color: rgba(229, 9, 20, 1); } 100% { box-shadow: 0 0 5px rgba(229, 9, 20, 0.4); border-color: rgba(229, 9, 20, 0.4); } }
+.trending-glow { animation: trending-pulse 2s ease-in-out 3; border: 1px solid rgba(229, 9, 20, 0.6) !important; position: relative; z-index: 5; }
+@keyframes modal-fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(25px); } }
+.modal-closing-anim { animation: modal-fade-out 0.3s forwards; pointer-events: none; }
+
+/* МЕНЮ ПРОФІЛЬ */
+.menu-profile-header { position: relative; width: 100%; height: 90px; display: flex; align-items: center; padding-left: 15px; margin-bottom: 25px; margin-top: 10px; filter: drop-shadow(4px 4px 6px rgba(0,0,0,0.6)); }
+.menu-brush-bg { position: absolute; top: 0; left: -20px; width: 110%; height: 100%; background: linear-gradient(90deg, #990000 0%, #E50914 60%, #ff1f1f 100%); z-index: 1; clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%); }
+.menu-glass-overlay { position: absolute; top: 0; left: -20px; width: 110%; height: 100%; z-index: 2; background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.2)); backdrop-filter: blur(3px); clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%); opacity: 0.8; }
+.menu-user-content { position: relative; z-index: 3; display: flex; align-items: center; gap: 12px; }
+.menu-user-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 4px 10px rgba(0,0,0,0.5); background: #000; }
+.menu-user-info { display: flex; flex-direction: column; justify-content: center; }
+.menu-user-name { color: #fff; font-family: var(--font-title, sans-serif); font-size: 18px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.9); line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px; }
+.menu-user-status { color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+/* ВАЛЮТА TICKETS */
+.menu-ticket-badge { display: flex; align-items: center; gap: 6px; margin-top: 4px; background: rgba(0, 0, 0, 0.3); padding: 2px 8px 2px 6px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); width: fit-content; }
+.ticket-icon { width: 16px; height: 16px; fill: #ffd700; filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5)); }
+.ticket-count { color: #46d369; font-family: var(--font-title, sans-serif); font-weight: 700; font-size: 14px; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(70, 211, 105, 0.4); }
+.ticket-label { color: #aaa; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-left: 2px; }
+
+/* БОНУС МОДАЛКА */
+.bonus-content-box { position: relative; background: #141414; padding: 30px 20px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.8); opacity: 0; animation: bonusPopIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.bonus-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; background: radial-gradient(circle, rgba(70, 211, 105, 0.4) 0%, rgba(0,0,0,0) 70%); z-index: 1; animation: rotateGlow 5s linear infinite; }
+@keyframes bonusPopIn { to { transform: scale(1); opacity: 1; } }
+@keyframes rotateGlow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+/* 🔥 АДАПТАЦІЯ (ГОРИЗОНТАЛЬНА + ПОШУК) */
+body.search-mode .netflix-header {
+    background: #000 !important;
     position: fixed;
-    top: 0;
-    right: -320px;
-    width: 260px;
-    height: 100%;
-    background: #141414;
-    z-index: 100000;
-    transition: right 0.3s;
-    padding: 20px;
-    padding-top: calc(30px + var(--safe-top));
-    box-shadow: -10px 0 30px rgba(0,0,0,0.9);
-    display: flex;
-    flex-direction: column;
-}
-.side-menu.active {
-    right: 0;
-}
-
-.menu-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    display: none;
-    z-index: 99999;
-}
-
-.menu-item {
-    color: white;
-    padding: 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #222;
-    margin-bottom: 10px;
-    font-size: 14px;
-}
-
-.admin-only-item {
-    border: 1px solid #e50914;
-}
-
-.menu-stats-box {
-    background: #1f1f1f;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    font-size: 13px;
-    color: #aaa;
-}
-
-/* DONATE SECTION */
-.donate-item {
-    background: linear-gradient(90deg, #f1c40f, #f39c12) !important;
-    color: #000 !important;
-    font-weight: 800 !important;
-    margin-top: 15px !important;
-    border: none !important;
-}
-
-.donate-modal-content {
-    padding: 30px 20px;
-    text-align: center;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
-
-.donate-option-card {
-    width: 100%;
-    background: #222;
-    border-radius: 12px;
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid #333;
-    transition: transform 0.2s, border-color 0.2s;
-    cursor: pointer;
-}
-
-.donate-btn-close {
-    margin-top: 10px;
-    width: 100%;
-    padding: 12px;
-    color: white;
-    background: #333;
-    border: 1px solid #444;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-/* NOTIFICATION BAR */
-#notification_bar {
-    position: fixed;
-    top: -150px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 400px;
-    background: #e50914;
-    color: white;
-    padding: 15px;
-    border-radius: 12px;
-    z-index: 200000;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
-
-#notification_bar.active {
-    top: calc(20px + var(--safe-top));
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
-
-/* MENU PROFILE SECTION (BRUSH STYLE) */
-.menu-profile-header {
-    position: relative;
-    width: 100%;
-    height: 90px;
-    display: flex;
-    align-items: center;
-    padding-left: 15px;
-    margin-bottom: 25px;
-    margin-top: 10px;
-    filter: drop-shadow(4px 4px 6px rgba(0,0,0,0.6));
-}
-
-.menu-brush-bg {
-    position: absolute;
-    top: 0;
-    left: -20px;
-    width: 110%;
-    height: 100%;
-    background: linear-gradient(90deg, #990000 0%, #E50914 60%, #ff1f1f 100%);
-    z-index: 1;
-    clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%);
-}
-
-.menu-glass-overlay {
-    position: absolute;
-    top: 0;
-    left: -20px;
-    width: 110%;
-    height: 100%;
-    z-index: 2;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.2));
-    backdrop-filter: blur(3px);
-    clip-path: polygon(0% 0%, 95% 0%, 90% 15%, 98% 25%, 88% 35%, 96% 45%, 85% 55%, 97% 65%, 90% 75%, 99% 85%, 92% 95%, 85% 100%, 0% 100%);
-    opacity: 0.8;
-}
-
-.menu-user-content {
-    position: relative;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.menu-user-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid rgba(255,255,255,0.9);
+    top: 0; left: 0; width: 100%;
+    z-index: 105;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    background: #000;
 }
 
-.menu-user-name {
-    color: #fff;
-    font-size: 18px;
-    font-weight: 800;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+@media (orientation: landscape) and (max-height: 600px) {
+    .netflix-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 10px !important;
+    }
 }
 
-/* TICKETS BADGE У МЕНЮ */
-.menu-ticket-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 4px;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 2px 8px 2px 6px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: fit-content;
-}
-.ticket-icon {
-    width: 16px;
-    height: 16px;
-    fill: #ffd700;
-    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
-}
-.ticket-count {
-    color: #46d369;
-    font-weight: 700;
-    font-size: 14px;
-    text-shadow: 0 0 10px rgba(70, 211, 105, 0.4);
+@media (min-width: 768px) {
+    .netflix-grid {
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 12px !important;
+    }
 }
 
-/* 🎉 СВЯТКОВИЙ ШАР (OVERLAY) */
+/* 🔥 СВЯТКОВИЙ ШАР (OVERLAY) - Винесено з медіа-запиту, щоб працювало на телефонах */
 #holiday_decor_layer {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none;
-    
-    /* 🔥 ПРАВКА 2: Було 99, ставимо 2000 (щоб було поверх хедера) */
+    pointer-events: none; 
     z-index: 2000; 
-    
     overflow: hidden;
-    display: none;
+    display: none; 
 }
 
-/* 🎄 ГІРЛЯНДА */
+/* ❄️ РЕЖИМ: ЗИМОВА ГІРЛЯНДА */
 .garland-rope {
     width: 100%;
     height: 60px;
@@ -458,38 +190,55 @@
 }
 
 .garland-bulb {
+    position: relative;
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    position: relative;
+    background: #ccc;
     animation: flash 2s infinite alternate;
 }
 
-/* Кольори та анімації для лампочок */
-.garland-bulb:nth-child(4n+1) { background: #ff3b30; animation-duration: 1.5s; animation-delay: 0s; box-shadow: 0 5px 20px rgba(255, 59, 48, 1); } /* Червоний */
-.garland-bulb:nth-child(4n+2) { background: #ffcc00; animation-duration: 2.2s; animation-delay: 0.5s; box-shadow: 0 5px 20px rgba(255, 204, 0, 1); } /* Золотий */
-.garland-bulb:nth-child(4n+3) { background: #4cd964; animation-duration: 1.8s; animation-delay: 1.2s; box-shadow: 0 5px 20px rgba(76, 217, 100, 1); } /* Зелений */
-.garland-bulb:nth-child(4n+4) { background: #007aff; animation-duration: 2.5s; animation-delay: 0.2s; box-shadow: 0 5px 20px rgba(0, 122, 255, 1); } /* Синій */
+.garland-bulb::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: 4px;
+    width: 6px;
+    height: 10px;
+    background: #222;
+    border-radius: 2px;
+}
+
+.garland-bulb:nth-child(4n+1) { background: #ff3b30; animation-duration: 1.5s; box-shadow: 0 5px 20px rgba(255, 59, 48, 1); }
+.garland-bulb:nth-child(4n+2) { background: #ffcc00; animation-duration: 2.2s; animation-delay: 0.5s; box-shadow: 0 5px 20px rgba(255, 204, 0, 1); }
+.garland-bulb:nth-child(4n+3) { background: #4cd964; animation-duration: 1.8s; animation-delay: 1.2s; box-shadow: 0 5px 20px rgba(76, 217, 100, 1); }
+.garland-bulb:nth-child(4n+4) { background: #007aff; animation-duration: 2.5s; animation-delay: 0.2s; box-shadow: 0 5px 20px rgba(0, 122, 255, 1); }
 
 @keyframes flash {
     0%, 100% { opacity: 1; transform: scale(1); filter: brightness(1.5); }
     50% { opacity: 0.4; transform: scale(0.9); filter: brightness(0.8); }
 }
 
-/* 🎉 РЕЖИМ: УНІВЕРСАЛЬНИЙ (ЗОЛОТІ ІСКРИ) */
 .universal-decor {
     width: 100%;
     height: 100%;
-    /* Градієнтна рамка по краях */
     background: radial-gradient(circle, transparent 60%, rgba(255, 215, 0, 0.15) 100%);
+    position: relative;
 }
 
-/* 🔥 ПРАВКА 3: ФІКС ДЛЯ ПОЛІВ В АДМІНЦІ (Додано в кінець файлу) */
-#admin_panel_modal input, 
-#admin_panel_modal textarea, 
-#admin_panel_modal select {
+@keyframes floatSparkle {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+    50% { transform: translateY(-10px) rotate(20deg); opacity: 0.8; }
+    100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+}
+
+/* 🔥 ПРАВКА: Фінальне вирівнювання полів в адмінці */
+#admin_panel_modal .modal-content input, 
+#admin_panel_modal .modal-content textarea, 
+#admin_panel_modal .modal-content select {
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
-    margin-bottom: 15px !important;
     display: block !important;
+    margin-bottom: 15px !important;
 }

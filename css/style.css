@@ -8,11 +8,6 @@
 @import 'components.css';
 @import 'modals.css';
 
-/* 🔥 ПРАВКА: Глобальне правило, щоб поля не вилазили за краї */
-* {
-    box-sizing: border-box;
-}
-
 .skeleton { background-color: #1f1f1f; position: relative; overflow: hidden; border-radius: 4px; aspect-ratio: 2/3; cursor: default; }
 .skeleton::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0)); animation: skeleton-move 1.5s infinite; }
 @keyframes skeleton-move { 100% { transform: translateX(100%); } }
@@ -20,11 +15,17 @@
 /* 🔥 ОНОВЛЕНИЙ ПОШУК (ФІКСОВАНИЙ + 100% ФОН) */
 #search_bar_container {
     display: none; 
+    
+    /* Фіксуємо на екрані */
     position: fixed; 
     top: calc(50px + var(--safe-top)); 
-    left: 0; 
+    left: 0; /* Притискаємо до лівого краю */
+    
+    /* Розтягуємо фон на всю ширину, щоб закрити щілини */
     width: 100%; 
     z-index: 100;
+    
+    /* Чорний фон */
     background: #000;
     padding: 10px 0;
     box-shadow: 0 10px 20px rgba(0,0,0,0.8);
@@ -32,10 +33,12 @@
 }
 
 #search_input {
+    /* Саме поле вводу центруємо і обмежуємо */
     width: 94%;
     max-width: 800px;
-    margin: 0 auto; 
+    margin: 0 auto; /* Центрування */
     display: block;
+    
     height: 40px; 
     padding: 0 15px; 
     border-radius: 8px; 
@@ -166,25 +169,27 @@ body.search-mode .netflix-header {
     }
 }
 
-/* 🔥 СВЯТКОВИЙ ШАР (OVERLAY) - Винесено з медіа-запиту, щоб працювало на телефонах */
+/* 🔥 СВЯТКОВИЙ ШАР (OVERLAY) */
 #holiday_decor_layer {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; 
-    z-index: 2000; 
+    pointer-events: none; /* Пропускає кліки крізь себе */
+    z-index: 2000; /* Поверх контенту, але під модалками */
     overflow: hidden;
-    display: none; 
+    display: none; /* За замовчуванням вимкнено */
 }
 
 /* ❄️ РЕЖИМ: ЗИМОВА ГІРЛЯНДА */
 .garland-rope {
     width: 100%;
-    height: 60px;
+    height: 60px; /* Висота звисання */
     display: flex;
     justify-content: space-around;
+    padding-top: 0px;
+    background: transparent;
     position: absolute;
     top: -5px;
 }
@@ -195,6 +200,7 @@ body.search-mode .netflix-header {
     height: 14px;
     border-radius: 50%;
     background: #ccc;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
     animation: flash 2s infinite alternate;
 }
 
@@ -209,36 +215,45 @@ body.search-mode .netflix-header {
     border-radius: 2px;
 }
 
-.garland-bulb:nth-child(4n+1) { background: #ff3b30; animation-duration: 1.5s; box-shadow: 0 5px 20px rgba(255, 59, 48, 1); }
-.garland-bulb:nth-child(4n+2) { background: #ffcc00; animation-duration: 2.2s; animation-delay: 0.5s; box-shadow: 0 5px 20px rgba(255, 204, 0, 1); }
-.garland-bulb:nth-child(4n+3) { background: #4cd964; animation-duration: 1.8s; animation-delay: 1.2s; box-shadow: 0 5px 20px rgba(76, 217, 100, 1); }
-.garland-bulb:nth-child(4n+4) { background: #007aff; animation-duration: 2.5s; animation-delay: 0.2s; box-shadow: 0 5px 20px rgba(0, 122, 255, 1); }
+/* Кольори лампочок */
+.garland-bulb:nth-child(4n+1) { background: #ff3b30; animation-duration: 1.5s; box-shadow: 0 5px 20px rgba(255, 59, 48, 1); } /* Червоний */
+.garland-bulb:nth-child(4n+2) { background: #ffcc00; animation-duration: 2.2s; animation-delay: 0.5s; box-shadow: 0 5px 20px rgba(255, 204, 0, 1); } /* Золотий */
+.garland-bulb:nth-child(4n+3) { background: #4cd964; animation-duration: 1.8s; animation-delay: 1.2s; box-shadow: 0 5px 20px rgba(76, 217, 100, 1); } /* Зелений */
+.garland-bulb:nth-child(4n+4) { background: #007aff; animation-duration: 2.5s; animation-delay: 0.2s; box-shadow: 0 5px 20px rgba(0, 122, 255, 1); } /* Синій */
 
 @keyframes flash {
     0%, 100% { opacity: 1; transform: scale(1); filter: brightness(1.5); }
     50% { opacity: 0.4; transform: scale(0.9); filter: brightness(0.8); }
 }
 
+/* 🎉 РЕЖИМ: УНІВЕРСАЛЬНИЙ (ЗОЛОТІ ІСКРИ) */
 .universal-decor {
     width: 100%;
     height: 100%;
+    /* Градієнтна рамка по краях */
     background: radial-gradient(circle, transparent 60%, rgba(255, 215, 0, 0.15) 100%);
     position: relative;
+}
+/* Можна додати частинки */
+.universal-decor::after {
+    content: "✨";
+    position: absolute;
+    top: 20px; right: 20px;
+    font-size: 24px;
+    opacity: 0.5;
+    animation: floatSparkle 3s infinite ease-in-out;
+}
+.universal-decor::before {
+    content: "✨";
+    position: absolute;
+    top: 20px; left: 20px;
+    font-size: 24px;
+    opacity: 0.5;
+    animation: floatSparkle 4s infinite ease-in-out reverse;
 }
 
 @keyframes floatSparkle {
     0% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
     50% { transform: translateY(-10px) rotate(20deg); opacity: 0.8; }
     100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
-}
-
-/* 🔥 ПРАВКА: Фінальне вирівнювання полів в адмінці */
-#admin_panel_modal .modal-content input, 
-#admin_panel_modal .modal-content textarea, 
-#admin_panel_modal .modal-content select {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    display: block !important;
-    margin-bottom: 15px !important;
 }
